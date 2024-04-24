@@ -13,14 +13,14 @@
 #include <unordered_map>
 
 namespace Memory {
-    class Modules {
-    public:
-        static std::span<uint8_t> Get(std::string name);
+	class Modules {
+	public:
+		static std::span<uint8_t> Get(std::string name);
 
-    private:
-        static void PopulateModules();
-        static std::unordered_map<std::string, std::span<uint8_t>> loadedModules;
-    };
+	private:
+		static void PopulateModules();
+		static std::unordered_map<std::string, std::span<uint8_t>> loadedModules;
+	};
 };
 
 #endif // MODULES_HPP

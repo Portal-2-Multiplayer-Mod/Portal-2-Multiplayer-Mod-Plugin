@@ -5,9 +5,6 @@
 // 
 //===========================================================================//
 
-#ifndef SAMPLE_PLUGIN
-#define SAMPLE_PLUGIN
-
 #include "engine/iserverplugin.h"
 #include "igameevents.h"
 
@@ -26,7 +23,7 @@ public:
 	virtual void			Unload(void);
 	virtual void			Pause(void);
 	virtual void			UnPause(void);
-	virtual const char*		GetPluginDescription(void);
+	virtual const char*     GetPluginDescription(void);
 	virtual void			LevelInit(char const* pMapName);
 	virtual void			ServerActivate(edict_t* pEdictList, int edictCount, int clientMax);
 	virtual void			GameFrame(bool simulating);
@@ -49,10 +46,10 @@ public:
 	virtual int GetCommandIndex() { return m_iClientCommandIndex; }
 
 	// IGameEventListener Interface
-	virtual void			FireGameEvent( KeyValues *event );
+	virtual void			FireGameEvent(KeyValues* event);
 
 private:
-	
+
 	bool		m_bPluginLoaded;
 	bool		m_bNoUnload;
 
@@ -61,6 +58,3 @@ private:
 
 extern CP2MMServerPlugin g_P2MMServerPlugin;
 
-void P2MMLog(const tchar* pMsg, int level = 0);
-
-#endif // SAMPLE_PLUGIN

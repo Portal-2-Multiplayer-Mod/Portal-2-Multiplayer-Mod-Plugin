@@ -10,6 +10,7 @@
 #include "p2mm.hpp"
 #include "scanner.hpp"
 #include "modules.hpp"
+#include "globals.hpp"
 
 #ifdef _WIN32
 #pragma once
@@ -30,12 +31,12 @@
 //---------------------------------------------------------------------------------
 // Interfaces from the engine
 //---------------------------------------------------------------------------------
-IVEngineServer				*engine				= NULL; // helper functions (messaging clients, loading content, making entities, running commands, etc)
-CGlobalVars					*gpGlobals			= NULL;
-IPlayerInfoManager			*playerinfomanager	= NULL;
-IScriptVM					*g_pScriptVM		= NULL; // VScript support
-IServerTools				*g_pServerTools		= NULL;
-IGameEventManager			*gameeventmanager_	= NULL; // game events interface
+IVEngineServer* engine = NULL; // helper functions (messaging clients, loading content, making entities, running commands, etc)
+CGlobalVars* gpGlobals = NULL;
+IPlayerInfoManager* playerinfomanager = NULL;
+IScriptVM* g_pScriptVM = NULL; // VScript support
+IServerTools* g_pServerTools = NULL;
+IGameEventManager* gameeventmanager_ = NULL; // game events interface
 #ifndef GAME_DLL
 #define gameeventmanager gameeventmanager_
 #endif
@@ -44,7 +45,11 @@ IGameEventManager			*gameeventmanager_	= NULL; // game events interface
 // The plugin is a static singleton that is exported as an interface
 //---------------------------------------------------------------------------------
 CP2MMServerPlugin g_P2MMServerPlugin;
-EXPOSE_SINGLE_INTERFACE_GLOBALVAR( CP2MMServerPlugin, IServerPluginCallbacks, INTERFACEVERSION_ISERVERPLUGINCALLBACKS, g_P2MMServerPlugin );
+EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CP2MMServerPlugin, IServerPluginCallbacks, INTERFACEVERSION_ISERVERPLUGINCALLBACKS, g_P2MMServerPlugin);
+
+ConVar p2mm_developer("p2mm_developer", "0", FCVAR_NONE);
+ConVar p2mm_lastmap("p2mm_lastmap", "", FCVAR_NONE); // Last Map System
+ConVar p2mm_firstrun("p2mm_firstrun", "1", FCVAR_NONE); // Check if it's the first run map for the VScript
 
 //---------------------------------------------------------------------------------
 // Purpose: constructor/destructor
@@ -62,44 +67,17 @@ CP2MMServerPlugin::~CP2MMServerPlugin()
 {
 }
 
-const char *CP2MMServerPlugin::GetPluginDescription( void )
+const char* CP2MMServerPlugin::GetPluginDescription(void)
 {
-	return "Portal 2 Multiplayer Mod Server Plugin";
-}
-
-//---------------------------------------------------------------------------------
-// Purpose: Logging for the plugin by adding a prefix and line break. level: 0 = Msg, 1 = Warning, 2 = Error
-//---------------------------------------------------------------------------------
-void P2MMLog(const tchar* pMsg, int level)
-{
-	std::string msgPrefix = "(P2:MM PLUGIN): ";
-	std::string msg(pMsg);
-	std::string completeMsg = (msgPrefix + msg + "\n");
-
-	switch (level)
-	{
-	case 0:
-		Msg((completeMsg).c_str());
-		break;
-	case 1:
-		Warning((completeMsg).c_str());
-		break;
-	case 2:
-		Error((completeMsg).c_str());
-		break;
-	default:
-		Warning("(P2:MM PLUGIN): P2MMLog level set outside of 0-2, \"%d\", defaulting to Msg().");
-		Msg((completeMsg).c_str());
-		break;
-	}
+	return "Portal 2: Multiplayer Mod Server Plugin";
 }
 
 void ReplacePattern(std::string target_module, std::string patternBytes, std::string replace_with)
 {
-	void *addr = Memory::Scanner::Scan<void*>(Memory::Modules::Get(target_module), patternBytes);
+	void* addr = Memory::Scanner::Scan<void*>(Memory::Modules::Get(target_module), patternBytes);
 	if (!addr)
 	{
-		P2MMLog("Failed to replace pattern!", 1);
+		P2MMLog(1, false, "Failed to replace pattern!");
 		return;
 	}
 
@@ -120,65 +98,63 @@ void ReplacePattern(std::string target_module, std::string patternBytes, std::st
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: called when the plugin is loaded, load the interface we need from the engine
+// Purpose: Called when the plugin is loaded, initialization process. Loads the interfaces we need from the engine and applies our patches.
 //---------------------------------------------------------------------------------
-bool CP2MMServerPlugin::Load( CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameServerFactory )
+bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameServerFactory)
 {
-	P2MMLog("Loading plugin...");
-
-	if ( m_bPluginLoaded )
+	if (m_bPluginLoaded)
 	{
-		P2MMLog( "Already loaded.", 1 );
+		P2MMLog(1, false, "Already loaded!");
 		m_bNoUnload = true;
 		return false;
 	}
 	m_bPluginLoaded = true;
 
-	ConnectTier1Libraries( &interfaceFactory, 1 );
-	ConnectTier2Libraries( &interfaceFactory, 1 );
+	P2MMLog(0, false, "Loading plugin...");
 
-	engine = (IVEngineServer *)interfaceFactory( INTERFACEVERSION_VENGINESERVER, 0 );
-	if ( !engine )
+	ConnectTier1Libraries(&interfaceFactory, 1);
+	ConnectTier2Libraries(&interfaceFactory, 1);
+
+	// Make sure that all the interfaces needed are loaded and useable
+	engine = (IVEngineServer*)interfaceFactory(INTERFACEVERSION_VENGINESERVER, 0);
+	if (!engine)
 	{
-		P2MMLog( "Unable to load engine!", 2);
+		P2MMLog(1, false, "Unable to load engine!");
 		this->m_bNoUnload = true;
 		return false;
 	}
 
-	gameeventmanager = (IGameEventManager *)interfaceFactory( INTERFACEVERSION_GAMEEVENTSMANAGER, 0 );
-	if ( !gameeventmanager )
+	gameeventmanager = (IGameEventManager*)interfaceFactory(INTERFACEVERSION_GAMEEVENTSMANAGER, 0);
+	if (!gameeventmanager)
 	{
-		Warning("(P2:MM Plugin): Unable to load gameeventmanager\n");
+		P2MMLog(1, false, "Unable to load gameeventmanager!");
 		this->m_bNoUnload = true;
 		return false;
 	}
 
-	playerinfomanager = (IPlayerInfoManager *)gameServerFactory(INTERFACEVERSION_PLAYERINFOMANAGER, 0);
-	if ( !playerinfomanager )
+	playerinfomanager = (IPlayerInfoManager*)gameServerFactory(INTERFACEVERSION_PLAYERINFOMANAGER, 0);
+	if (!playerinfomanager)
 	{
-		Warning( "(P2:MM Plugin): Unable to load playerinfomanager\n" );
+		P2MMLog(1, false, "Unable to load playerinfomanager!");
 		this->m_bNoUnload = true;
 		return false;
 	}
 
-	g_pServerTools = (IServerTools *)gameServerFactory( VSERVERTOOLS_INTERFACE_VERSION, 0 );
-	if ( !g_pServerTools )
+	g_pServerTools = (IServerTools*)gameServerFactory(VSERVERTOOLS_INTERFACE_VERSION, 0);
+	if (!g_pServerTools)
 	{
-		Warning( "(P2:MM Plugin): Unable to load g_pServerTools\n" );
+		P2MMLog(1, false, "Unable to load g_pServerTools!");
 		this->m_bNoUnload = true;
 		return false;
 	}
 
 	gpGlobals = playerinfomanager->GetGlobalVars();
-	MathLib_Init( 2.2f, 2.2f, 0.0f, 2.0f );
-	ConVar_Register( 0 );
+	MathLib_Init(2.2f, 2.2f, 0.0f, 2.0f);
+	ConVar_Register(0);
 
 	gameeventmanager->AddListener(this, true);
 
-	// Byte patches...
-
-	// Linked portal doors event
-	ReplacePattern("server", "0F B6 87 04 05 00 00 8B 16", "EB 14 87 04 05 00 00 8B 16");
+	// Byte patches
 
 	// Partner disconnects
 	ReplacePattern("server", "51 50 FF D2 83 C4 10 E8", "51 50 90 90 83 C4 10 E8");
@@ -196,70 +172,78 @@ bool CP2MMServerPlugin::Load( CreateInterfaceFn interfaceFactory, CreateInterfac
 	// Fix sv_password
 	ReplacePattern("engine", "0F 95 C1 51 8D 4D E8", "03 C9 90 51 8D 4D E8");
 
+	// Linked portal doors event crash patch
+	ReplacePattern("server", "0F B6 87 04 05 00 00 8B 16", "EB 14 87 04 05 00 00 8B 16");
+
 	return true;
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: called when the plugin is unloaded (turned off)
+// Purpose: Called when the plugin is turning off/unloading. Currently causes the game to crash no clue why.
 //---------------------------------------------------------------------------------
-void CP2MMServerPlugin::Unload( void )
+void CP2MMServerPlugin::Unload(void)
 {
-	P2MMLog("Unloading Plugin...");
-
-	if ( m_bNoUnload )
+	// If the plugin errors for some reason, preventing it from unloading.
+	if (m_bNoUnload)
 	{
 		m_bNoUnload = false;
 		return;
 	}
 
+	P2MMLog(0, false, "Unloading Plugin...");
+
 	gameeventmanager->RemoveListener(this);
 
-	ConVar_Unregister( );
-	DisconnectTier2Libraries( );
-	DisconnectTier1Libraries( );
-	
+	ConVar_Unregister();
+	DisconnectTier2Libraries();
+	DisconnectTier1Libraries();
+
 	m_bPluginLoaded = false;
 }
 
-void CP2MMServerPlugin::SetCommandClient( int index )
+void CP2MMServerPlugin::SetCommandClient(int index)
 {
 	m_iClientCommandIndex = index;
 }
 
 void RegisterFuncsAndRun();
-void CP2MMServerPlugin::ServerActivate( edict_t* pEdictList, int edictCount, int clientMax )
+void CP2MMServerPlugin::ServerActivate(edict_t* pEdictList, int edictCount, int clientMax)
 {
 	RegisterFuncsAndRun();
 }
 
-void CP2MMServerPlugin::FireGameEvent( KeyValues *event )
+//---------------------------------------------------------------------------------
+// Purpose: Capture and work with game events. Interfaces game events to VScript functions.
+//---------------------------------------------------------------------------------
+void CP2MMServerPlugin::FireGameEvent(KeyValues* event)
 {
-	if (Q_strcmp(event->GetName(), "player_say") == 0)
+	// Event called when a player inputs a message into the chat, "player_say" returns:
+	/*
+		"userid"	"short"		// user ID on server
+		"text"		"string"	// the say text
+	*/
+	if (FStrEq(event->GetName(), "player_say"))
 	{
 		if (g_pScriptVM)
 		{
-			int entindex = NULL;
-			for (int i = 1; i <= gpGlobals->maxClients; i++)
-			{
-				edict_t *pEdict = NULL;
-				if ( i >= 0 && i < gpGlobals->maxEntities )
-				{
-					pEdict = (edict_t *)( gpGlobals->pEdicts + i );
-				}
-
-				if (engine->GetPlayerUserId(pEdict) == event->GetInt("userid"))
-				{
-					entindex = i;
-				}
-			}
-			const char *eventtext = event->GetString("text");
+			int userid = event->GetInt("userid");
+			const char* text = event->GetString("text");
+			int entindex = UserIDToEntityIndex(userid);
 
 			if (entindex != NULL)
 			{
-				HSCRIPT func = g_pScriptVM->LookupFunction("ChatCommands");
-				if (func)
+				// Handling chat commands
+				HSCRIPT cc_func = g_pScriptVM->LookupFunction("ChatCommands");
+				if (cc_func)
 				{
-					g_pScriptVM->Call<int, const char*>(func, NULL, true, NULL, entindex, eventtext);
+					g_pScriptVM->Call<const char*, int>(cc_func, NULL, true, NULL, text, entindex);
+				}
+
+				// Handle VScript interface function
+				HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSay");
+				if (ge_func)
+				{
+					g_pScriptVM->Call<int, const char*>(ge_func, NULL, true, NULL, userid, text, entindex);
 				}
 			}
 		}
@@ -270,22 +254,22 @@ void CP2MMServerPlugin::FireGameEvent( KeyValues *event )
 // Purpose: Unused callbacks
 //---------------------------------------------------------------------------------
 #pragma region UNUSED_CALLBACKS
-void CP2MMServerPlugin::Pause( void ) {}
-void CP2MMServerPlugin::UnPause( void ) {}
-void CP2MMServerPlugin::LevelInit( char const* pMapName ) {}
-void CP2MMServerPlugin::GameFrame( bool simulating ) {}
-void CP2MMServerPlugin::LevelShutdown( void ) {}
-void CP2MMServerPlugin::ClientActive( edict_t *pEntity ) {}
-void CP2MMServerPlugin::ClientDisconnect( edict_t *pEntity ) {}
-void CP2MMServerPlugin::ClientPutInServer( edict_t *pEntity, char const *playername ) {}
-void CP2MMServerPlugin::ClientSettingsChanged( edict_t *pEdict ) {}
-PLUGIN_RESULT CP2MMServerPlugin::ClientConnect( bool *bAllowConnect, edict_t *pEntity, const char *pszName, const char *pszAddress, char *reject, int maxrejectlen ) { return PLUGIN_CONTINUE; }
-void CP2MMServerPlugin::ClientFullyConnect( edict_t *pEntity ) { return; }
-PLUGIN_RESULT CP2MMServerPlugin::ClientCommand( edict_t* pEntity, const CCommand& args ) { return PLUGIN_CONTINUE; }
-PLUGIN_RESULT CP2MMServerPlugin::NetworkIDValidated( const char* pszUserName, const char* pszNetworkID ) { return PLUGIN_CONTINUE; }
-void CP2MMServerPlugin::OnQueryCvarValueFinished( QueryCvarCookie_t iCookie, edict_t *pPlayerEntity, EQueryCvarValueStatus eStatus, const char *pCvarName, const char *pCvarValue ) {}
-void CP2MMServerPlugin::OnEdictAllocated( edict_t *edict ) {}
-void CP2MMServerPlugin::OnEdictFreed( const edict_t *edict  ) {}
-bool CP2MMServerPlugin::BNetworkCryptKeyCheckRequired( uint32 unFromIP, uint16 usFromPort, uint32 unAccountIdProvidedByClient, bool bClientWantsToUseCryptKey ) { return false; }
-bool CP2MMServerPlugin::BNetworkCryptKeyValidate( uint32 unFromIP, uint16 usFromPort, uint32 unAccountIdProvidedByClient, int nEncryptionKeyIndexFromClient, int numEncryptedBytesFromClient, byte *pbEncryptedBufferFromClient, byte *pbPlainTextKeyForNetchan ) { return true; }
+void CP2MMServerPlugin::Pause(void) {}
+void CP2MMServerPlugin::UnPause(void) {}
+void CP2MMServerPlugin::GameFrame(bool simulating) {}
+void CP2MMServerPlugin::LevelInit(char const* pMapName) {}
+void CP2MMServerPlugin::LevelShutdown(void) {}
+void CP2MMServerPlugin::ClientActive(edict_t* pEntity) {}
+void CP2MMServerPlugin::ClientDisconnect(edict_t* pEntity) {}
+void CP2MMServerPlugin::ClientPutInServer(edict_t* pEntity, char const* playername) {}
+void CP2MMServerPlugin::ClientSettingsChanged(edict_t* pEdict) {}
+PLUGIN_RESULT CP2MMServerPlugin::ClientConnect(bool* bAllowConnect, edict_t* pEntity, const char* pszName, const char* pszAddress, char* reject, int maxrejectlen) { return PLUGIN_CONTINUE; }
+void CP2MMServerPlugin::ClientFullyConnect(edict_t* pEntity) { return; }
+PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand& args) { return PLUGIN_CONTINUE; }
+PLUGIN_RESULT CP2MMServerPlugin::NetworkIDValidated(const char* pszUserName, const char* pszNetworkID) { return PLUGIN_CONTINUE; }
+void CP2MMServerPlugin::OnQueryCvarValueFinished(QueryCvarCookie_t iCookie, edict_t* pPlayerEntity, EQueryCvarValueStatus eStatus, const char* pCvarName, const char* pCvarValue) {}
+void CP2MMServerPlugin::OnEdictAllocated(edict_t* edict) {}
+void CP2MMServerPlugin::OnEdictFreed(const edict_t* edict) {}
+bool CP2MMServerPlugin::BNetworkCryptKeyCheckRequired(uint32 unFromIP, uint16 usFromPort, uint32 unAccountIdProvidedByClient, bool bClientWantsToUseCryptKey) { return false; }
+bool CP2MMServerPlugin::BNetworkCryptKeyValidate(uint32 unFromIP, uint16 usFromPort, uint32 unAccountIdProvidedByClient, int nEncryptionKeyIndexFromClient, int numEncryptedBytesFromClient, byte* pbEncryptedBufferFromClient, byte* pbPlainTextKeyForNetchan) { return true; }
 #pragma endregion

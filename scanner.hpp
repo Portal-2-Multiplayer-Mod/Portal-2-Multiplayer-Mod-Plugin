@@ -14,25 +14,25 @@
 #include <memory>
 
 namespace Memory {
-    class ScannerImplementation {
-    public:
-        virtual uintptr_t Scan(std::span<uint8_t> region, std::string pattern, int offset) = 0;
-        virtual std::vector<uintptr_t> ScanMultiple(std::span<uint8_t> region, std::string pattern, int offset) = 0;
-    };
+	class ScannerImplementation {
+	public:
+		virtual uintptr_t Scan(std::span<uint8_t> region, std::string pattern, int offset) = 0;
+		virtual std::vector<uintptr_t> ScanMultiple(std::span<uint8_t> region, std::string pattern, int offset) = 0;
+	};
 
-    class Scanner {
-    public:
-        template<typename T = uintptr_t> static T Scan(std::span<uint8_t> region, std::string pattern, int offset = 0) {
-            return reinterpret_cast<T>(Scanner::Implementation().get()->Scan(region, pattern, offset));
-        }
+	class Scanner {
+	public:
+		template<typename T = uintptr_t> static T Scan(std::span<uint8_t> region, std::string pattern, int offset = 0) {
+			return reinterpret_cast<T>(Scanner::Implementation().get()->Scan(region, pattern, offset));
+		}
 
-        static std::vector<uintptr_t> ScanMultiple(std::span<uint8_t> region, std::string pattern, int offset = 0) {
-            return Scanner::Implementation().get()->ScanMultiple(region, pattern, offset);
-        }
+		static std::vector<uintptr_t> ScanMultiple(std::span<uint8_t> region, std::string pattern, int offset = 0) {
+			return Scanner::Implementation().get()->ScanMultiple(region, pattern, offset);
+		}
 
-    private:
-        static std::unique_ptr<ScannerImplementation>& Implementation();
-    };
+	private:
+		static std::unique_ptr<ScannerImplementation>& Implementation();
+	};
 };
 
 #endif // SCANNER_HPP

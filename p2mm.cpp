@@ -1,6 +1,7 @@
 //===========================================================================//
 //
 // Author: Nanoman2525 & NULLderef
+// Maintainer: Orsell
 // Purpose: Portal 2: Multiplayer Mod server plugin
 // 
 // Note: This plugin was made in like 20 mins, but everything works.
@@ -37,6 +38,7 @@ IPlayerInfoManager* playerinfomanager = NULL;
 IScriptVM* g_pScriptVM = NULL; // VScript support
 IServerTools* g_pServerTools = NULL;
 IGameEventManager* gameeventmanager_ = NULL; // game events interface
+//IServerPluginHelpers* helpers = NULL; // helper plugin functions
 #ifndef GAME_DLL
 #define gameeventmanager gameeventmanager_
 #endif
@@ -47,9 +49,54 @@ IGameEventManager* gameeventmanager_ = NULL; // game events interface
 CP2MMServerPlugin g_P2MMServerPlugin;
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CP2MMServerPlugin, IServerPluginCallbacks, INTERFACEVERSION_ISERVERPLUGINCALLBACKS, g_P2MMServerPlugin);
 
-ConVar p2mm_developer("p2mm_developer", "0", FCVAR_NONE);
-ConVar p2mm_lastmap("p2mm_lastmap", "", FCVAR_NONE); // Last Map System
-ConVar p2mm_firstrun("p2mm_firstrun", "1", FCVAR_NONE); // Check if it's the first run map for the VScript
+ConVar p2mm_developer("p2mm_developer", "0", FCVAR_NONE, "Enable for P2:MM developer messages.");
+ConVar p2mm_lastmap("p2mm_lastmap", "", FCVAR_NONE, "Last map recorded for the Last Map system.");
+ConVar p2mm_firstrun("p2mm_firstrun", "1", FCVAR_NONE, "Flag for checking if it's the first map run for the session. Manual modification not recommended as it can mess things up.");
+ConVar p2mm_splitscreen("p2mm_splitscreen", "0", FCVAR_NONE, "Flag for the main menu buttons to start in splitscreen or not.");
+
+CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with the defined map and whether it should be splitscreen or not.")
+{
+	// Make sure the CON_COMMAND was executed correctly
+	if (args.ArgC() < 2)
+	{
+		P2MMLog(1, false, "p2mm_startsession called incorrectly!");
+		P2MMLog(1, false, "Usage: 'p2mm_startsession (map to start)'.");
+		return;
+	}
+
+	// A check done by the menu ot request to use the 
+	const char* requestedMap = args.Arg(1);
+	if (requestedMap == "P2MM_LASTMAP")
+	{
+		requestedMap = p2mm_lastmap.GetString();
+	}
+
+	// Check if the supplied map is a valid map
+	if (!engine->IsMapValid(requestedMap))
+	{
+		P2MMLog(1, false, "p2mm_startsession was given a non-valid map! %s", requestedMap);
+		return;
+	}
+
+	// Check if the user requested it to start in splitscreen or not
+	// Whether we are starting a singleplayer or multiplayer map,
+	// it will start at mp_coop_community_hub so the mod gets started correctly
+	const char* startSessionCommand = "";
+	if (p2mm_splitscreen.GetBool())
+	{
+		startSessionCommand = "ss_map mp_coop_community_hub";
+	}
+	else
+	{
+		startSessionCommand = "map mp_coop_community_hub";
+	}
+
+	// Set first run ConVar flag on and set the last map ConVar value so the system
+	// can change from mp_coop_community_hub to the requested map
+	p2mm_firstrun.SetValue(1);
+	p2mm_lastmap.SetValue(requestedMap);
+	engine->ServerCommand(startSessionCommand);
+}
 
 //---------------------------------------------------------------------------------
 // Purpose: constructor/destructor
@@ -183,7 +230,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 //---------------------------------------------------------------------------------
 void CP2MMServerPlugin::Unload(void)
 {
-	// If the plugin errors for some reason, preventing it from unloading.
+	// If the plugin errors for some reason, prevent it from unloading.
 	if (m_bNoUnload)
 	{
 		m_bNoUnload = false;

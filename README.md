@@ -21,7 +21,7 @@ void        SetPhysTypeConvar(int newval)            | "Sets 'player_held_object
 void        SetMaxPortalSeparationConvar(int newval) | "Sets 'portal_max_separation_force' to the supplied integer value."
 bool        IsDedicatedServer()                      | "Returns true if this is a dedicated server."
 void        InitializeEntity(HSCRIPT ent)            | "Initializes an entity."
-void        SendToChat(const char *msg, int index)   | "Sends a raw message to the chat HUD."
+void        SendToChat(const char* msg, int index)   | "Sends a raw message to the chat HUD."
 const char* GetGameDirectory()                       | "Returns the game directory."
 const char* GetLastMap()                             | "Returns the last map recorded by the launcher's Last Map system."
 bool        IsFirstRun()                             | "Returns true if this is the first map ever run during the game session."

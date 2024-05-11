@@ -13,7 +13,7 @@ The purpose of this plugin is to patch Portal 2 to make the mod work as well as 
 ## VScript Functions Added To Interface With The Engine:
 
 ```c++
-const char *GetPlayerName(int index)                 | "Gets player username by index."
+const char* GetPlayerName(int index)                 | "Gets player username by index."
 int         GetSteamID(int index)                    | "Gets the account ID component of player SteamID by index."
 bool        IsMapValid(const char* map)              | "Returns true is the supplied string is a valid map name."
 int         GetDeveloperLevelP2MM()                  | "Returns the value of ConVar p2mm_developer."
@@ -22,7 +22,7 @@ void        SetMaxPortalSeparationConvar(int newval) | "Sets 'portal_max_separat
 bool        IsDedicatedServer()                      | "Returns true if this is a dedicated server."
 void        InitializeEntity(HSCRIPT ent)            | "Initializes an entity."
 void        SendToChat(const char *msg, int index)   | "Sends a raw message to the chat HUD."
-const char *GetGameDirectory()                       | "Returns the game directory."
-const char *GetLastMap()                             | "Returns the last map recorded by the launcher's Last Map system."
+const char* GetGameDirectory()                       | "Returns the game directory."
+const char* GetLastMap()                             | "Returns the last map recorded by the launcher's Last Map system."
 bool        IsFirstRun()                             | "Returns true if this is the first map ever run during the game session."
 ```

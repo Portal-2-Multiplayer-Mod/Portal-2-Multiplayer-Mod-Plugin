@@ -44,10 +44,10 @@ int UserIDToEntityIndex(int userid)
 			pEdict = (edict_t*)(gpGlobals->pEdicts + i);
 		}
 
-		if (engine->GetPlayerUserId(pEdict) == userid)
+		if (engineServer->GetPlayerUserId(pEdict) == userid)
 		{
 			return i;
 		}
 	}
-	return NULL; // Return -1 if the index can't be found
+	return NULL; // Return NULL if the index can't be found
 }

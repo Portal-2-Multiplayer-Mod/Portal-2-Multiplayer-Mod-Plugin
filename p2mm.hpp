@@ -6,14 +6,13 @@
 // 
 //===========================================================================//
 
-#include "engine/iserverplugin.h"
-#include "igameevents.h"
+#include "globals.hpp"
 
 //---------------------------------------------------------------------------------
 // Purpose: Portal 2: Multiplayer Mod server plugin class
 //---------------------------------------------------------------------------------
 
-class CP2MMServerPlugin : public IServerPluginCallbacks, public IGameEventListener
+class CP2MMServerPlugin : public IServerPluginCallbacks, public IServerPluginHelpers, public IGameEventListener
 {
 public:
 	CP2MMServerPlugin();
@@ -44,10 +43,16 @@ public:
 	virtual bool			BNetworkCryptKeyCheckRequired(uint32 unFromIP, uint16 usFromPort, uint32 unAccountIdProvidedByClient, bool bClientWantsToUseCryptKey);
 	virtual bool			BNetworkCryptKeyValidate(uint32 unFromIP, uint16 usFromPort, uint32 unAccountIdProvidedByClient, int nEncryptionKeyIndexFromClient, int numEncryptedBytesFromClient, byte* pbEncryptedBufferFromClient, byte* pbPlainTextKeyForNetchan);
 
-	virtual int GetCommandIndex() { return m_iClientCommandIndex; }
+	// IServerPluginHelpers methods
+	virtual void			  CreateMessage(edict_t* pEntity, DIALOG_TYPE type, KeyValues* data, IServerPluginCallbacks* plugin);
+	virtual void			  ClientCommand(edict_t* pEntity, const char* cmd);
+	virtual QueryCvarCookie_t StartQueryCvarValue(edict_t* pEntity, const char* pName);
 
 	// IGameEventListener Interface
 	virtual void			FireGameEvent(KeyValues* event);
+
+	// 
+	virtual int				GetCommandIndex() { return m_iClientCommandIndex; }
 
 private:
 
@@ -58,4 +63,3 @@ private:
 };
 
 extern CP2MMServerPlugin g_P2MMServerPlugin;
-

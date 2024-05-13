@@ -11,7 +11,6 @@
 #include "p2mm.hpp"
 #include "scanner.hpp"
 #include "modules.hpp"
-#include "globals.hpp"
 
 #ifdef _WIN32
 #pragma once
@@ -20,10 +19,7 @@
 
 #include <sstream>
 
-#include "eiface.h"
 #include "filesystem.h"
-#include "vscript/ivscript.h"
-#include "game/server/iplayerinfo.h"
 #include "public/toolframework/itoolentity.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -32,13 +28,14 @@
 //---------------------------------------------------------------------------------
 // Interfaces from the engine
 //---------------------------------------------------------------------------------
-IVEngineServer* engine = NULL; // helper functions (messaging clients, loading content, making entities, running commands, etc)
-CGlobalVars* gpGlobals = NULL;
-IPlayerInfoManager* playerinfomanager = NULL;
+IVEngineServer* engineServer = NULL; // Access engine server helper functions (messaging clients, loading content, making entities, running commands, etc)
+IVEngineClient* engineClient = NULL; // Access engine client helper functions
+CGlobalVars* gpGlobals = NULL; // Access global variables shared between the engine and games dlls
+IPlayerInfoManager* playerinfomanager = NULL; // Access functions for players
 IScriptVM* g_pScriptVM = NULL; // VScript support
-IServerTools* g_pServerTools = NULL;
-IGameEventManager* gameeventmanager_ = NULL; // game events interface
-//IServerPluginHelpers* helpers = NULL; // helper plugin functions
+IServerTools* g_pServerTools = NULL; // Access to interface from engine to tools for manipulating entities
+IGameEventManager* gameeventmanager_ = NULL; // Game events interface
+IServerPluginHelpers* helpers = NULL; // Helper plugin functions
 #ifndef GAME_DLL
 #define gameeventmanager gameeventmanager_
 #endif
@@ -72,7 +69,7 @@ CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with the defined map a
 	}
 
 	// Check if the supplied map is a valid map
-	if (!engine->IsMapValid(requestedMap))
+	if (!engineServer->IsMapValid(requestedMap.c_str()))
 	{
 		P2MMLog(1, false, "p2mm_startsession was given a non-valid map! %s", requestedMap);
 		return;
@@ -155,7 +152,6 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		m_bNoUnload = true;
 		return false;
 	}
-	m_bPluginLoaded = true;
 
 	P2MMLog(0, false, "Loading plugin...");
 
@@ -163,10 +159,18 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	ConnectTier2Libraries(&interfaceFactory, 1);
 
 	// Make sure that all the interfaces needed are loaded and useable
-	engine = (IVEngineServer*)interfaceFactory(INTERFACEVERSION_VENGINESERVER, 0);
-	if (!engine)
+	engineServer = (IVEngineServer*)interfaceFactory(INTERFACEVERSION_VENGINESERVER, 0);
+	if (!engineServer)
 	{
-		P2MMLog(1, false, "Unable to load engine!");
+		P2MMLog(1, false, "Unable to load engineServer!");
+		this->m_bNoUnload = true;
+		return false;
+	}
+
+	engineClient = (IVEngineClient*)interfaceFactory(VENGINE_CLIENT_INTERFACE_VERSION, 0);
+	if (!engineClient)
+	{
+		P2MMLog(1, false, "Unable to load engineClient!");
 		this->m_bNoUnload = true;
 		return false;
 	}
@@ -203,6 +207,9 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 
 	// Byte patches
 
+	// Linked portal doors event crash patch
+	ReplacePattern("server", "0F B6 87 04 05 00 00 8B 16", "EB 14 87 04 05 00 00 8B 16");
+
 	// Partner disconnects
 	ReplacePattern("server", "51 50 FF D2 83 C4 10 E8", "51 50 90 90 83 C4 10 E8");
 	ReplacePattern("server", "74 28 3B 75 FC", "EB 28 3B 75 FC");
@@ -219,9 +226,8 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	// Fix sv_password
 	ReplacePattern("engine", "0F 95 C1 51 8D 4D E8", "03 C9 90 51 8D 4D E8");
 
-	// Linked portal doors event crash patch
-	ReplacePattern("server", "0F B6 87 04 05 00 00 8B 16", "EB 14 87 04 05 00 00 8B 16");
-
+	P2MMLog(0, false, "Loaded plugin!");
+	m_bPluginLoaded = true;
 	return true;
 }
 
@@ -319,4 +325,7 @@ void CP2MMServerPlugin::OnEdictAllocated(edict_t* edict) {}
 void CP2MMServerPlugin::OnEdictFreed(const edict_t* edict) {}
 bool CP2MMServerPlugin::BNetworkCryptKeyCheckRequired(uint32 unFromIP, uint16 usFromPort, uint32 unAccountIdProvidedByClient, bool bClientWantsToUseCryptKey) { return false; }
 bool CP2MMServerPlugin::BNetworkCryptKeyValidate(uint32 unFromIP, uint16 usFromPort, uint32 unAccountIdProvidedByClient, int nEncryptionKeyIndexFromClient, int numEncryptedBytesFromClient, byte* pbEncryptedBufferFromClient, byte* pbPlainTextKeyForNetchan) { return true; }
+void CP2MMServerPlugin::CreateMessage(edict_t* pEntity, DIALOG_TYPE type, KeyValues* data, IServerPluginCallbacks* plugin) {}
+void CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const char* cmd) {}
+QueryCvarCookie_t CP2MMServerPlugin::StartQueryCvarValue(edict_t* pEntity, const char* pName) {return QueryCvarCookie_t();}
 #pragma endregion

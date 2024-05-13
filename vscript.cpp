@@ -7,19 +7,11 @@
 
 #include "scanner.hpp"
 #include "modules.hpp"
-#include "globals.hpp"
-
-#include "eiface.h"
-#include "public/cdll_int.h"
-#include "public/steam/steamclientpublic.h"
-#include "vscript/ivscript.h"
-#include "irecipientfilter.h"
 #include "p2mm.hpp"
 
-extern IVEngineServer* engine;
-extern CGlobalVars* gpGlobals;
-extern IScriptVM* g_pScriptVM;
-extern IServerTools* g_pServerTools;
+#include "public/steam/steamclientpublic.h"
+#include "irecipientfilter.h"
+
 extern ConVar p2mm_developer;
 extern ConVar p2mm_lastmap;
 extern ConVar p2mm_firstrun;
@@ -35,7 +27,7 @@ const char* GetPlayerName(int index)
 	}
 
 	player_info_t playerinfo;
-	if (!engine->GetPlayerInfo(index, &playerinfo))
+	if (!engineServer->GetPlayerInfo(index, &playerinfo))
 	{
 		return "";
 	}
@@ -59,12 +51,12 @@ int GetSteamID(int index)
 	}
 
 	player_info_t playerinfo;
-	if (!engine->GetPlayerInfo(index, &playerinfo))
+	if (!engineServer->GetPlayerInfo(index, &playerinfo))
 	{
 		return -1;
 	}
 
-	const CSteamID* pSteamID = engine->GetClientSteamID(pEdict);
+	const CSteamID* pSteamID = engineServer->GetClientSteamID(pEdict);
 	if (!pSteamID || pSteamID->GetAccountID() == 0)
 	{
 		return -1;
@@ -78,7 +70,7 @@ int GetSteamID(int index)
 //---------------------------------------------------------------------------------
 bool IsMapValid(const char* map)
 {
-	return engine->IsMapValid(map);
+	return engineServer->IsMapValid(map);
 }
 
 //---------------------------------------------------------------------------------
@@ -102,7 +94,7 @@ void SetPhysTypeConvar(int newval)
 //---------------------------------------------------------------------------------
 void SetMaxPortalSeparationConvar(int newval)
 {
-	if (engine->IsDedicatedServer())
+	if (engineServer->IsDedicatedServer())
 	{
 		return;
 	}
@@ -114,7 +106,7 @@ void SetMaxPortalSeparationConvar(int newval)
 //---------------------------------------------------------------------------------
 bool IsDedicatedServer()
 {
-	return engine->IsDedicatedServer();
+	return engineServer->IsDedicatedServer();
 }
 
 //---------------------------------------------------------------------------------
@@ -179,7 +171,7 @@ void SendToChat(const char* msg, int index)
 		for (int i = 1; i < gpGlobals->maxClients; i++)
 		{
 			player_info_t playerinfo;
-			if (engine->GetPlayerInfo(i, &playerinfo))
+			if (engineServer->GetPlayerInfo(i, &playerinfo))
 			{
 				recipient_filter.AddPlayer(i);
 			}
@@ -190,11 +182,11 @@ void SendToChat(const char* msg, int index)
 		recipient_filter.AddPlayer(index);
 	}
 
-	netmsg = engine->UserMessageBegin(&recipient_filter, 3, "SayText2");
+	netmsg = engineServer->UserMessageBegin(&recipient_filter, 3, "SayText2");
 	netmsg->WriteByte(0);
 	netmsg->WriteString(msg);
 	netmsg->WriteByte(1);
-	engine->MessageEnd();
+	engineServer->MessageEnd();
 }
 
 //---------------------------------------------------------------------------------
@@ -221,16 +213,14 @@ bool IsFirstRun()
 	return p2mm_firstrun.GetBool();
 }
 
-//void RemoveEntityType(CBaseEntity* ent)
+//void RemoveEntityByClassname(const char* ent)
 //{
-//	CBaseEntity* pResult = gEntList.FindEntityByClassname(NULL, "npc_*");
+//	CBaseEntity* pResult = gEntList.FindEntityByClassname(NULL, ent);
 //	while (pResult)
 //	{
-//		CAI_BaseNPC* pNPC = dynamic_cast<CAI_BaseNPC*>(pResult);
-//		if (pNPC)
-//			pNPC->SetState(NPC_STATE_IDLE);
+//		
 //
-//		pResult = gEntList.FindEntityByClassname(pResult, "npc_*");
+//		pResult = gEntList.FindEntityByClassname(pResult, ent);
 //	}
 //}
 

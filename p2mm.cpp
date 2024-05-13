@@ -51,52 +51,62 @@ ConVar p2mm_lastmap("p2mm_lastmap", "", FCVAR_NONE, "Last map recorded for the L
 ConVar p2mm_firstrun("p2mm_firstrun", "1", FCVAR_NONE, "Flag for checking if it's the first map run for the session. Manual modification not recommended as it can mess things up.");
 ConVar p2mm_splitscreen("p2mm_splitscreen", "0", FCVAR_NONE, "Flag for the main menu buttons to start in splitscreen or not.");
 
-CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with the defined map and whether it should be splitscreen or not.")
+CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map.")
 {
 	// Make sure the CON_COMMAND was executed correctly
-	if (args.ArgC() < 2)
+	if (args.ArgC() < 1 || args.Arg(1) == "")
 	{
-		P2MMLog(1, false, "p2mm_startsession called incorrectly!");
-		P2MMLog(1, false, "Usage: 'p2mm_startsession (map to start)'.");
+		P2MMLog(1, false, "p2mm_startsession called incorrectly! Usage: 'p2mm_startsession (map to start) '");
 		return;
 	}
 
-	// A check done by the menu ot request to use the 
-	const char* requestedMap = args.Arg(1);
-	if (requestedMap == "P2MM_LASTMAP")
+	// A check done by the menu to request to use the last recorded map in the p2mm_lastmap ConVar
+	std::string requestedMap = args.Arg(1);
+	P2MMLog(0, true, "Requested Map: %s", requestedMap.c_str());
+	if (FSubStr(requestedMap.c_str(), "P2MM_LASTMAP"))
 	{
 		requestedMap = p2mm_lastmap.GetString();
+		P2MMLog(0, true, "P2MM_LASTMAP called! Running Last Map: %s", requestedMap.c_str());
 	}
+	p2mm_lastmap.SetValue(""); // Set last map ConVar to blank so it doesn't trigger in situations where we don't want it to trigger
 
 	// Check if the supplied map is a valid map
 	if (!engineServer->IsMapValid(requestedMap.c_str()))
 	{
-		P2MMLog(1, false, "p2mm_startsession was given a non-valid map! %s", requestedMap);
+		P2MMLog(1, false, "p2mm_startsession was given a non-valid map or one that doesn't exist! %s", requestedMap);
 		return;
 	}
 
 	// Check if the user requested it to start in splitscreen or not
-	// Whether we are starting a singleplayer or multiplayer map,
-	// it will start at mp_coop_community_hub so the mod gets started correctly
-	const char* startSessionCommand = "";
+	std::string mapString = "";
 	if (p2mm_splitscreen.GetBool())
 	{
-		startSessionCommand = "ss_map mp_coop_community_hub";
+		mapString = "ss_map ";
 	}
 	else
 	{
-		startSessionCommand = "map mp_coop_community_hub";
+		mapString = "map ";
 	}
+	P2MMLog(0, true, "Map String: %s", mapString.c_str());
 
 	// Set first run ConVar flag on and set the last map ConVar value so the system
 	// can change from mp_coop_community_hub to the requested map
 	p2mm_firstrun.SetValue(1);
-	p2mm_lastmap.SetValue(requestedMap);
-	engine->ServerCommand(startSessionCommand);
+	if (!FSubStr(requestedMap.c_str(), "mp_coop"))
+	{
+		P2MMLog(0, true, "'mp_coop' not found, singleplayer map being run.");
+		p2mm_lastmap.SetValue(requestedMap.c_str());
+		engineClient->ExecuteClientCmd(std::string(mapString + "mp_coop_community_hub").c_str());
+	}
+	else
+	{
+		P2MMLog(0, true, "'mp_coop' found, multiplayer map being run.");
+		engineClient->ExecuteClientCmd(std::string(mapString + requestedMap).c_str());
+	}
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: constructor/destructor
+// Purpose: constructor
 //---------------------------------------------------------------------------------
 CP2MMServerPlugin::CP2MMServerPlugin()
 {
@@ -107,13 +117,17 @@ CP2MMServerPlugin::CP2MMServerPlugin()
 	this->m_bNoUnload = false; // If we fail to load, we don't want to run anything on Unload()
 }
 
+//---------------------------------------------------------------------------------
+// Purpose: destructor
+//---------------------------------------------------------------------------------
 CP2MMServerPlugin::~CP2MMServerPlugin()
 {
 }
 
 const char* CP2MMServerPlugin::GetPluginDescription(void)
-{
-	return "Portal 2: Multiplayer Mod Server Plugin";
+{ 
+	static std::string pluginDescription = "Portal 2: Multiplayer Mod Server Plugin | Plugin Version: " + std::string(P2MM_PLUGIN_VERSION) + " | For P2:MM Version: " + std::string(P2MM_VERSION);
+	return pluginDescription.c_str();
 }
 
 void ReplacePattern(std::string target_module, std::string patternBytes, std::string replace_with)

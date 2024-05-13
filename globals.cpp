@@ -16,13 +16,18 @@ void P2MMLog(int level, bool dev, const tchar* pMsg, ...)
 {
 	std::string completeMsg = ("(P2:MM PLUGIN): " + std::string(pMsg) + "\n");
 
+	if (dev && !p2mm_developer.GetBool())
+	{
+		return;
+	}
+
 	switch (level)
 	{
 	case 0:
-		dev ? DevMsg((completeMsg).c_str()) : Msg((completeMsg).c_str());
+		Msg((completeMsg).c_str());
 		break;
 	case 1:
-		dev ? DevWarning((completeMsg).c_str()) : Warning((completeMsg).c_str());
+		Warning((completeMsg).c_str());
 		break;
 	default:
 		Warning("(P2:MM PLUGIN): P2MMLog level set outside of 0-1, \"%d\", defaulting to Msg().\n", level);

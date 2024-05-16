@@ -12,6 +12,9 @@
 #include <stdexcept>
 #include <sstream>
 
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
+
 namespace Memory {
 	enum MaskState : uint8_t {
 		MASK_EMPTY = 0x00,

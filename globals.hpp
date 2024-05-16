@@ -13,7 +13,7 @@
 #include "game/server/iplayerinfo.h"
 #include "engine/iserverplugin.h"
 
-#define P2MM_CONSOLE_COLOR Color(0, 148, 100)
+#define P2MM_CONSOLE_COLOR Color(0, 148, 100, 255)
 
 //---------------------------------------------------------------------------------
 // Any ConVars or CON_COMMANDS that need to be globally available
@@ -34,20 +34,42 @@ extern IGameEventManager2* gameeventmanager_;
 extern IServerPluginHelpers* pluginHelpers;
 
 void P2MMLog(int level, bool dev, const char* pMsg, ...);
-extern int GetPlayerIndex(int userid);
-
-// For making P2MM
-const char* GetFormattedPrint(const char* pMsg);
 
 // If String Equals String helper function
-bool FStrEq(const char* sz1, const char* sz2);
+inline bool FStrEq(const char* sz1, const char* sz2)
+{
+	return (Q_stricmp(sz1, sz2) == 0);
+}
 
 // If String Has Substring helper function
-bool FSubStr(const char* sz1, const char* search);
+inline bool FSubStr(const char* sz1, const char* search)
+{
+	return (Q_strstr(sz1, search));
+}
 
 // Helper functions taken from utils.h which entity to entity index and entity index to entity conversion
 // Entity to entity index
-int ENTINDEX(edict_t* pEdict);
+inline int ENTINDEX(edict_t* pEdict)
+{
+	if (!pEdict)
+		return 0;
+	int edictIndex = pEdict - gpGlobals->pEdicts;
+	Assert(edictIndex < MAX_EDICTS && edictIndex >= 0);
+	return edictIndex;
+}
 
 // Entity index to entity
-edict_t* INDEXENT(int iEdictNum);
+inline edict_t* INDEXENT(int iEdictNum)
+{
+	Assert(iEdictNum >= 0 && iEdictNum < MAX_EDICTS);
+	if (gpGlobals->pEdicts)
+	{
+		edict_t* pEdict = gpGlobals->pEdicts + iEdictNum;
+		if (pEdict->IsFree())
+			return NULL;
+		return pEdict;
+	}
+	return NULL;
+}
+
+extern int GetPlayerIndex(int userid);

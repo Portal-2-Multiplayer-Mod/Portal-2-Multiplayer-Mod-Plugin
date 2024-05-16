@@ -12,9 +12,12 @@
 #include "public/steam/steamclientpublic.h"
 #include "irecipientfilter.h"
 
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
+
 extern ConVar p2mm_developer;
 extern ConVar p2mm_lastmap;
-extern ConVar p2mm_firstrun;
+//extern ConVar p2mm_firstrun;
 
 //---------------------------------------------------------------------------------
 // Purpose: Gets player username by index.
@@ -208,9 +211,10 @@ const char* GetLastMap()
 //---------------------------------------------------------------------------------
 // Purpose: Returns true if this is the first map ever run during the game session.
 //---------------------------------------------------------------------------------
-bool IsFirstRun()
+static bool IsFirstRun()
 {
-	return p2mm_firstrun.GetBool();
+	//return p2mm_firstrun.GetBool();
+	return g_P2MMServerPlugin.m_bFirstMapRan;
 }
 
 //---------------------------------------------------------------------------------

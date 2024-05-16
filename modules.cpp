@@ -15,6 +15,9 @@
 #include <filesystem>
 #include <stdexcept>
 
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
+
 namespace Memory {
 	std::unordered_map<std::string, std::span<uint8_t>> Modules::loadedModules;
 

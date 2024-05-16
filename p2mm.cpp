@@ -19,9 +19,6 @@
 
 #include <sstream>
 
-#include "filesystem.h"
-#include "public/toolframework/itoolentity.h"
-
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -42,7 +39,7 @@ IServerPluginHelpers* pluginHelpers = NULL; // Access interface for plugin helpe
 #endif
 
 // List of game events the plugin interfaces used to load each one
-std::list<const char*> gameevents
+const char *gameevents[] =
 {
 	"portal_player_touchedground",
 	"portal_player_ping",
@@ -60,13 +57,13 @@ EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CP2MMServerPlugin, IServerPluginCallbacks, INT
 
 ConVar p2mm_developer("p2mm_developer", "0", FCVAR_NONE, "Enable for P2:MM developer messages.");
 ConVar p2mm_lastmap("p2mm_lastmap", "", FCVAR_NONE, "Last map recorded for the Last Map system.");
-ConVar p2mm_firstrun("p2mm_firstrun", "1", FCVAR_NONE, "Flag for checking if it's the first map run for the session. Manual modification not recommended as it can mess things up.");
+//ConVar p2mm_firstrun("p2mm_firstrun", "1", FCVAR_NONE, "Flag for checking if it's the first map run for the session. Manual modification not recommended as it can mess things up.");
 ConVar p2mm_splitscreen("p2mm_splitscreen", "0", FCVAR_NONE, "Flag for the main menu buttons to start in splitscreen or not.");
 
 CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map.")
 {
 	// Make sure the CON_COMMAND was executed correctly
-	if (args.ArgC() < 2 || args.Arg(1) == "")
+	if (args.ArgC() < 2 || FStrEq(args.Arg(1), ""))
 	{
 		P2MMLog(1, false, "p2mm_startsession called incorrectly! Usage: 'p2mm_startsession (map to start) '");
 		return;
@@ -112,7 +109,8 @@ CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map."
 
 	// Set first run ConVar flag on and set the last map ConVar value so the system
 	// can change from mp_coop_community_hub to the requested map
-	p2mm_firstrun.SetValue(1);
+	//p2mm_firstrun.SetValue(1);
+	g_P2MMServerPlugin.m_bFirstMapRan = true;
 	if (!FSubStr(requestedMap.c_str(), "mp_coop"))
 	{
 		P2MMLog(0, true, "'mp_coop' not found, singleplayer map being run.");
@@ -160,8 +158,13 @@ CP2MMServerPlugin::CP2MMServerPlugin()
 
 	// Store plugin Status
 	this->m_bPluginLoaded = false;
-	this->m_bNoUnload = false; // If we fail to load, we don't want to run anything on Unload()
-	this->m_bSeenFirstRunPrompt = false; // Flag is set true after CallFirstRunPrompt() is called in VScript
+	this->m_bNoUnload = false;				// If we fail to load, we don't want to run anything on Unload()
+
+	// Store game vars
+	this->m_bSeenFirstRunPrompt = false;	// Flag is set true after CallFirstRunPrompt() is called in VScript
+	this->m_bFirstMapRan = false;			// Checks if the game ran for the first time
+
+	m_nDebugID = EVENT_DEBUG_ID_INIT;
 }
 
 //---------------------------------------------------------------------------------
@@ -169,6 +172,7 @@ CP2MMServerPlugin::CP2MMServerPlugin()
 //---------------------------------------------------------------------------------
 CP2MMServerPlugin::~CP2MMServerPlugin()
 {
+	m_nDebugID = EVENT_DEBUG_ID_SHUTDOWN;
 }
 
 const char* CP2MMServerPlugin::GetPluginDescription(void)
@@ -178,7 +182,8 @@ const char* CP2MMServerPlugin::GetPluginDescription(void)
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Called when the plugin is loaded, initialization process. Loads the interfaces we need from the engine and applies our patches.
+// Purpose: Called when the plugin is loaded, initialization process.
+//			Loads the interfaces we need from the engine and applies our patches.
 //---------------------------------------------------------------------------------
 bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameServerFactory)
 {
@@ -291,7 +296,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	ReplacePattern("engine", "0F 95 C1 51 8D 4D E8", "03 C9 90 51 8D 4D E8");
 
 	// Make sure -allowspectators is there so we get our 33 max players
-	if (CommandLine()->FindParm("-allowspectators"))
+	if (!CommandLine()->FindParm("-allowspectators"))
 	{
 		CommandLine()->AppendParm("-allowspectators", "");
 	}
@@ -302,7 +307,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Called when the plugin is turning off/unloading. Currently causes the game to crash no clue why.
+// Purpose: Called when the plugin is turning off/unloading.
 //---------------------------------------------------------------------------------
 void CP2MMServerPlugin::Unload(void)
 {
@@ -320,6 +325,27 @@ void CP2MMServerPlugin::Unload(void)
 	ConVar_Unregister();
 	DisconnectTier2Libraries();
 	DisconnectTier1Libraries();
+
+	// Undo byte patches
+
+	// Linked portal doors event crash patch
+	ReplacePattern("server", "EB 14 87 04 05 00 00 8B 16", "0F B6 87 04 05 00 00 8B 16");
+
+	// Partner disconnects
+	ReplacePattern("server", "51 50 90 90 83 C4 10 E8", "51 50 FF D2 83 C4 10 E8");
+	ReplacePattern("server", "EB 28 3B 75 FC", "74 28 3B 75 FC");
+
+	// Max players -> 3
+	ReplacePattern("server", "83 C0 20 89 01", "83 C0 02 89 01");
+	ReplacePattern("engine", "31 C0 04 21 8B 17", "85 C0 78 13 8B 17");
+	static uintptr_t sv = *reinterpret_cast<uintptr_t*>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "74 0A B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B E5", 3));
+	*reinterpret_cast<int*>(sv + 0x228) = 2;
+
+	// Disconnect by "STEAM validation rejected"
+	ReplacePattern("engine", "01 EB 7D 8B", "01 74 7D 8B");
+
+	// sv_password
+	ReplacePattern("engine", "03 C9 90 51 8D 4D E8", "0F 95 C1 51 8D 4D E8");
 
 	m_bPluginLoaded = false;
 }
@@ -341,7 +367,7 @@ void CP2MMServerPlugin::ServerActivate(edict_t* pEdictList, int edictCount, int 
 void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 {
 	P2MMLog(0, true, "Game Event Fired: %s", event->GetName());
-	P2MMLog(0, true, "VScript VM Working?: %s", g_pScriptVM ? "Working" : "Not Working!");
+	P2MMLog(0, true, "VScript VM Working?: %s", (g_pScriptVM != NULL) ? "Working" : "Not Working!");
 
 	// Event called when a player touches the ground, "portal_player_touchedground" returns:
 	/*
@@ -513,5 +539,4 @@ void CP2MMServerPlugin::OnEdictAllocated(edict_t* edict) {}
 void CP2MMServerPlugin::OnEdictFreed(const edict_t* edict) {}
 bool CP2MMServerPlugin::BNetworkCryptKeyCheckRequired(uint32 unFromIP, uint16 usFromPort, uint32 unAccountIdProvidedByClient, bool bClientWantsToUseCryptKey) { return false; }
 bool CP2MMServerPlugin::BNetworkCryptKeyValidate(uint32 unFromIP, uint16 usFromPort, uint32 unAccountIdProvidedByClient, int nEncryptionKeyIndexFromClient, int numEncryptedBytesFromClient, byte* pbEncryptedBufferFromClient, byte* pbPlainTextKeyForNetchan) { return true; }
-int	 CP2MMServerPlugin::GetEventDebugID(void) { return 42; }
 #pragma endregion

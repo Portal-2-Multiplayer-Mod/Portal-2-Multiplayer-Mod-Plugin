@@ -48,16 +48,18 @@ public:
 
 	// IGameEventListener2 methods
 	virtual void			FireGameEvent(IGameEvent* event);
-	virtual int				GetEventDebugID(void);
+	virtual int				GetEventDebugID(void) { return m_nDebugID; }
 
 	virtual int				GetCommandIndex() { return m_iClientCommandIndex; }
 
 	bool		m_bSeenFirstRunPrompt;
+	bool		m_bFirstMapRan;
 
 private:
 
 	bool		m_bPluginLoaded;
 	bool		m_bNoUnload;
+	int			m_nDebugID;
 
 	int			m_iClientCommandIndex;
 };

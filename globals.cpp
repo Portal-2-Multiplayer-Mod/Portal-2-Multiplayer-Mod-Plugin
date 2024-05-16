@@ -9,21 +9,25 @@
 
 #include "globals.hpp"
 
-inline const char* GetFormattedPrint(const char* pMsg)
-{
-	char buf[260];
-	V_snprintf(buf, sizeof(buf), "(P2:MM Plugin): %s\n", pMsg);
-	return buf;
-}
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
 
 //---------------------------------------------------------------------------------
-// Purpose: Logging for the plugin by adding a prefix and line break. level: 0 = Msg/DevMsg, 1 = Warning/DevWarning
+// Purpose: Logging for the plugin by adding a prefix and line break.
+// level:	0 = Msg/DevMsg, 1 = Warning/DevWarning
 //---------------------------------------------------------------------------------
-void P2MMLog(int level, bool dev, const char* pMsg, ...)
+void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 {
+	va_list argptr;
+	char szFormattedText[1024];
+	va_start(argptr, pMsgFormat);
+	Q_vsnprintf(szFormattedText, sizeof(szFormattedText), pMsgFormat, argptr);
+	va_end(argptr);
 
+	char completeMsg[260];
+	V_snprintf(completeMsg, sizeof(completeMsg), "(P2:MM PLUGIN): %s\n", szFormattedText);
 
-	if (!dev || !p2mm_developer.GetBool())
+	if (!dev && !p2mm_developer.GetBool())
 	{
 		return;
 	}
@@ -31,14 +35,14 @@ void P2MMLog(int level, bool dev, const char* pMsg, ...)
 	switch (level)
 	{
 	case 0:
-		ConColorMsg(P2MM_CONSOLE_COLOR, GetFormattedPrint(pMsg));
+		ConColorMsg(P2MM_CONSOLE_COLOR, completeMsg);
 		break;
 	case 1:
-		Warning(GetFormattedPrint(pMsg));
+		Warning(completeMsg);
 		break;
 	default:
 		Warning("(P2:MM PLUGIN): P2MMLog level set outside of 0-1, \"%i\", defaulting to ConColorMsg().\n", level);
-		ConColorMsg(P2MM_CONSOLE_COLOR, GetFormattedPrint(pMsg));
+		ConColorMsg(P2MM_CONSOLE_COLOR, completeMsg);
 		break;
 	}
 }
@@ -62,41 +66,4 @@ int GetPlayerIndex(int userid)
 		}
 	}
 	return NULL; // Return NULL if the index can't be found
-}
-
-// If String Equals String helper function
-inline bool FStrEq(const char* sz1, const char* sz2)
-{
-	return (Q_stricmp(sz1, sz2) == 0);
-}
-
-// If String Has Substring helper function
-inline bool FSubStr(const char* sz1, const char* search)
-{
-	return (Q_strstr(sz1, search));
-}
-
-// Helper functions taken from utils.h which entity to entity index and entity index to entity conversion
-// Entity to entity index
-inline int ENTINDEX(edict_t* pEdict)
-{
-	if (!pEdict)
-		return 0;
-	int edictIndex = pEdict - gpGlobals->pEdicts;
-	Assert(edictIndex < MAX_EDICTS && edictIndex >= 0);
-	return edictIndex;
-}
-
-// Entity index to entity
-inline edict_t* INDEXENT(int iEdictNum)
-{
-	Assert(iEdictNum >= 0 && iEdictNum < MAX_EDICTS);
-	if (gpGlobals->pEdicts)
-	{
-		edict_t* pEdict = gpGlobals->pEdicts + iEdictNum;
-		if (pEdict->IsFree())
-			return NULL;
-		return pEdict;
-	}
-	return NULL;
 }

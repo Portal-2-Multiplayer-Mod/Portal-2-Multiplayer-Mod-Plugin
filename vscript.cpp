@@ -213,16 +213,31 @@ bool IsFirstRun()
 	return p2mm_firstrun.GetBool();
 }
 
-//void RemoveEntityByClassname(const char* ent)
-//{
-//	CBaseEntity* pResult = gEntList.FindEntityByClassname(NULL, ent);
-//	while (pResult)
-//	{
-//		
-//
-//		pResult = gEntList.FindEntityByClassname(pResult, ent);
-//	}
-//}
+//---------------------------------------------------------------------------------
+// Purpose: Shows the first run prompt if enabled in config.nut.
+//---------------------------------------------------------------------------------
+void CallFirstRunPrompt()
+{
+	if (g_P2MMServerPlugin.m_bSeenFirstRunPrompt) { P2MMLog(0, true, "no");  return; } // Don't display again once the first one is shown
+
+	P2MMLog(0, false, "DISPLAYING FIRST RUN PROMPT!");
+	KeyValues* kv = new KeyValues("firstrunprompt");
+	kv->SetString("title", "Welcome to the Portal 2: Multiplayer Mod!");
+	kv->SetInt("level", 0);
+	kv->SetInt("time", 10);
+	kv->SetString("msg",
+		"Welcome to the Portal 2: Multiplayer Mod!\n"
+		"Input '!help' into chat to see a full list of chat commands you can use!\n"
+		"\n"
+		"\n"
+		"Message will be dismissed in 10 seconds...\n"
+		"This message can be disabled in config.nut located in the local p2mm folder on your system.\n"
+		"'p2mm/ModFiles/Portal 2/install_dlc/scripts/vscripts/multiplayermod/config.nut'"
+	);
+	pluginHelpers->CreateMessage(INDEXENT(1), DIALOG_TEXT, kv, &g_P2MMServerPlugin);
+	kv->deleteThis();
+	g_P2MMServerPlugin.m_bSeenFirstRunPrompt = true;
+}
 
 void RegisterFuncsAndRun()
 {
@@ -235,6 +250,7 @@ void RegisterFuncsAndRun()
 
 	ScriptRegisterFunction(g_pScriptVM, GetPlayerName, "Gets player username by index.");
 	ScriptRegisterFunction(g_pScriptVM, GetSteamID, "Gets the account ID component of player SteamID by index.");
+	ScriptRegisterFunction(g_pScriptVM, GetPlayerIndex, "Gets player entity index by userid."); // Located in globals.cpp because its also used throughout the plugin
 	ScriptRegisterFunction(g_pScriptVM, IsMapValid, "Returns true is the supplied string is a valid map name.");
 	ScriptRegisterFunction(g_pScriptVM, GetDeveloperLevelP2MM, "Returns the value of ConVar p2mm_developer.");
 	ScriptRegisterFunction(g_pScriptVM, SetPhysTypeConvar, "Sets 'player_held_object_use_view_model' to the supplied integer value.");
@@ -245,6 +261,7 @@ void RegisterFuncsAndRun()
 	ScriptRegisterFunction(g_pScriptVM, GetGameDirectory, "Returns the game directory.");
 	ScriptRegisterFunction(g_pScriptVM, GetLastMap, "Returns the last map recorded by the launcher's Last Map system.");
 	ScriptRegisterFunction(g_pScriptVM, IsFirstRun, "Returns true if this is the first map ever run during the game session.");
+	ScriptRegisterFunction(g_pScriptVM, CallFirstRunPrompt, "Shows the first run prompt if enabled in config.nut.");
 
 	g_pScriptVM->Run("IncludeScript(\"multiplayermod/p2mm\");");
 }

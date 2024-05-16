@@ -28,17 +28,29 @@
 //---------------------------------------------------------------------------------
 // Interfaces from the engine
 //---------------------------------------------------------------------------------
-IVEngineServer* engineServer = NULL; // Access engine server helper functions (messaging clients, loading content, making entities, running commands, etc)
-IVEngineClient* engineClient = NULL; // Access engine client helper functions
+IVEngineServer* engineServer = NULL; // Access engine server functions (messaging clients, loading content, making entities, running commands, etc)
+IVEngineClient* engineClient = NULL; // Access engine client functions
+IEngineSound* engineSound = NULL; // Access engine sound interface functions
 CGlobalVars* gpGlobals = NULL; // Access global variables shared between the engine and games dlls
-IPlayerInfoManager* playerinfomanager = NULL; // Access functions for players
-IScriptVM* g_pScriptVM = NULL; // VScript support
+IPlayerInfoManager* playerinfomanager = NULL; // Access interface functions for players
+IScriptVM* g_pScriptVM = NULL; // Access VScript interface
 IServerTools* g_pServerTools = NULL; // Access to interface from engine to tools for manipulating entities
-IGameEventManager* gameeventmanager_ = NULL; // Game events interface
-IServerPluginHelpers* helpers = NULL; // Helper plugin functions
+IGameEventManager2* gameeventmanager_ = NULL; // Access game events interface
+IServerPluginHelpers* pluginHelpers = NULL; // Access interface for plugin helper functions
 #ifndef GAME_DLL
 #define gameeventmanager gameeventmanager_
 #endif
+
+// List of game events the plugin interfaces used to load each one
+std::list<const char*> gameevents
+{
+	"portal_player_touchedground",
+	"portal_player_ping",
+	"portal_player_portaled",
+	"turret_hit_turret",
+	"security_camera_detached",
+	"player_say"
+};
 
 //---------------------------------------------------------------------------------
 // The plugin is a static singleton that is exported as an interface
@@ -54,7 +66,7 @@ ConVar p2mm_splitscreen("p2mm_splitscreen", "0", FCVAR_NONE, "Flag for the main 
 CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map.")
 {
 	// Make sure the CON_COMMAND was executed correctly
-	if (args.ArgC() < 1 || args.Arg(1) == "")
+	if (args.ArgC() < 2 || args.Arg(1) == "")
 	{
 		P2MMLog(1, false, "p2mm_startsession called incorrectly! Usage: 'p2mm_startsession (map to start) '");
 		return;
@@ -65,6 +77,15 @@ CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map."
 	P2MMLog(0, true, "Requested Map: %s", requestedMap.c_str());
 	if (FSubStr(requestedMap.c_str(), "P2MM_LASTMAP"))
 	{
+		P2MMLog(0, true, "p2mm_lastmap: %s", p2mm_lastmap.GetString());
+		if (!engineServer->IsMapValid(p2mm_lastmap.GetString()))
+		{
+			P2MMLog(1, false, "p2mm_session was called with P2MM_LASTMAP, but p2mm_lastmap is empty or invalid!");
+			engineClient->ExecuteClientCmd("disconnect \"There is no last map recorded or it doesn't exist! Please start a play session with the other options first.\"");
+			engineSound->EmitAmbientSound("music/mainmenu/portal2_background01", 1.0f);
+			// Will stop main menu music, can EmitAmbientSound after disconnect is called work?
+			return;
+		}
 		requestedMap = p2mm_lastmap.GetString();
 		P2MMLog(0, true, "P2MM_LASTMAP called! Running Last Map: %s", requestedMap.c_str());
 	}
@@ -73,7 +94,7 @@ CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map."
 	// Check if the supplied map is a valid map
 	if (!engineServer->IsMapValid(requestedMap.c_str()))
 	{
-		P2MMLog(1, false, "p2mm_startsession was given a non-valid map or one that doesn't exist! %s", requestedMap);
+		P2MMLog(1, false, "p2mm_startsession was given a non-valid map or one that doesn't exist! %s", requestedMap.c_str());
 		return;
 	}
 
@@ -105,31 +126,6 @@ CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map."
 	}
 }
 
-//---------------------------------------------------------------------------------
-// Purpose: constructor
-//---------------------------------------------------------------------------------
-CP2MMServerPlugin::CP2MMServerPlugin()
-{
-	this->m_iClientCommandIndex = 0;
-
-	// Store plugin Status
-	this->m_bPluginLoaded = false;
-	this->m_bNoUnload = false; // If we fail to load, we don't want to run anything on Unload()
-}
-
-//---------------------------------------------------------------------------------
-// Purpose: destructor
-//---------------------------------------------------------------------------------
-CP2MMServerPlugin::~CP2MMServerPlugin()
-{
-}
-
-const char* CP2MMServerPlugin::GetPluginDescription(void)
-{ 
-	static std::string pluginDescription = "Portal 2: Multiplayer Mod Server Plugin | Plugin Version: " + std::string(P2MM_PLUGIN_VERSION) + " | For P2:MM Version: " + std::string(P2MM_VERSION);
-	return pluginDescription.c_str();
-}
-
 void ReplacePattern(std::string target_module, std::string patternBytes, std::string replace_with)
 {
 	void* addr = Memory::Scanner::Scan<void*>(Memory::Modules::Get(target_module), patternBytes);
@@ -153,6 +149,32 @@ void ReplacePattern(std::string target_module, std::string patternBytes, std::st
 	VirtualProtect(addr, replace.size(), newprotect, &oldprotect);
 	memcpy_s(addr, replace.size(), replace.data(), replace.size());
 	VirtualProtect(addr, replace.size(), oldprotect, &newprotect);
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: constructor
+//---------------------------------------------------------------------------------
+CP2MMServerPlugin::CP2MMServerPlugin()
+{
+	this->m_iClientCommandIndex = 0;
+
+	// Store plugin Status
+	this->m_bPluginLoaded = false;
+	this->m_bNoUnload = false; // If we fail to load, we don't want to run anything on Unload()
+	this->m_bSeenFirstRunPrompt = false; // Flag is set true after CallFirstRunPrompt() is called in VScript
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: destructor
+//---------------------------------------------------------------------------------
+CP2MMServerPlugin::~CP2MMServerPlugin()
+{
+}
+
+const char* CP2MMServerPlugin::GetPluginDescription(void)
+{
+	static std::string pluginDescription = "Portal 2: Multiplayer Mod Server Plugin | Plugin Version: " + std::string(P2MM_PLUGIN_VERSION) + " | For P2:MM Version: " + std::string(P2MM_VERSION);
+	return pluginDescription.c_str();
 }
 
 //---------------------------------------------------------------------------------
@@ -189,10 +211,10 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 
-	gameeventmanager = (IGameEventManager*)interfaceFactory(INTERFACEVERSION_GAMEEVENTSMANAGER, 0);
-	if (!gameeventmanager)
+	engineSound = (IEngineSound*)interfaceFactory(IENGINESOUND_CLIENT_INTERFACE_VERSION, 0);
+	if (!engineSound)
 	{
-		P2MMLog(1, false, "Unable to load gameeventmanager!");
+		P2MMLog(1, false, "Unable to load engineSound!");
 		this->m_bNoUnload = true;
 		return false;
 	}
@@ -205,6 +227,14 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 
+	g_pScriptVM = (IScriptVM*)interfaceFactory(VSCRIPT_INTERFACE_VERSION, 0);
+	if (!g_pScriptVM)
+	{
+		P2MMLog(1, false, "Unable to load g_pScriptVM!");
+		this->m_bNoUnload = true;
+		return false;
+	}
+	
 	g_pServerTools = (IServerTools*)gameServerFactory(VSERVERTOOLS_INTERFACE_VERSION, 0);
 	if (!g_pServerTools)
 	{
@@ -213,12 +243,32 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 
+	gameeventmanager = (IGameEventManager2*)interfaceFactory(INTERFACEVERSION_GAMEEVENTSMANAGER2, 0);
+	if (!gameeventmanager)
+	{
+		P2MMLog(1, false, "Unable to load gameeventmanager!");
+		this->m_bNoUnload = true;
+		return false;
+	}
+
+	pluginHelpers = (IServerPluginHelpers*)interfaceFactory(INTERFACEVERSION_ISERVERPLUGINHELPERS, 0);
+	if (!pluginHelpers)
+	{
+		P2MMLog(1, false, "Unable to load pluginHelpers!");
+		this->m_bNoUnload = true;
+		return false;
+	}
+
 	gpGlobals = playerinfomanager->GetGlobalVars();
 	MathLib_Init(2.2f, 2.2f, 0.0f, 2.0f);
 	ConVar_Register(0);
 
-	gameeventmanager->AddListener(this, true);
-
+	// Add listener for all used game events
+	for (const char* gameevent : gameevents)
+	{
+		gameeventmanager->AddListener(this, gameevent, true);
+	}
+	
 	// Byte patches
 
 	// Linked portal doors event crash patch
@@ -239,6 +289,12 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 
 	// Fix sv_password
 	ReplacePattern("engine", "0F 95 C1 51 8D 4D E8", "03 C9 90 51 8D 4D E8");
+
+	// Make sure -allowspectators is there so we get our 33 max players
+	if (CommandLine()->FindParm("-allowspectators"))
+	{
+		CommandLine()->AppendParm("-allowspectators", "");
+	}
 
 	P2MMLog(0, false, "Loaded plugin!");
 	m_bPluginLoaded = true;
@@ -282,21 +338,133 @@ void CP2MMServerPlugin::ServerActivate(edict_t* pEdictList, int edictCount, int 
 //---------------------------------------------------------------------------------
 // Purpose: Capture and work with game events. Interfaces game events to VScript functions.
 //---------------------------------------------------------------------------------
-void CP2MMServerPlugin::FireGameEvent(KeyValues* event)
+void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 {
+	P2MMLog(0, true, "Game Event Fired: %s", event->GetName());
+	P2MMLog(0, true, "VScript VM Working?: %s", g_pScriptVM ? "Working" : "Not Working!");
+
+	// Event called when a player touches the ground, "portal_player_touchedground" returns:
+	/*
+		"userid"	"short"		// user ID on server
+	*/
+	if (FStrEq(event->GetName(), "portal_player_touchedground"))
+	{
+		short userid = event->GetInt("userid");
+		int entindex = GetPlayerIndex(userid);
+
+		if (g_pScriptVM)
+		{
+			// Handle VScript game event function
+			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerLanded");
+			if (ge_func)
+			{
+				g_pScriptVM->Call<short, int>(ge_func, NULL, true, NULL, userid, entindex);
+			}
+		}
+
+		P2MMLog(0, true, "userid: %i", userid);
+		P2MMLog(0, true, "entindex: %i", entindex);
+		return;
+	}
+	// Event called when a player pings, "portal_player_ping" returns:
+	/*
+		"userid"	"short"		// user ID on server
+		"ping_x"	"float"		// ping's x-coordinate in map
+		"ping_y"	"float"		// ping's y-coordinate in map
+		"ping_z"	"float"		// ping's z-coordinate in map
+	*/
+	else if (FStrEq(event->GetName(), "portal_player_ping"))
+	{
+		short userid = event->GetInt("userid");
+		float ping_x = event->GetFloat("ping_x");
+		float ping_y = event->GetFloat("ping_y");
+		float ping_z = event->GetFloat("ping_z");
+		int entindex = GetPlayerIndex(userid);
+
+		if (g_pScriptVM)
+		{
+			// Handle VScript game event function
+			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerPing");
+			if (ge_func)
+			{
+				g_pScriptVM->Call<short, float, float, float, int>(ge_func, NULL, true, NULL, userid, ping_x, ping_y, ping_z, entindex);
+			}
+		}
+
+		P2MMLog(0, true, "userid: %i", userid);
+		P2MMLog(0, true, "ping_x: %f", ping_x);
+		P2MMLog(0, true, "ping_y: %f", ping_y);
+		P2MMLog(0, true, "ping_z: %f", ping_z);
+		P2MMLog(0, true, "entindex: %i", entindex);
+		return;
+	}
+	// Event called when a player goes through a portal, "portal_player_portaled" returns:
+	/*
+		"userid"	"short"		// user ID on server
+		"portal2"	"bool"		// false for portal1 (blue)
+	*/
+	else if (FStrEq(event->GetName(), "portal_player_portaled"))
+	{
+		short userid = event->GetInt("userid");
+		bool portal2 = event->GetString("text");
+		int entindex = GetPlayerIndex(userid);
+
+		if (g_pScriptVM)
+		{
+			// Handle VScript game event function
+			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerPortaled");
+			if (ge_func)
+			{
+				g_pScriptVM->Call<short, bool, int>(ge_func, NULL, true, NULL, userid, portal2, entindex);
+			}
+		}
+
+		P2MMLog(0, true, "userid: %i", userid);
+		P2MMLog(0, true, "portal2: %s", portal2 ? "true" : "false");
+		P2MMLog(0, true, "entindex: %i", entindex);
+		return;
+	}
+	// Event called when a player goes through a portal, "turret_hit_turret" returns nothing.
+	else if (FStrEq(event->GetName(), "turret_hit_turret"))
+	{
+		if (g_pScriptVM)
+		{
+			// Handle VScript game event function
+			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GETurretHitTurret");
+			if (ge_func)
+			{
+				g_pScriptVM->Call(ge_func, NULL, true, NULL);
+			}
+		}
+		return;
+	}
+	// Event called when a player goes through a portal, "security_camera_detached" returns nothing.
+	else if (FStrEq(event->GetName(), "security_camera_detached"))
+	{
+		if (g_pScriptVM)
+		{
+			// Handle VScript game event function
+			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GECamDetach");
+			if (ge_func)
+			{
+				g_pScriptVM->Call(ge_func, NULL, true, NULL);
+			}
+		}
+		return;
+	}
 	// Event called when a player inputs a message into the chat, "player_say" returns:
 	/*
 		"userid"	"short"		// user ID on server
 		"text"		"string"	// the say text
 	*/
-	if (FStrEq(event->GetName(), "player_say"))
+	else if (FStrEq(event->GetName(), "player_say"))
 	{
+		short userid = event->GetInt("userid");
+		const char* text = event->GetString("text");
+		int entindex = GetPlayerIndex(userid);
+
 		if (g_pScriptVM)
 		{
-			int userid = event->GetInt("userid");
-			const char* text = event->GetString("text");
-			int entindex = UserIDToEntityIndex(userid);
-
 			if (entindex != NULL)
 			{
 				// Handling chat commands
@@ -305,15 +473,21 @@ void CP2MMServerPlugin::FireGameEvent(KeyValues* event)
 				{
 					g_pScriptVM->Call<const char*, int>(cc_func, NULL, true, NULL, text, entindex);
 				}
-
-				// Handle VScript interface function
-				HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSay");
-				if (ge_func)
-				{
-					g_pScriptVM->Call<int, const char*>(ge_func, NULL, true, NULL, userid, text, entindex);
-				}
 			}
+			
+			// Handle VScript game event function
+			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSay");
+			if (ge_func)
+			{
+				g_pScriptVM->Call<short, const char*, int>(ge_func, NULL, true, NULL, userid, text, entindex);
+			}
+			
 		}
+
+		P2MMLog(0, true, "userid: %i", userid);
+		P2MMLog(0, true, "text: %s", text);
+		P2MMLog(0, true, "entindex: %i", entindex);
+		return;
 	}
 }
 
@@ -339,7 +513,5 @@ void CP2MMServerPlugin::OnEdictAllocated(edict_t* edict) {}
 void CP2MMServerPlugin::OnEdictFreed(const edict_t* edict) {}
 bool CP2MMServerPlugin::BNetworkCryptKeyCheckRequired(uint32 unFromIP, uint16 usFromPort, uint32 unAccountIdProvidedByClient, bool bClientWantsToUseCryptKey) { return false; }
 bool CP2MMServerPlugin::BNetworkCryptKeyValidate(uint32 unFromIP, uint16 usFromPort, uint32 unAccountIdProvidedByClient, int nEncryptionKeyIndexFromClient, int numEncryptedBytesFromClient, byte* pbEncryptedBufferFromClient, byte* pbPlainTextKeyForNetchan) { return true; }
-void CP2MMServerPlugin::CreateMessage(edict_t* pEntity, DIALOG_TYPE type, KeyValues* data, IServerPluginCallbacks* plugin) {}
-void CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const char* cmd) {}
-QueryCvarCookie_t CP2MMServerPlugin::StartQueryCvarValue(edict_t* pEntity, const char* pName) {return QueryCvarCookie_t();}
+int	 CP2MMServerPlugin::GetEventDebugID(void) { return 42; }
 #pragma endregion

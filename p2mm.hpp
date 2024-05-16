@@ -8,11 +8,14 @@
 
 #include "globals.hpp"
 
+#define P2MM_PLUGIN_VERSION "1.1" // Update this when a new version of the plugin is released
+#define P2MM_VERSION "2.3" // Update this for whatever P2:MM Version it's released with
+
 //---------------------------------------------------------------------------------
 // Purpose: Portal 2: Multiplayer Mod server plugin class
 //---------------------------------------------------------------------------------
 
-class CP2MMServerPlugin : public IServerPluginCallbacks, public IServerPluginHelpers, public IGameEventListener
+class CP2MMServerPlugin : public IServerPluginCallbacks, public IGameEventListener2
 {
 public:
 	CP2MMServerPlugin();
@@ -43,16 +46,13 @@ public:
 	virtual bool			BNetworkCryptKeyCheckRequired(uint32 unFromIP, uint16 usFromPort, uint32 unAccountIdProvidedByClient, bool bClientWantsToUseCryptKey);
 	virtual bool			BNetworkCryptKeyValidate(uint32 unFromIP, uint16 usFromPort, uint32 unAccountIdProvidedByClient, int nEncryptionKeyIndexFromClient, int numEncryptedBytesFromClient, byte* pbEncryptedBufferFromClient, byte* pbPlainTextKeyForNetchan);
 
-	// IServerPluginHelpers methods
-	virtual void			  CreateMessage(edict_t* pEntity, DIALOG_TYPE type, KeyValues* data, IServerPluginCallbacks* plugin);
-	virtual void			  ClientCommand(edict_t* pEntity, const char* cmd);
-	virtual QueryCvarCookie_t StartQueryCvarValue(edict_t* pEntity, const char* pName);
+	// IGameEventListener2 methods
+	virtual void			FireGameEvent(IGameEvent* event);
+	virtual int				GetEventDebugID(void);
 
-	// IGameEventListener Interface
-	virtual void			FireGameEvent(KeyValues* event);
-
-	// 
 	virtual int				GetCommandIndex() { return m_iClientCommandIndex; }
+
+	bool		m_bSeenFirstRunPrompt;
 
 private:
 

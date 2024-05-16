@@ -125,7 +125,7 @@ public:
 
 typedef enum
 {
-	DIALOG_MSG = 0,		// just an on screen message
+	DIALOG_MSG = 0,		// just an on screen message (DOESN'T WORK IN PORTAL 2!)
 	DIALOG_MENU,		// an options menu
 	DIALOG_TEXT,		// a richtext dialog
 	DIALOG_ENTRY,		// an entry box

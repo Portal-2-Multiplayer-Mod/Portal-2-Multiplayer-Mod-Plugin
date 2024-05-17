@@ -39,7 +39,7 @@ IServerPluginHelpers* pluginHelpers = NULL; // Access interface for plugin helpe
 #endif
 
 // List of game events the plugin interfaces used to load each one
-const char *gameevents[] =
+const char* gameevents[] =
 {
 	"portal_player_touchedground",
 	"portal_player_ping",
@@ -57,7 +57,6 @@ EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CP2MMServerPlugin, IServerPluginCallbacks, INT
 
 ConVar p2mm_developer("p2mm_developer", "0", FCVAR_NONE, "Enable for P2:MM developer messages.");
 ConVar p2mm_lastmap("p2mm_lastmap", "", FCVAR_NONE, "Last map recorded for the Last Map system.");
-//ConVar p2mm_firstrun("p2mm_firstrun", "1", FCVAR_NONE, "Flag for checking if it's the first map run for the session. Manual modification not recommended as it can mess things up.");
 ConVar p2mm_splitscreen("p2mm_splitscreen", "0", FCVAR_NONE, "Flag for the main menu buttons to start in splitscreen or not.");
 
 CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map.")
@@ -80,7 +79,7 @@ CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map."
 			P2MMLog(1, false, "p2mm_session was called with P2MM_LASTMAP, but p2mm_lastmap is empty or invalid!");
 			engineClient->ExecuteClientCmd("disconnect \"There is no last map recorded or it doesn't exist! Please start a play session with the other options first.\"");
 			engineSound->EmitAmbientSound("music/mainmenu/portal2_background01", 1.0f);
-			// Will stop main menu music, can EmitAmbientSound after disconnect is called work?
+			engineSound->EmitAmbientSound("*#music/mainmenu/portal2_background01.wav", 0.35f * 1.0f);
 			return;
 		}
 		requestedMap = p2mm_lastmap.GetString();
@@ -108,9 +107,10 @@ CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map."
 	P2MMLog(0, true, "Map String: %s", mapString.c_str());
 
 	// Set first run ConVar flag on and set the last map ConVar value so the system
-	// can change from mp_coop_community_hub to the requested map
-	//p2mm_firstrun.SetValue(1);
+	// can change from mp_coop_community_hub to the requested map.
+	// Also set m_bSeenFirstRunPrompt back to false so the prompt can be triggered again.
 	g_P2MMServerPlugin.m_bFirstMapRan = true;
+	g_P2MMServerPlugin.m_bSeenFirstRunPrompt = false;
 	if (!FSubStr(requestedMap.c_str(), "mp_coop"))
 	{
 		P2MMLog(0, true, "'mp_coop' not found, singleplayer map being run.");
@@ -162,7 +162,7 @@ CP2MMServerPlugin::CP2MMServerPlugin()
 
 	// Store game vars
 	this->m_bSeenFirstRunPrompt = false;	// Flag is set true after CallFirstRunPrompt() is called in VScript
-	this->m_bFirstMapRan = false;			// Checks if the game ran for the first time
+	this->m_bFirstMapRan = true;			// Checks if the game ran for the first time
 
 	m_nDebugID = EVENT_DEBUG_ID_INIT;
 }
@@ -262,6 +262,8 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		P2MMLog(1, false, "Unable to load pluginHelpers!");
 		this->m_bNoUnload = true;
 		return false;
+	}
+
 	}
 
 	gpGlobals = playerinfomanager->GetGlobalVars();

@@ -14,6 +14,7 @@
 
 //---------------------------------------------------------------------------------
 // Purpose: Logging for the plugin by adding a prefix and line break.
+// Max character limit of 1024 characters.	
 // level:	0 = Msg/DevMsg, 1 = Warning/DevWarning
 //---------------------------------------------------------------------------------
 void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
@@ -21,13 +22,13 @@ void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 	va_list argptr;
 	char szFormattedText[1024];
 	va_start(argptr, pMsgFormat);
-	Q_vsnprintf(szFormattedText, sizeof(szFormattedText), pMsgFormat, argptr);
+	V_vsnprintf(szFormattedText, sizeof(szFormattedText), pMsgFormat, argptr);
 	va_end(argptr);
 
-	char completeMsg[260];
+	char completeMsg[1024];
 	V_snprintf(completeMsg, sizeof(completeMsg), "(P2:MM PLUGIN): %s\n", szFormattedText);
 
-	if (!dev && !p2mm_developer.GetBool())
+	if (dev && !p2mm_developer.GetBool())
 	{
 		return;
 	}
@@ -35,15 +36,15 @@ void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 	switch (level)
 	{
 	case 0:
-		ConColorMsg(P2MM_CONSOLE_COLOR, completeMsg);
-		break;
+		ConColorMsg(P2MM_PLUGIN_CONSOLE_COLOR, completeMsg);
+		return;
 	case 1:
 		Warning(completeMsg);
-		break;
+		return;
 	default:
 		Warning("(P2:MM PLUGIN): P2MMLog level set outside of 0-1, \"%i\", defaulting to ConColorMsg().\n", level);
-		ConColorMsg(P2MM_CONSOLE_COLOR, completeMsg);
-		break;
+		ConColorMsg(P2MM_PLUGIN_CONSOLE_COLOR, completeMsg);
+		return;
 	}
 }
 

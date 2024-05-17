@@ -13,19 +13,20 @@ The purpose of this plugin is to patch Portal 2 to make the mod work as well as 
 ## VScript Functions Added By C++ Plugin To Interface With The Engine:
 
 ```c++
-const char* GetPlayerName(int index);                 | "Gets player username by index."
-int         GetSteamID(int index);                    | "Gets the account ID component of player SteamID by index."
-int         int GetPlayerIndex(int userid);           | "Gets player entity index by userid."
-bool        IsMapValid(const char* map);              | "Returns true is the supplied string is a valid map name."
-int         GetDeveloperLevelP2MM();                  | "Returns the value of ConVar p2mm_developer."
-void        SetPhysTypeConvar(int newval);            | "Sets 'player_held_object_use_view_model' to the supplied integer value."
-void        SetMaxPortalSeparationConvar(int newval); | "Sets 'portal_max_separation_force' to the supplied integer value."
-bool        IsDedicatedServer();                      | "Returns true if this is a dedicated server."
-void        InitializeEntity(HSCRIPT ent);            | "Initializes an entity."
-void        SendToChat(const char* msg, int index);   | "Sends a raw message to the chat HUD."
-const char* GetGameDirectory();                       | "Returns the game directory."
-const char* GetLastMap();                             | "Returns the last map recorded by the launcher's Last Map system."
-bool        IsFirstRun();                             | "Returns true if this is the first map ever run during the game session."
+void        printlP2MM(int level, bool dev, const char* pMsgFormat); | "Logging for the P2:MM VScript."
+const char* GetPlayerName(int index);                                | "Gets player username by index."
+int         GetSteamID(int index);                                   | "Gets the account ID component of player SteamID by index."
+int         int GetPlayerIndex(int userid);                          | "Gets player entity index by userid."
+bool        IsMapValid(const char* map);                             | "Returns true is the supplied string is a valid map name."
+int         GetDeveloperLevelP2MM();                                 | "Returns the value of ConVar p2mm_developer."
+void        SetPhysTypeConvar(int newval);                           | "Sets 'player_held_object_use_view_model' to the supplied integer value."
+void        SetMaxPortalSeparationConvar(int newval);                | "Sets 'portal_max_separation_force' to the supplied integer value."
+bool        IsDedicatedServer();                                     | "Returns true if this is a dedicated server."
+void        InitializeEntity(HSCRIPT ent);                           | "Initializes an entity."
+void        SendToChat(const char* msg, int index);                  | "Sends a raw message to the chat HUD."
+const char* GetGameDirectory();                                      | "Returns the game directory."
+const char* GetLastMap();                                            | "Returns the last map recorded by the launcher's Last Map system."
+bool        FirstRunState();                                         | "Get or set the state of whether the first map was run or not. Set false/true = 0/1 | -1 to get state."
 ```
 
 ## Game Events Interfaced To Squirrel VScript Functions:
@@ -39,5 +40,4 @@ void GEPlayerPortaled(bool portal2);                                       | "Ca
 void GETurretHitTurret();                                                  | "Called whenever a turret hits another turret. Game event: 'turret_hit_turret'"
 void GECamDetach();                                                        | "Called whenever a camera is detached from a surface. Game event: 'security_camera_detached'"
 void GEPlayerSay(short userid, const char* text, int entindex);            | "Called whenever a player inputs a chat message. Game event: 'player_say'"
-
 ```

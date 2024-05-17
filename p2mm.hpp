@@ -9,7 +9,7 @@
 #include "globals.hpp"
 
 #define P2MM_PLUGIN_VERSION "1.1" // Update this when a new version of the plugin is released
-#define P2MM_VERSION "2.3" // Update this for whatever P2:MM Version it's released with
+#define P2MM_VERSION		"2.3" // Update this for whatever P2:MM version the plugin is released with
 
 //---------------------------------------------------------------------------------
 // Purpose: Portal 2: Multiplayer Mod server plugin class

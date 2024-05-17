@@ -13,7 +13,8 @@
 #include "game/server/iplayerinfo.h"
 #include "engine/iserverplugin.h"
 
-#define P2MM_CONSOLE_COLOR Color(0, 148, 100, 255)
+#define P2MM_PLUGIN_CONSOLE_COLOR Color(100, 192, 252, 255)
+#define P2MM_VSCRIPT_CONSOLE_COLOR Color(110, 247, 76, 255)
 
 //---------------------------------------------------------------------------------
 // Any ConVars or CON_COMMANDS that need to be globally available
@@ -33,7 +34,9 @@ extern IServerTools* g_pServerTools;
 extern IGameEventManager2* gameeventmanager_;
 extern IServerPluginHelpers* pluginHelpers;
 
-void P2MMLog(int level, bool dev, const char* pMsg, ...);
+void P2MMLog(int level, bool dev, const char* pMsgFormat, ...);
+
+extern int GetPlayerIndex(int userid);
 
 // If String Equals String helper function
 inline bool FStrEq(const char* sz1, const char* sz2)
@@ -71,5 +74,3 @@ inline edict_t* INDEXENT(int iEdictNum)
 	}
 	return NULL;
 }
-
-extern int GetPlayerIndex(int userid);

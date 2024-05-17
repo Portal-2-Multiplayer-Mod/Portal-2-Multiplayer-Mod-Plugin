@@ -17,12 +17,45 @@
 
 extern ConVar p2mm_developer;
 extern ConVar p2mm_lastmap;
-//extern ConVar p2mm_firstrun;
+
+//---------------------------------------------------------------------------------
+// Purpose: Logging for the P2:MM VScript.
+//---------------------------------------------------------------------------------
+static void printlP2MM(int level, bool dev, const char* pMsgFormat)
+{
+	va_list argptr;
+	char szFormattedText[1024];
+	va_start(argptr, pMsgFormat);
+	V_vsnprintf(szFormattedText, sizeof(szFormattedText), pMsgFormat, argptr);
+	va_end(argptr);
+
+	char completeMsg[1024];
+	V_snprintf(completeMsg, sizeof(completeMsg), "(P2:MM VSCRIPT): %s\n", szFormattedText);
+
+	if (dev && !p2mm_developer.GetBool())
+	{
+		return;
+	}
+
+	switch (level)
+	{
+	case 0:
+		ConColorMsg(P2MM_VSCRIPT_CONSOLE_COLOR, completeMsg);
+		return;
+	case 1:
+		Warning(completeMsg);
+		return;
+	default:
+		Warning("(P2:MM VSCRIPT): printlP2MM level set outside of 0-1, \"%i\", defaulting to ConColorMsg().\n", level);
+		ConColorMsg(P2MM_VSCRIPT_CONSOLE_COLOR, completeMsg);
+		return;
+	}
+}
 
 //---------------------------------------------------------------------------------
 // Purpose: Gets player username by index.
 //---------------------------------------------------------------------------------
-const char* GetPlayerName(int index)
+static const char* GetPlayerName(int index)
 {
 	if (index <= 0)
 	{
@@ -41,7 +74,7 @@ const char* GetPlayerName(int index)
 //---------------------------------------------------------------------------------
 // Purpose: Gets the account ID component of player SteamID by index.
 //---------------------------------------------------------------------------------
-int GetSteamID(int index)
+static int GetSteamID(int index)
 {
 	edict_t* pEdict = NULL;
 	if (index >= 0 && index < gpGlobals->maxEntities)
@@ -71,7 +104,7 @@ int GetSteamID(int index)
 //---------------------------------------------------------------------------------
 // Purpose: Returns true is the supplied string is a valid map name.
 //---------------------------------------------------------------------------------
-bool IsMapValid(const char* map)
+static bool IsMapValid(const char* map)
 {
 	return engineServer->IsMapValid(map);
 }
@@ -79,7 +112,7 @@ bool IsMapValid(const char* map)
 //---------------------------------------------------------------------------------
 // Purpose: Returns the value of ConVar p2mm_developer.
 //---------------------------------------------------------------------------------
-int GetDeveloperLevelP2MM()
+static int GetDeveloperLevelP2MM()
 {
 	return p2mm_developer.GetInt();
 }
@@ -87,7 +120,7 @@ int GetDeveloperLevelP2MM()
 //---------------------------------------------------------------------------------
 // Purpose: Sets 'player_held_object_use_view_model' to the supplied integer value.
 //---------------------------------------------------------------------------------
-void SetPhysTypeConvar(int newval)
+static void SetPhysTypeConvar(int newval)
 {
 	g_pCVar->FindVar("player_held_object_use_view_model")->SetValue(newval);
 }
@@ -95,10 +128,11 @@ void SetPhysTypeConvar(int newval)
 //---------------------------------------------------------------------------------
 // Purpose: Sets 'portal_max_separation_force' to the supplied integer value.
 //---------------------------------------------------------------------------------
-void SetMaxPortalSeparationConvar(int newval)
+static void SetMaxPortalSeparationConvar(int newval)
 {
 	if (engineServer->IsDedicatedServer())
 	{
+		P2MMLog(1, true, "SetMaxPortalSeparationConVar can not be set on dedicated servers!");
 		return;
 	}
 	g_pCVar->FindVar("portal_max_separation_force")->SetValue(newval);
@@ -107,7 +141,7 @@ void SetMaxPortalSeparationConvar(int newval)
 //---------------------------------------------------------------------------------
 // Purpose: Returns true if this is a dedicated server.
 //---------------------------------------------------------------------------------
-bool IsDedicatedServer()
+static bool IsDedicatedServer()
 {
 	return engineServer->IsDedicatedServer();
 }
@@ -115,7 +149,7 @@ bool IsDedicatedServer()
 //---------------------------------------------------------------------------------
 // Purpose: Initializes an entity.
 //---------------------------------------------------------------------------------
-void InitializeEntity(HSCRIPT ent)
+static void InitializeEntity(HSCRIPT ent)
 {
 	static uintptr_t func = (uintptr_t)Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "E8 ?? ?? ?? ?? 8B 4D 18 8B 57 5C", 1);
 	static auto GetCBaseEntityScriptDesc = reinterpret_cast<ScriptClassDesc_t * (*)()>(*reinterpret_cast<uintptr_t*>(func) + func + sizeof(func));
@@ -159,7 +193,7 @@ private:
 //---------------------------------------------------------------------------------
 // Purpose: Sends a raw message to the chat HUD.
 //---------------------------------------------------------------------------------
-void SendToChat(const char* msg, int index)
+static void SendToChat(const char* msg, int index)
 {
 	if (!msg)
 	{
@@ -195,7 +229,7 @@ void SendToChat(const char* msg, int index)
 //---------------------------------------------------------------------------------
 // Purpose: Returns the game directory.
 //---------------------------------------------------------------------------------
-const char* GetGameDirectory()
+static const char* GetGameDirectory()
 {
 	return CommandLine()->ParmValue("-game", CommandLine()->ParmValue("-defaultgamedir", "hl2"));
 }
@@ -203,24 +237,27 @@ const char* GetGameDirectory()
 //---------------------------------------------------------------------------------
 // Purpose: Returns the last map recorded by the launcher's Last Map System.
 //---------------------------------------------------------------------------------
-const char* GetLastMap()
+static const char* GetLastMap()
 {
 	return p2mm_lastmap.GetString();
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Returns true if this is the first map ever run during the game session.
+// Purpose: Get or set the state of whether the first map was run or not.
+// Set false/true = 0/1 | -1 to get state.
 //---------------------------------------------------------------------------------
-static bool IsFirstRun()
+static bool FirstRunState(int state = -1)
 {
-	//return p2mm_firstrun.GetBool();
+	if (state == 0 || state == 1) {
+		return g_P2MMServerPlugin.m_bFirstMapRan = !!state;
+	}
 	return g_P2MMServerPlugin.m_bFirstMapRan;
 }
 
 //---------------------------------------------------------------------------------
 // Purpose: Shows the first run prompt if enabled in config.nut.
 //---------------------------------------------------------------------------------
-void CallFirstRunPrompt()
+static void CallFirstRunPrompt()
 {
 	if (g_P2MMServerPlugin.m_bSeenFirstRunPrompt) { P2MMLog(0, true, "no");  return; } // Don't display again once the first one is shown
 
@@ -252,6 +289,7 @@ void RegisterFuncsAndRun()
 		return;
 	}
 
+	ScriptRegisterFunction(g_pScriptVM, printlP2MM, "Logging for the P2:MM VScript.");
 	ScriptRegisterFunction(g_pScriptVM, GetPlayerName, "Gets player username by index.");
 	ScriptRegisterFunction(g_pScriptVM, GetSteamID, "Gets the account ID component of player SteamID by index.");
 	ScriptRegisterFunction(g_pScriptVM, GetPlayerIndex, "Gets player entity index by userid."); // Located in globals.cpp because its also used throughout the plugin
@@ -264,8 +302,25 @@ void RegisterFuncsAndRun()
 	ScriptRegisterFunction(g_pScriptVM, SendToChat, "Sends a raw message to the chat HUD.");
 	ScriptRegisterFunction(g_pScriptVM, GetGameDirectory, "Returns the game directory.");
 	ScriptRegisterFunction(g_pScriptVM, GetLastMap, "Returns the last map recorded by the launcher's Last Map system.");
-	ScriptRegisterFunction(g_pScriptVM, IsFirstRun, "Returns true if this is the first map ever run during the game session.");
+	ScriptRegisterFunction(g_pScriptVM, FirstRunState, "Get or set the state of whether the first map was run or not. Set false/true = 0/1 | -1 to get state.");
 	ScriptRegisterFunction(g_pScriptVM, CallFirstRunPrompt, "Shows the first run prompt if enabled in config.nut.");
 
-	g_pScriptVM->Run("IncludeScript(\"multiplayermod/p2mm\");");
+	// Set all the plugin function check bools to true and start the P2:MM VScript
+	g_pScriptVM->Run(
+		"printlP2MMLoaded <- true;"
+		"GetPlayerNameLoaded <- true;"
+		"GetSteamIDLoaded <- true;"
+		"GetPlayerIndexLoaded <- true;"
+		"IsMapValidLoaded <- true;"
+		"GetDeveloperLevelP2MMLoaded <- true;"
+		"SetPhysTypeConvarLoaded <- true;"
+		"SetMaxPortalSeparationConvarLoaded <- true;"
+		"IsDedicatedServerLoaded <- true;"
+		"InitializeEntityLoaded <- true;"
+		"SendToChatLoaded <- true;"
+		"GetGameDirectoryLoaded <- true;"
+		"GetLastMapLoaded <- true;"
+		"FirstRunStateLoaded <- true;"
+		"CallFirstRunPromptLoaded <- true;"
+		"IncludeScript(\"multiplayermod/p2mm\");");
 }

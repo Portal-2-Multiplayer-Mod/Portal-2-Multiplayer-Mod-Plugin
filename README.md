@@ -8,7 +8,7 @@ The Portal 2 Source Engine server plugin used to run the 2.2.x+ versions of the 
 
 This plugin has been put into a separate repository due to the nature of the development and compiling environment of Source Engine plugins. The plugin alone can not make the Portal 2: Multiplayer Mod work. If you are looking to play the Portal 2: Multiplayer Mod itself, please look at this repository instead: <https://github.com/Portal-2-Multiplayer-Mod/Portal-2-Multiplayer-Mod>
 
-The purpose of this plugin is to patch Portal 2 to make the mod work as well as fix some bugs that impact multiplayer sessions. The plugin also provides access to features of the Source Engine directly that can be interfaced with by VScript. The added VScript functions are used to access Source Engine interfaces and ConVars. The interfaced game event VScript functions are called by plugin and can be 
+The purpose of this plugin is to patch Portal 2 to make the mod work as well as fix some bugs that impact multiplayer sessions. The plugin also provides access to features of the Source Engine directly that can be interfaced with by VScript. The added VScript functions are used to access Source Engine interfaces and ConVars. The interfaced game event VScript functions are called by plugin and can be used to do certain things based on those game events. portal2allgameevents.res in the main repository (<https://github.com/Portal-2-Multiplayer-Mod/Portal-2-Multiplayer-Mod/blob/dev/mapmaking/portal2allgameevents.res>) also lists what game events Portal 2 has and which ones the plugin interfaces. When game events are called, the plugins operations take priority over the interfaced VScript calls.
 
 ## VScript Functions Added By C++ Plugin To Interface With The Engine:
 

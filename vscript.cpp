@@ -259,24 +259,35 @@ static bool FirstRunState(int state = -1)
 //---------------------------------------------------------------------------------
 static void CallFirstRunPrompt()
 {
-	if (g_P2MMServerPlugin.m_bSeenFirstRunPrompt) { P2MMLog(0, true, "no");  return; } // Don't display again once the first one is shown
+	// Don't display again once the first one is shown.
+	if (g_P2MMServerPlugin.m_bSeenFirstRunPrompt) 
+	{ 
+		P2MMLog(0, true, "First run prompt already shown...");
+		return; 
+	}
 
 	P2MMLog(0, false, "DISPLAYING FIRST RUN PROMPT!");
+
+	// Put together KeyValues to pass to CreateMessage.
 	KeyValues* kv = new KeyValues("firstrunprompt");
-	kv->SetString("title", "Welcome to the Portal 2: Multiplayer Mod!");
-	kv->SetInt("level", 0);
-	kv->SetInt("time", 10);
-	kv->SetString("msg",
-		"Welcome to the Portal 2: Multiplayer Mod!\n"
+	kv->SetWString("title", localize->Find("#P2MM_FirstRunPrompt_t"));
+	//kv->SetString("title", "Welcome to the Portal 2: Multiplayer Mod!");
+	kv->SetInt("level", 0);	
+	kv->SetWString("msg", localize->Find("#P2MM_FirstRunPrompt_d"));
+	/*kv->SetString("msg", 
+		"Welcome to the Portal 2: Multiplayer Mod!\n\n"
 		"Input '!help' into chat to see a full list of chat commands you can use!\n"
-		"\n"
-		"\n"
-		"Message will be dismissed in 10 seconds...\n"
+		"Hope you enjoy the mod! - Portal 2: Multiplayer Mod Team\n\n"
 		"This message can be disabled in config.nut located in the local p2mm folder on your system.\n"
 		"'p2mm/ModFiles/Portal 2/install_dlc/scripts/vscripts/multiplayermod/config.nut'"
-	);
+	);*/
+
+	// CreateMessage prompts can only be seen when the pause menu is up, so pause the game.
+	engineClient->ExecuteClientCmd("gameui_activate");
 	pluginHelpers->CreateMessage(INDEXENT(1), DIALOG_TEXT, kv, &g_P2MMServerPlugin);
 	kv->deleteThis();
+	
+	// Set the plugin variable flag that the host seen the prompt to true so its not reshown.
 	g_P2MMServerPlugin.m_bSeenFirstRunPrompt = true;
 }
 

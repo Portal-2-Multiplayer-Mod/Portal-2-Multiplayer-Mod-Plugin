@@ -7,11 +7,11 @@
 
 #include "eiface.h"
 #include "cdll_int.h"
-#include "engine/IEngineSound.h"
 #include "igameevents.h"
 #include "vscript/ivscript.h"
 #include "game/server/iplayerinfo.h"
 #include "engine/iserverplugin.h"
+#include "public/localize/ilocalize.h"
 
 #define P2MM_PLUGIN_CONSOLE_COLOR Color(100, 192, 252, 255)
 #define P2MM_VSCRIPT_CONSOLE_COLOR Color(110, 247, 76, 255)
@@ -26,13 +26,13 @@ extern ConVar p2mm_developer;
 //---------------------------------------------------------------------------------
 extern IVEngineServer* engineServer;
 extern IVEngineClient* engineClient;
-extern IEngineSound* engineSound;
 extern CGlobalVars* gpGlobals;
 extern IPlayerInfoManager* playerinfomanager;
 extern IScriptVM* g_pScriptVM;
 extern IServerTools* g_pServerTools;
 extern IGameEventManager2* gameeventmanager_;
 extern IServerPluginHelpers* pluginHelpers;
+extern ILocalize* localize;
 
 void P2MMLog(int level, bool dev, const char* pMsgFormat, ...);
 

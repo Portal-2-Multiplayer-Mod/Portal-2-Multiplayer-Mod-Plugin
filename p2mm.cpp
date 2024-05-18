@@ -27,13 +27,13 @@
 //---------------------------------------------------------------------------------
 IVEngineServer* engineServer = NULL; // Access engine server functions (messaging clients, loading content, making entities, running commands, etc)
 IVEngineClient* engineClient = NULL; // Access engine client functions
-IEngineSound* engineSound = NULL; // Access engine sound interface functions
 CGlobalVars* gpGlobals = NULL; // Access global variables shared between the engine and games dlls
 IPlayerInfoManager* playerinfomanager = NULL; // Access interface functions for players
 IScriptVM* g_pScriptVM = NULL; // Access VScript interface
 IServerTools* g_pServerTools = NULL; // Access to interface from engine to tools for manipulating entities
 IGameEventManager2* gameeventmanager_ = NULL; // Access game events interface
 IServerPluginHelpers* pluginHelpers = NULL; // Access interface for plugin helper functions
+ILocalize* localize = NULL;
 #ifndef GAME_DLL
 #define gameeventmanager gameeventmanager_
 #endif
@@ -78,8 +78,7 @@ CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map."
 		{
 			P2MMLog(1, false, "p2mm_session was called with P2MM_LASTMAP, but p2mm_lastmap is empty or invalid!");
 			engineClient->ExecuteClientCmd("disconnect \"There is no last map recorded or it doesn't exist! Please start a play session with the other options first.\"");
-			engineSound->EmitAmbientSound("music/mainmenu/portal2_background01", 1.0f);
-			engineSound->EmitAmbientSound("*#music/mainmenu/portal2_background01.wav", 0.35f * 1.0f);
+			engineClient->ExecuteClientCmd("playvol \"music/mainmenu/portal2_background01\" 0.35");
 			return;
 		}
 		requestedMap = p2mm_lastmap.GetString();
@@ -216,14 +215,6 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 
-	engineSound = (IEngineSound*)interfaceFactory(IENGINESOUND_CLIENT_INTERFACE_VERSION, 0);
-	if (!engineSound)
-	{
-		P2MMLog(1, false, "Unable to load engineSound!");
-		this->m_bNoUnload = true;
-		return false;
-	}
-
 	playerinfomanager = (IPlayerInfoManager*)gameServerFactory(INTERFACEVERSION_PLAYERINFOMANAGER, 0);
 	if (!playerinfomanager)
 	{
@@ -264,6 +255,12 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 
+	localize = (ILocalize*)interfaceFactory(LOCALIZE_INTERFACE_VERSION, 0);
+	if (!localize)
+	{
+		P2MMLog(1, false, "Unable to load localize!");
+		this->m_bNoUnload = true;
+		return false;
 	}
 
 	gpGlobals = playerinfomanager->GetGlobalVars();

@@ -360,6 +360,42 @@ void CP2MMServerPlugin::ServerActivate(edict_t* pEdictList, int edictCount, int 
 	RegisterFuncsAndRun();
 }
 
+PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand& args)
+{
+	if (!pEntity || pEntity->IsFree())
+	{
+		return PLUGIN_CONTINUE;
+	}
+
+	const char* pcmd = args[0];
+	const char* fargs = args.ArgS();
+	short userid = engineServer->GetPlayerUserId(pEntity);
+	int entindex = GetPlayerIndex(userid);
+
+	P2MMLog(0, true, "ClientCommand called: %s", pcmd);
+	P2MMLog(0, true, "ClientCommand args: %s", args.ArgS());
+	P2MMLog(0, true, "userid: %i", userid);
+	P2MMLog(0, true, "entindex: %i", entindex);
+	P2MMLog(0, true, "VScript VM Working?: %s", (g_pScriptVM != NULL) ? "Working" : "Not Working!");
+
+	// Call the "GEClientCommand" VScript function
+	if (g_pScriptVM)
+	{
+		HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEClientCommand");
+		if (ge_func)
+		{
+			g_pScriptVM->Call<const char*, const char*, short, int>(ge_func, NULL, true, NULL, pcmd, fargs, userid, entindex);
+		}
+	}
+	
+	/*if (FStrEq(pcmd, ""))
+	{
+		return PLUGIN_CONTINUE;
+	}*/
+
+	return PLUGIN_CONTINUE;
+}
+
 //---------------------------------------------------------------------------------
 // Purpose: Capture and work with game events. Interfaces game events to VScript functions.
 //---------------------------------------------------------------------------------
@@ -531,7 +567,6 @@ void CP2MMServerPlugin::ClientPutInServer(edict_t* pEntity, char const* playerna
 void CP2MMServerPlugin::ClientSettingsChanged(edict_t* pEdict) {}
 PLUGIN_RESULT CP2MMServerPlugin::ClientConnect(bool* bAllowConnect, edict_t* pEntity, const char* pszName, const char* pszAddress, char* reject, int maxrejectlen) { return PLUGIN_CONTINUE; }
 void CP2MMServerPlugin::ClientFullyConnect(edict_t* pEntity) { return; }
-PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand& args) { return PLUGIN_CONTINUE; }
 PLUGIN_RESULT CP2MMServerPlugin::NetworkIDValidated(const char* pszUserName, const char* pszNetworkID) { return PLUGIN_CONTINUE; }
 void CP2MMServerPlugin::OnQueryCvarValueFinished(QueryCvarCookie_t iCookie, edict_t* pPlayerEntity, EQueryCvarValueStatus eStatus, const char* pCvarName, const char* pCvarValue) {}
 void CP2MMServerPlugin::OnEdictAllocated(edict_t* edict) {}

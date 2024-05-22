@@ -19,7 +19,7 @@ extern ConVar p2mm_developer;
 extern ConVar p2mm_lastmap;
 
 //---------------------------------------------------------------------------------
-// Purpose: Logging for the P2:MM VScript.
+// Purpose: Logging for the P2MM VScript. The log message must be passed as a string or it will error.
 //---------------------------------------------------------------------------------
 static void printlP2MM(int level, bool dev, const char* pMsgFormat)
 {
@@ -300,7 +300,7 @@ void RegisterFuncsAndRun()
 		return;
 	}
 
-	ScriptRegisterFunction(g_pScriptVM, printlP2MM, "Logging for the P2:MM VScript.");
+	ScriptRegisterFunction(g_pScriptVM, printlP2MM, "Logging for the P2MM VScript. The log message must be passed as a string or it will error.");
 	ScriptRegisterFunction(g_pScriptVM, GetPlayerName, "Gets player username by index.");
 	ScriptRegisterFunction(g_pScriptVM, GetSteamID, "Gets the account ID component of player SteamID by index.");
 	ScriptRegisterFunction(g_pScriptVM, GetPlayerIndex, "Gets player entity index by userid."); // Located in globals.cpp because its also used throughout the plugin

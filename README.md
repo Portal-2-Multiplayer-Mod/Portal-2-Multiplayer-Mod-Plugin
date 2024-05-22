@@ -2,7 +2,7 @@
 
 ## **Created by Nanoman2525 & NULLderef. Maintained by Orsell.**
 
-The Portal 2 Source Engine server plugin used to run the 2.2.x+ versions of the Portal 2: Multiplayer Mod.
+The Portal 2 Source Engine server plugin used to run the 2.2+ versions of the Portal 2: Multiplayer Mod.
 
 **This plugin currently only works for Windows. Only designed to work with Portal 2. Portal 2 based mods may work but haven't been tested.**
 
@@ -10,10 +10,12 @@ This plugin has been put into a separate repository due to the nature of the dev
 
 The purpose of this plugin is to patch Portal 2 to make the mod work as well as fix some bugs that impact multiplayer sessions. The plugin also provides access to features of the Source Engine directly that can be interfaced with by VScript. The added VScript functions are used to access Source Engine interfaces and ConVars. The interfaced game event VScript functions are called by plugin and can be used to do certain things based on those game events. portal2allgameevents.res in the main repository (<https://github.com/Portal-2-Multiplayer-Mod/Portal-2-Multiplayer-Mod/blob/dev/mapmaking/portal2allgameevents.res>) also lists what game events Portal 2 has and which ones the plugin interfaces. When game events are called, the plugins operations take priority over the interfaced VScript calls.
 
+`GEClientCommand` is the only exception of not being a game event being the plugin's ClientCommand function being interfaced to VScript.
+
 ## VScript Functions Added By C++ Plugin To Interface With The Engine:
 
 ```c++
-void        printlP2MM(int level, bool dev, const char* pMsgFormat); | "Logging for the P2:MM VScript."
+void        printlP2MM(int level, bool dev, const char* pMsgFormat); | "Logging for the P2MM VScript. The log message must be passed as a string or it will error."
 const char* GetPlayerName(int index);                                | "Gets player username by index."
 int         GetSteamID(int index);                                   | "Gets the account ID component of player SteamID by index."
 int         int GetPlayerIndex(int userid);                          | "Gets player entity index by userid."
@@ -34,10 +36,11 @@ bool        FirstRunState();                                         | "Get or s
 Note: While represented in C++, below functions are for Squirrel. `const char*` type is translated to `string` type, and `byte`, `short`, and `long` types are translated to `integer` type in Squirrel. `void` types are simply the `function` type in Squirrel.
 
 ```c++
-void GEPlayerLanded(short userid);                                         | "Called whenever a player lands on the ground. Game event: 'portal_player_touchedground'"
-void GEPlayerPing(short userid, float ping_x, float ping_y, float ping_z); | "Called whenever a player pings. Game event: 'portal_player_ping'"
-void GEPlayerPortaled(bool portal2);                                       | "Called whenever a player goes through a portal. `portal2` is false when portal1/blue portal is entered. Game event: 'portal_player_portaled'"
-void GETurretHitTurret();                                                  | "Called whenever a turret hits another turret. Game event: 'turret_hit_turret'"
-void GECamDetach();                                                        | "Called whenever a camera is detached from a surface. Game event: 'security_camera_detached'"
-void GEPlayerSay(short userid, const char* text, int entindex);            | "Called whenever a player inputs a chat message. Game event: 'player_say'"
+void GEClientCommand(short userid, int entindex, const char* pcmd, const char* fargs); | "Called whenever a player runs a console command."
+void GEPlayerLanded(short userid);                                                     | "Called whenever a player lands on the ground. Game event: 'portal_player_touchedground'"
+void GEPlayerPing(short userid, float ping_x, float ping_y, float ping_z);             | "Called whenever a player pings. Game event: 'portal_player_ping'"
+void GEPlayerPortaled(bool portal2);                                                   | "Called whenever a player goes through a portal. `portal2` is false when portal1/blue portal is entered. Game event: 'portal_player_portaled'"
+void GETurretHitTurret();                                                              | "Called whenever a turret hits another turret. Game event: 'turret_hit_turret'"
+void GECamDetach();                                                                    | "Called whenever a camera is detached from a surface. Game event: 'security_camera_detached'"
+void GEPlayerSay(short userid, const char* text, int entindex);                        | "Called whenever a player inputs a chat message. Game event: 'player_say'"
 ```

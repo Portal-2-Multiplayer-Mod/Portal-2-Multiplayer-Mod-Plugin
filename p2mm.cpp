@@ -33,7 +33,7 @@ IScriptVM* g_pScriptVM = NULL; // Access VScript interface
 IServerTools* g_pServerTools = NULL; // Access to interface from engine to tools for manipulating entities
 IGameEventManager2* gameeventmanager_ = NULL; // Access game events interface
 IServerPluginHelpers* pluginHelpers = NULL; // Access interface for plugin helper functions
-ILocalize* localize = NULL;
+ILocalize* localize = NULL; // Access locatize interface to access localization files
 #ifndef GAME_DLL
 #define gameeventmanager gameeventmanager_
 #endif
@@ -56,8 +56,9 @@ CP2MMServerPlugin g_P2MMServerPlugin;
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CP2MMServerPlugin, IServerPluginCallbacks, INTERFACEVERSION_ISERVERPLUGINCALLBACKS, g_P2MMServerPlugin);
 
 ConVar p2mm_developer("p2mm_developer", "0", FCVAR_NONE, "Enable for P2:MM developer messages.");
-ConVar p2mm_lastmap("p2mm_lastmap", "", FCVAR_NONE, "Last map recorded for the Last Map system.");
-ConVar p2mm_splitscreen("p2mm_splitscreen", "0", FCVAR_NONE, "Flag for the main menu buttons to start in splitscreen or not.");
+ConVar p2mm_lastmap("p2mm_lastmap", "", FCVAR_HIDDEN, "Last map recorded for the Last Map system.");
+ConVar p2mm_splitscreen("p2mm_splitscreen", "0", FCVAR_HIDDEN, "Flag for the main menu buttons to start in splitscreen or not.");
+//ConVar p2mm_loop("p2mm_loop", "0", FCVAR_DONE)
 
 CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map.")
 {
@@ -199,6 +200,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	ConnectTier2Libraries(&interfaceFactory, 1);
 
 	// Make sure that all the interfaces needed are loaded and useable
+
 	engineServer = (IVEngineServer*)interfaceFactory(INTERFACEVERSION_VENGINESERVER, 0);
 	if (!engineServer)
 	{

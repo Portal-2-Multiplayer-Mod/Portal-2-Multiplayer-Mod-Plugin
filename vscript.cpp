@@ -318,6 +318,7 @@ void RegisterFuncsAndRun()
 
 	// Set all the plugin function check bools to true and start the P2:MM VScript
 	g_pScriptVM->Run(
+		"PluginLoaded <- true;"
 		"printlP2MMLoaded <- true;"
 		"GetPlayerNameLoaded <- true;"
 		"GetSteamIDLoaded <- true;"

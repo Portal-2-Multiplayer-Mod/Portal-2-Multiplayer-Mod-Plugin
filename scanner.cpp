@@ -16,6 +16,18 @@
 #include "tier0/memdbgon.h"
 
 namespace Memory {
+#ifndef _WIN32
+	inline void __cpuidex(int cpuid[4], int function, int subleaf) {
+		asm volatile("cpuid"
+			: "=a" (cpuid[0]),
+			"=b" (cpuid[1]),
+			"=c" (cpuid[2]),
+			"=d" (cpuid[3])
+			: "0" (function), "2" (subleaf)
+		);
+	}
+#endif // _WIN32
+
 	enum MaskState : uint8_t {
 		MASK_EMPTY = 0x00,
 		MASK_FULL = 0xFF,
@@ -316,26 +328,23 @@ namespace Memory {
 		if (implementation == nullptr) {
 			int cpuid[4];
 
-#ifdef _WIN32
-			__cpuidex(cpuid, 1, 0);
-#else
-			asm volatile("cpuid"
-				: "=a" (cpuid[0]),
-				"=b" (cpuid[1]),
-				"=c" (cpuid[2]),
-				"=d" (cpuid[3])
-				: "0" (1), "2" (0)
-				);
-#endif
+			__cpuidex(cpuid, 0, 0);
 
-			if (cpuid[2] & (1 << 28)) {
-				implementation = std::make_unique<AVXScanner>();
-			}
-			else if (cpuid[3] & (1 << 26)) {
-				implementation = std::make_unique<SSEScanner>();
-			}
-			else {
-				implementation = std::make_unique<GenericScanner>();
+			int ncpuids = cpuid[0];
+			if(ncpuids >= 7) {
+				__cpuidex(cpuid, 7, 0);
+				if (cpuid[1] & (1 << 5)) {
+					implementation = std::make_unique<AVXScanner>();
+				} else {
+					implementation = std::make_unique<SSEScanner>();
+				}
+			} else {
+				__cpuidex(cpuid, 1, 0);
+				if(cpuid[3] & (1 << 26)) {
+					implementation = std::make_unique<SSEScanner>();
+				} else {
+					implementation = std::make_unique<GenericScanner>();
+				}
 			}
 		}
 

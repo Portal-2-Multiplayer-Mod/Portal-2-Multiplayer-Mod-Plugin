@@ -68,3 +68,52 @@ int GetPlayerIndex(int userid)
 	}
 	return NULL; // Return NULL if the index can't be found
 }
+
+//---------------------------------------------------------------------------------
+// Purpose: Gets player username by index.
+//---------------------------------------------------------------------------------
+const char* GetPlayerName(int index)
+{
+	if (index <= 0)
+	{
+		return "";
+	}
+
+	player_info_t playerinfo;
+	if (!engineServer->GetPlayerInfo(index, &playerinfo))
+	{
+		return "";
+	}
+
+	return playerinfo.name;
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Gets the account ID component of player SteamID by index.
+//---------------------------------------------------------------------------------
+int GetSteamID(int index)
+{
+	edict_t* pEdict = NULL;
+	if (index >= 0 && index < gpGlobals->maxEntities)
+	{
+		pEdict = (edict_t*)(gpGlobals->pEdicts + index);
+	}
+	if (!pEdict)
+	{
+		return -1;
+	}
+
+	player_info_t playerinfo;
+	if (!engineServer->GetPlayerInfo(index, &playerinfo))
+	{
+		return -1;
+	}
+
+	const CSteamID* pSteamID = engineServer->GetClientSteamID(pEdict);
+	if (!pSteamID || pSteamID->GetAccountID() == 0)
+	{
+		return -1;
+	}
+
+	return pSteamID->GetAccountID();
+}

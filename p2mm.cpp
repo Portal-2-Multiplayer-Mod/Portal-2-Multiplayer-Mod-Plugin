@@ -33,21 +33,9 @@ IScriptVM* g_pScriptVM = NULL; // Access VScript interface
 IServerTools* g_pServerTools = NULL; // Access to interface from engine to tools for manipulating entities
 IGameEventManager2* gameeventmanager_ = NULL; // Access game events interface
 IServerPluginHelpers* pluginHelpers = NULL; // Access interface for plugin helper functions
-ILocalize* localize = NULL; // Access locatize interface to access localization files
 #ifndef GAME_DLL
 #define gameeventmanager gameeventmanager_
 #endif
-
-// List of game events the plugin interfaces used to load each one
-const char* gameevents[] =
-{
-	"portal_player_touchedground",
-	"portal_player_ping",
-	"portal_player_portaled",
-	"turret_hit_turret",
-	"security_camera_detached",
-	"player_say"
-};
 
 //---------------------------------------------------------------------------------
 // The plugin is a static singleton that is exported as an interface
@@ -55,10 +43,18 @@ const char* gameevents[] =
 CP2MMServerPlugin g_P2MMServerPlugin;
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CP2MMServerPlugin, IServerPluginCallbacks, INTERFACEVERSION_ISERVERPLUGINCALLBACKS, g_P2MMServerPlugin);
 
+// Core P2:MM ConVars
+ConVar p2mm_lastmap("p2mm_lastmap", "", FCVAR_HIDDEN, "Last map recorded for the Last Map system."); // Hidden to prevent accidentally breaking something
+ConVar p2mm_splitscreen("p2mm_splitscreen", "0", FCVAR_HIDDEN, "Flag for the main menu buttons and launcher to start in splitscreen or not."); // Hidden to prevent accidentally breaking something
+
+// UTIL ConVars
+ConVar p2mm_forbidclientcommands("p2mm_forbidclientcommands", "1", FCVAR_NONE, "Stop client commands clients shouldn't be executing.");
+ConVar p2mm_deathicons("p2mm_deathicons", "1", FCVAR_NONE, "Whether or not when players die the death icon should appear.");
+
+// Debug ConVars
 ConVar p2mm_developer("p2mm_developer", "0", FCVAR_NONE, "Enable for P2:MM developer messages.");
-ConVar p2mm_lastmap("p2mm_lastmap", "", FCVAR_HIDDEN, "Last map recorded for the Last Map system.");
-ConVar p2mm_splitscreen("p2mm_splitscreen", "0", FCVAR_HIDDEN, "Flag for the main menu buttons to start in splitscreen or not.");
-//ConVar p2mm_loop("p2mm_loop", "0", FCVAR_DONE)
+
+// ConCommands
 
 CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map.")
 {
@@ -257,22 +253,28 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 
-	localize = (ILocalize*)interfaceFactory(LOCALIZE_INTERFACE_VERSION, 0);
-	if (!localize)
-	{
-		P2MMLog(1, false, "Unable to load localize!");
-		this->m_bNoUnload = true;
-		return false;
-	}
 
 	gpGlobals = playerinfomanager->GetGlobalVars();
 	MathLib_Init(2.2f, 2.2f, 0.0f, 2.0f);
 	ConVar_Register(0);
 
+	// List of game events the plugin interfaces used to load each one
+	static const char* gameevents[] =
+	{
+		"portal_player_touchedground",
+		"portal_player_ping",
+		"portal_player_portaled",
+		"turret_hit_turret",
+		"security_camera_detached",
+		"player_connect",
+		"player_say"
+	};
+
 	// Add listener for all used game events
 	for (const char* gameevent : gameevents)
 	{
 		gameeventmanager->AddListener(this, gameevent, true);
+		P2MMLog(0, true, "Listener for gamevent '%s' has been added!", gameevent);
 	}
 	
 	// Byte patches
@@ -300,6 +302,25 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	if (!CommandLine()->FindParm("-allowspectators"))
 	{
 		CommandLine()->AppendParm("-allowspectators", "");
+	}
+
+	// List of some ConCommands and ConVars that Valve has messed up and we need to fix
+	static const char* commandsToFix[] = {
+		"stopvideos",
+		"r_portal_fastpath",
+		"r_portal_use_pvs_optimization",
+		"mat_motion_blur_forward_enabled",
+		"+score",
+		"-score"
+	};
+	for (const char* command : commandsToFix)
+	{
+		ConCommandBase* commandBase = g_pCVar->FindCommandBase(command);
+		if (commandBase)
+		{
+			commandBase->RemoveFlags(FCVAR_SERVER_CAN_EXECUTE);
+			commandBase->AddFlags(FCVAR_CLIENTCMD_CAN_EXECUTE);
+		}
 	}
 
 	P2MMLog(0, false, "Loaded plugin!");
@@ -371,13 +392,16 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 
 	const char* pcmd = args[0];
 	const char* fargs = args.ArgS();
+	
 	short userid = engineServer->GetPlayerUserId(pEntity);
 	int entindex = GetPlayerIndex(userid);
+	const char* playername = GetPlayerName(entindex);
 
 	P2MMLog(0, true, "ClientCommand called: %s", pcmd);
-	P2MMLog(0, true, "ClientCommand args: %s", args.ArgS());
+	P2MMLog(0, true, "ClientCommand args: %s", fargs);
 	P2MMLog(0, true, "userid: %i", userid);
 	P2MMLog(0, true, "entindex: %i", entindex);
+	P2MMLog(0, true, "playername: %s", playername);
 	P2MMLog(0, true, "VScript VM Working?: %s", (g_pScriptVM != NULL) ? "Working" : "Not Working!");
 
 	// Call the "GEClientCommand" VScript function
@@ -390,11 +414,55 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 		}
 	}
 	
-	/*if (FStrEq(pcmd, ""))
+	// Stop certain client commands from being excecated by clients and not the host
+	if ((  FStrEq(pcmd, "mp_earn_taunt")
+		|| FStrEq(pcmd, "restart_level")
+		|| FStrEq(pcmd, "survey_done")
+		|| FStrEq(pcmd, "pre_go_to_hub")
+		|| FStrEq(pcmd, "pre_go_to_calibration")
+		|| FStrEq(pcmd, "go_to_calibration")
+		|| FStrEq(pcmd, "go_to_hub")
+		|| FStrEq(pcmd, "restart_level")
+		|| FStrEq(pcmd, "mp_restart_level")
+		|| FStrEq(pcmd, "transition_map")
+		|| FStrEq(pcmd, "select_map")
+		|| FStrEq(pcmd, "mp_select_level")
+		|| FStrEq(pcmd, "erase_mp_progress")
+		|| FStrEq(pcmd, "report_entities")
+		|| FStrEq(pcmd, "script")
+		|| FStrEq(pcmd, "script_debug")
+		|| FStrEq(pcmd, "script_dump_all")
+		|| FStrEq(pcmd, "script_execute")
+		|| FStrEq(pcmd, "script_help")
+		|| FStrEq(pcmd, "script_reload_code")
+		|| FStrEq(pcmd, "script_reload_entity_code")
+		|| FStrEq(pcmd, "script_reload_think"))
+		&& entindex != 1)
 	{
+		if (p2mm_forbidclientcommands.GetBool())
+		{
+			P2MMLog(1, false, "##########################################################################################");
+			P2MMLog(1, false, "UH OH! Somebody did a no no and executed a blocked console command. Here's all their information! :D");
+			P2MMLog(1, false, "ClientCommand called: %s", pcmd);
+			P2MMLog(1, false, "ClientCommand args: %s", args.ArgS());
+			P2MMLog(1, false, "userid: %i", userid);
+			P2MMLog(1, false, "entindex: %i", entindex);
+			P2MMLog(1, false, "playername: %s", playername);
+			P2MMLog(1, false, "##########################################################################################");
+			return PLUGIN_STOP;
+		}
 		return PLUGIN_CONTINUE;
-	}*/
-
+	}
+	// signify is the client command used to make on screen icons appear
+	else if (FStrEq(pcmd, "signify"))
+	{
+		// Check if its the death icons and if the death icons disable ConVar is on
+		if ((FStrEq(args[1], "death_blue") || FStrEq(args[1], "death_orange")) && !p2mm_deathicons.GetBool())
+		{
+			return PLUGIN_STOP;
+		}
+		return PLUGIN_CONTINUE;
+	}
 	return PLUGIN_CONTINUE;
 }
 

@@ -9,7 +9,6 @@
 #include "modules.hpp"
 #include "p2mm.hpp"
 
-#include "public/steam/steamclientpublic.h"
 #include "irecipientfilter.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -50,55 +49,6 @@ static void printlP2MM(int level, bool dev, const char* pMsgFormat)
 		ConColorMsg(P2MM_VSCRIPT_CONSOLE_COLOR, completeMsg);
 		return;
 	}
-}
-
-//---------------------------------------------------------------------------------
-// Purpose: Gets player username by index.
-//---------------------------------------------------------------------------------
-static const char* GetPlayerName(int index)
-{
-	if (index <= 0)
-	{
-		return "";
-	}
-
-	player_info_t playerinfo;
-	if (!engineServer->GetPlayerInfo(index, &playerinfo))
-	{
-		return "";
-	}
-
-	return playerinfo.name;
-}
-
-//---------------------------------------------------------------------------------
-// Purpose: Gets the account ID component of player SteamID by index.
-//---------------------------------------------------------------------------------
-static int GetSteamID(int index)
-{
-	edict_t* pEdict = NULL;
-	if (index >= 0 && index < gpGlobals->maxEntities)
-	{
-		pEdict = (edict_t*)(gpGlobals->pEdicts + index);
-	}
-	if (!pEdict)
-	{
-		return -1;
-	}
-
-	player_info_t playerinfo;
-	if (!engineServer->GetPlayerInfo(index, &playerinfo))
-	{
-		return -1;
-	}
-
-	const CSteamID* pSteamID = engineServer->GetClientSteamID(pEdict);
-	if (!pSteamID || pSteamID->GetAccountID() == 0)
-	{
-		return -1;
-	}
-
-	return pSteamID->GetAccountID();
 }
 
 //---------------------------------------------------------------------------------
@@ -270,10 +220,10 @@ static void CallFirstRunPrompt()
 
 	// Put together KeyValues to pass to CreateMessage.
 	KeyValues* kv = new KeyValues("firstrunprompt");
-	kv->SetWString("title", localize->Find("#P2MM_FirstRunPrompt_t"));
+	kv->SetInt("level", 0);
+	kv->SetWString("title", g_pLocalize->FindSafe("#P2MM_FirstRunPrompt_t"));
 	//kv->SetString("title", "Welcome to the Portal 2: Multiplayer Mod!");
-	kv->SetInt("level", 0);	
-	kv->SetWString("msg", localize->Find("#P2MM_FirstRunPrompt_d"));
+	kv->SetWString("msg", g_pLocalize->FindSafe("#P2MM_FirstRunPrompt_d"));
 	/*kv->SetString("msg", 
 		"Welcome to the Portal 2: Multiplayer Mod!\n\n"
 		"Input '!help' into chat to see a full list of chat commands you can use!\n"
@@ -318,7 +268,7 @@ void RegisterFuncsAndRun()
 
 	// Set all the plugin function check bools to true and start the P2:MM VScript
 	g_pScriptVM->Run(
-		"PluginLoaded <- true;"
+		"P2MMPluginLoaded <- true;"
 		"printlP2MMLoaded <- true;"
 		"GetPlayerNameLoaded <- true;"
 		"GetSteamIDLoaded <- true;"
@@ -334,5 +284,6 @@ void RegisterFuncsAndRun()
 		"GetLastMapLoaded <- true;"
 		"FirstRunStateLoaded <- true;"
 		"CallFirstRunPromptLoaded <- true;"
-		"IncludeScript(\"multiplayermod/p2mm\");");
+		"IncludeScript(\"multiplayermod/p2mm\");"
+	);
 }

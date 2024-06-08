@@ -59,8 +59,8 @@ private:
 
 	bool		m_bPluginLoaded;
 	bool		m_bNoUnload;
+	
 	int			m_nDebugID;
-
 	int			m_iClientCommandIndex;
 };
 

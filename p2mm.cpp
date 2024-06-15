@@ -9,15 +9,8 @@
 //===========================================================================//
 
 #include "p2mm.hpp"
-#include "scanner.hpp"
-#include "modules.hpp"
 
-#ifdef _WIN32
-#pragma once
-#include <Windows.h>
-#endif
-
-#include <sstream>
+//#include <matchmaking/iplayer.h>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -33,6 +26,9 @@ IScriptVM* g_pScriptVM = NULL; // Access VScript interface
 IServerTools* g_pServerTools = NULL; // Access to interface from engine to tools for manipulating entities
 IGameEventManager2* gameeventmanager_ = NULL; // Access game events interface
 IServerPluginHelpers* pluginHelpers = NULL; // Access interface for plugin helper functions
+IInputSystem* inputSystem = NULL;
+IInputStackSystem* inputStackSystem = NULL;
+IGameUISystemMgr* gameuiSystemMgr = NULL;
 #ifndef GAME_DLL
 #define gameeventmanager gameeventmanager_
 #endif
@@ -120,30 +116,7 @@ CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map."
 	}
 }
 
-void ReplacePattern(std::string target_module, std::string patternBytes, std::string replace_with)
-{
-	void* addr = Memory::Scanner::Scan<void*>(Memory::Modules::Get(target_module), patternBytes);
-	if (!addr)
-	{
-		P2MMLog(1, false, "Failed to replace pattern!");
-		return;
-	}
 
-	std::vector<uint8_t> replace;
-
-	std::istringstream patternStream(replace_with);
-	std::string patternByte;
-	while (patternStream >> patternByte)
-	{
-		replace.push_back((uint8_t)std::stoul(patternByte, nullptr, 16));
-	}
-
-	DWORD oldprotect = 0;
-	DWORD newprotect = PAGE_EXECUTE_READWRITE;
-	VirtualProtect(addr, replace.size(), newprotect, &oldprotect);
-	memcpy_s(addr, replace.size(), replace.data(), replace.size());
-	VirtualProtect(addr, replace.size(), oldprotect, &newprotect);
-}
 
 //---------------------------------------------------------------------------------
 // Purpose: constructor
@@ -253,6 +226,29 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 
+	//inputSystem = (IInputSystem*)interfaceFactory(INPUTSYSTEM_INTERFACE_VERSION, 0);
+	//if (!inputSystem)
+	//{
+	//	P2MMLog(1, false, "Unable to load inputSystem!");
+	//	this->m_bNoUnload = true;
+	//	return false;
+	//}
+
+	//inputStackSystem = (IInputStackSystem*)interfaceFactory(INPUTSTACKSYSTEM_INTERFACE_VERSION, 0);
+	//if (!inputStackSystem)
+	//{
+	//	P2MMLog(1, false, "Unable to load inputStackSystem!");
+	//	this->m_bNoUnload = true;
+	//	return false;
+	//}
+
+	//gameuiSystemMgr = (IGameUISystemMgr*)interfaceFactory(GAMEUISYSTEMMGR_INTERFACE_VERSION, 0);
+	//if (!gameuiSystemMgr)
+	//{
+	//	P2MMLog(1, false, "Unable to load gameuiSystemMgr!");
+	//	this->m_bNoUnload = true;
+	//	return false;
+	//}
 
 	gpGlobals = playerinfomanager->GetGlobalVars();
 	MathLib_Init(2.2f, 2.2f, 0.0f, 2.0f);
@@ -394,7 +390,7 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 	const char* fargs = args.ArgS();
 	
 	short userid = engineServer->GetPlayerUserId(pEntity);
-	int entindex = GetPlayerIndex(userid);
+	int entindex = UserIDToPlayerIndex(userid);
 	const char* playername = GetPlayerName(entindex);
 
 	P2MMLog(0, true, "ClientCommand called: %s", pcmd);
@@ -428,6 +424,10 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 		|| FStrEq(pcmd, "select_map")
 		|| FStrEq(pcmd, "mp_select_level")
 		|| FStrEq(pcmd, "erase_mp_progress")
+		|| FStrEq(pcmd, "mp_mark_all_maps_complete")
+		|| FStrEq(pcmd, "mp_mark_all_maps_incomplete")
+		|| FStrEq(pcmd, "mp_mark_course_complete")
+		|| FStrEq(pcmd, "script_reload_think")
 		|| FStrEq(pcmd, "report_entities")
 		|| FStrEq(pcmd, "script")
 		|| FStrEq(pcmd, "script_debug")
@@ -436,7 +436,9 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 		|| FStrEq(pcmd, "script_help")
 		|| FStrEq(pcmd, "script_reload_code")
 		|| FStrEq(pcmd, "script_reload_entity_code")
-		|| FStrEq(pcmd, "script_reload_think"))
+		|| FStrEq(pcmd, "script_reload_think")
+		|| FStrEq(pcmd, "stopvideos"))
+
 		&& entindex != 1)
 	{
 		if (p2mm_forbidclientcommands.GetBool())
@@ -481,7 +483,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	if (FStrEq(event->GetName(), "portal_player_touchedground"))
 	{
 		short userid = event->GetInt("userid");
-		int entindex = GetPlayerIndex(userid);
+		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{
@@ -510,7 +512,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		float ping_x = event->GetFloat("ping_x");
 		float ping_y = event->GetFloat("ping_y");
 		float ping_z = event->GetFloat("ping_z");
-		int entindex = GetPlayerIndex(userid);
+		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{
@@ -538,7 +540,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	{
 		short userid = event->GetInt("userid");
 		bool portal2 = event->GetString("text");
-		int entindex = GetPlayerIndex(userid);
+		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{
@@ -583,6 +585,58 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		}
 		return;
 	}
+	// Event called when a player connects to the server, "player_connect" returns:
+	/*
+		"name"		"string"	// player name
+		"index"		"byte"		// player slot (entity index-1)
+		"userid"	"short"		// user ID on server (unique on server) "STEAM_1:...", will be "BOT" if player is bot
+		"xuid"		"uint64"	// XUID/Steam ID (converted to const char*)
+		"networkid" "string" 	// player network (i.e steam) id
+		"address"	"string"	// ip:port
+		"bot"		"bool"		// player is a bot
+	}
+	*/
+	else if (FStrEq(event->GetName(), "player_connect"))
+	{
+		const char* name = event->GetString("name");
+		int index = event->GetInt("index");
+		short userid = event->GetInt("userid");
+		const char* xuid = std::to_string(event->GetUint64("xuid")).c_str();
+		const char* networkid = event->GetString("networkid");
+		const char* address = event->GetString("address");
+		bool bot = event->GetBool("bot");
+		int entindex = UserIDToPlayerIndex(userid);
+		HSCRIPT scope = GetScriptScope((CBaseEntity*)PlayerIndexToPlayer(entindex));
+
+		if (g_pScriptVM)
+		{
+			// Handling OnPlayerJoin VScript event
+			HSCRIPT cc_func = g_pScriptVM->LookupFunction("OnPlayerJoin");
+			if (cc_func && (entindex != NULL) && (scope != NULL))
+			{
+				g_pScriptVM->Call<edict_t*, HSCRIPT>(cc_func, NULL, true, NULL, INDEXENT(entindex), scope);
+			}
+
+			// Handle VScript game event function
+			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerConnect");
+			if (ge_func)
+			{
+				g_pScriptVM->Call<const char*, int, short, const char*, const char*, const char*, bool, int>(ge_func, NULL, true, NULL, name, index, userid, xuid, networkid, address, bot, entindex);
+			}
+		}
+
+		P2MMLog(0, false, "name: %s", name);
+		P2MMLog(0, false, "index: %i", index);
+		P2MMLog(0, false, "userid: %i", userid);
+		P2MMLog(0, false, "xuid: %d", xuid);
+		P2MMLog(0, false, "networkid: %s", networkid);
+		P2MMLog(0, false, "address: %s", address);
+		P2MMLog(0, false, "bot: %i", bot);
+		P2MMLog(0, false, "entindex: %i", entindex);
+		P2MMLog(0, false, "Script Scope: %s", scope);
+
+		return;
+	}
 	// Event called when a player inputs a message into the chat, "player_say" returns:
 	/*
 		"userid"	"short"		// user ID on server
@@ -592,7 +646,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	{
 		short userid = event->GetInt("userid");
 		const char* text = event->GetString("text");
-		int entindex = GetPlayerIndex(userid);
+		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{

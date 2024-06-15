@@ -48,10 +48,35 @@ void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 	}
 }
 
+void ReplacePattern(std::string target_module, std::string patternBytes, std::string replace_with)
+{
+	void* addr = Memory::Scanner::Scan<void*>(Memory::Modules::Get(target_module), patternBytes);
+	if (!addr)
+	{
+		P2MMLog(1, false, "Failed to replace pattern!");
+		return;
+	}
+
+	std::vector<uint8_t> replace;
+
+	std::istringstream patternStream(replace_with);
+	std::string patternByte;
+	while (patternStream >> patternByte)
+	{
+		replace.push_back((uint8_t)std::stoul(patternByte, nullptr, 16));
+	}
+
+	DWORD oldprotect = 0;
+	DWORD newprotect = PAGE_EXECUTE_READWRITE;
+	VirtualProtect(addr, replace.size(), newprotect, &oldprotect);
+	memcpy_s(addr, replace.size(), replace.data(), replace.size());
+	VirtualProtect(addr, replace.size(), oldprotect, &newprotect);
+}
+
 //---------------------------------------------------------------------------------
 // Purpose: Gets player entity index by userid.
 //---------------------------------------------------------------------------------
-int GetPlayerIndex(int userid)
+int UserIDToPlayerIndex(int userid)
 {
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
@@ -67,6 +92,30 @@ int GetPlayerIndex(int userid)
 		}
 	}
 	return NULL; // Return NULL if the index can't be found
+}
+
+// Get the script scope of a entity, thanks to Nullderef/Vista for this.
+HSCRIPT GetScriptScope(CBaseEntity* entity)
+{
+	if (entity == NULL)
+	{ 
+
+		return NULL;
+	}
+	return reinterpret_cast<HSCRIPT>(reinterpret_cast<uintptr_t>(entity) + 0x33c);
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Gets player base class by player entity index. Thanks to Nanoman2525 for this.
+//---------------------------------------------------------------------------------
+CBasePlayer* PlayerIndexToPlayer(int playerIndex)
+{
+#ifdef _WIN32
+	static auto _PlayerIndexToPlayer = reinterpret_cast<CBasePlayer* (__cdecl*)(int)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 8B 4D 08 33 C0 85 C9 7E 30"));
+	return _PlayerIndexToPlayer(playerIndex);
+#else // Linux support TODO
+	return NULL;
+#endif
 }
 
 //---------------------------------------------------------------------------------

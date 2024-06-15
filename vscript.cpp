@@ -241,6 +241,11 @@ static void CallFirstRunPrompt()
 	g_P2MMServerPlugin.m_bSeenFirstRunPrompt = true;
 }
 
+//static void RemoveEntityByClassname(const char* classname, int num)
+//{
+//	CBaseEntity 
+//}
+
 void RegisterFuncsAndRun()
 {
 	g_pScriptVM = **Memory::Scanner::Scan<IScriptVM***>(Memory::Modules::Get("server"), "8B 1D ?? ?? ?? ?? 57 85 DB", 2);
@@ -253,7 +258,7 @@ void RegisterFuncsAndRun()
 	ScriptRegisterFunction(g_pScriptVM, printlP2MM, "Logging for the P2MM VScript. The log message must be passed as a string or it will error.");
 	ScriptRegisterFunction(g_pScriptVM, GetPlayerName, "Gets player username by index.");
 	ScriptRegisterFunction(g_pScriptVM, GetSteamID, "Gets the account ID component of player SteamID by index.");
-	ScriptRegisterFunction(g_pScriptVM, GetPlayerIndex, "Gets player entity index by userid."); // Located in globals.cpp because its also used throughout the plugin
+	ScriptRegisterFunction(g_pScriptVM, UserIDToPlayerIndex, "Gets player entity index by userid."); // Located in globals.cpp because its also used throughout the plugin
 	ScriptRegisterFunction(g_pScriptVM, IsMapValid, "Returns true is the supplied string is a valid map name.");
 	ScriptRegisterFunction(g_pScriptVM, GetDeveloperLevelP2MM, "Returns the value of ConVar p2mm_developer.");
 	ScriptRegisterFunction(g_pScriptVM, SetPhysTypeConvar, "Sets 'player_held_object_use_view_model' to the supplied integer value.");

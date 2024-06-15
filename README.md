@@ -42,5 +42,7 @@ void GEPlayerPing(short userid, float ping_x, float ping_y, float ping_z);      
 void GEPlayerPortaled(bool portal2);                                                   | "Called whenever a player goes through a portal. `portal2` is false when portal1/blue portal is entered. Game event: 'portal_player_portaled'"
 void GETurretHitTurret();                                                              | "Called whenever a turret hits another turret. Game event: 'turret_hit_turret'"
 void GECamDetach();                                                                    | "Called whenever a camera is detached from a surface. Game event: 'security_camera_detached'"
+void GEPlayerConnect(const char* name, int index, short userid, 
+                    const char* networkid, const char* address, int entindex);         | "Called where a player connects to the server. 'index' is the entity index minus 1. Game event: 'player_connect'"
 void GEPlayerSay(short userid, const char* text, int entindex);                        | "Called whenever a player inputs a chat message. Game event: 'player_say'"
 ```

@@ -14,6 +14,18 @@
 #include "public/localize/ilocalize.h"
 #include "public/steam/steamclientpublic.h"
 
+#include "scanner.hpp"
+#include "modules.hpp"
+
+#ifdef _WIN32
+#pragma once
+#include <Windows.h>
+#endif
+
+#include <sstream>
+
+class CBasePlayer;
+
 #define P2MM_PLUGIN_CONSOLE_COLOR Color(100, 192, 252, 255)
 #define P2MM_VSCRIPT_CONSOLE_COLOR Color(110, 247, 76, 255)
 
@@ -35,7 +47,10 @@ extern IGameEventManager2* gameeventmanager_;
 extern IServerPluginHelpers* pluginHelpers;
 
 void P2MMLog(int level, bool dev, const char* pMsgFormat, ...);
-int GetPlayerIndex(int userid);
+void ReplacePattern(std::string target_module, std::string patternBytes, std::string replace_with);
+int UserIDToPlayerIndex(int userid);
+HSCRIPT GetScriptScope(CBaseEntity* entity);
+CBasePlayer* PlayerIndexToPlayer(int playerIndex);
 const char* GetPlayerName(int index);
 int GetSteamID(int index);
 
@@ -51,7 +66,7 @@ inline bool FSubStr(const char* sz1, const char* search)
 	return (Q_strstr(sz1, search));
 }
 
-// Helper functions taken from utils.h which entity to entity index and entity index to entity conversion
+// Helper functions taken from utils.h which involves entity to entity index and entity index to entity conversion
 // Entity to entity index
 inline int ENTINDEX(edict_t* pEdict)
 {

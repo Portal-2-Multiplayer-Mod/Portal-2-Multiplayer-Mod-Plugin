@@ -532,7 +532,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				HSCRIPT cc_func = g_pScriptVM->LookupFunction("ChatCommands");
 				if (cc_func)
 				{
-					g_pScriptVM->Call<const char*, int>(cc_func, NULL, true, NULL, text, entindex);
+					g_pScriptVM->Call<int, const char*>(cc_func, NULL, true, NULL, entindex, text);
 				}
 			}
 			

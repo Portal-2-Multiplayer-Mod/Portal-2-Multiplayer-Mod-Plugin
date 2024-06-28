@@ -241,11 +241,6 @@ static void CallFirstRunPrompt()
 	g_P2MMServerPlugin.m_bSeenFirstRunPrompt = true;
 }
 
-//static void RemoveEntityByClassname(const char* classname, int num)
-//{
-//	CBaseEntity 
-//}
-
 void RegisterFuncsAndRun()
 {
 	g_pScriptVM = **Memory::Scanner::Scan<IScriptVM***>(Memory::Modules::Get("server"), "8B 1D ?? ?? ?? ?? 57 85 DB", 2);
@@ -256,9 +251,9 @@ void RegisterFuncsAndRun()
 	}
 
 	ScriptRegisterFunction(g_pScriptVM, printlP2MM, "Logging for the P2MM VScript. The log message must be passed as a string or it will error.");
-	ScriptRegisterFunction(g_pScriptVM, GetPlayerName, "Gets player username by index.");
-	ScriptRegisterFunction(g_pScriptVM, GetSteamID, "Gets the account ID component of player SteamID by index.");
-	ScriptRegisterFunction(g_pScriptVM, UserIDToPlayerIndex, "Gets player entity index by userid."); // Located in globals.cpp because its also used throughout the plugin
+	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetPlayerName, "GetPlayerName", "Gets player username by index.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetSteamID, "GetSteamID", "Gets the account ID component of player SteamID by index.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::UserIDToPlayerIndex, "UserIDToPlayerIndex", "Gets player entity index by userid.");
 	ScriptRegisterFunction(g_pScriptVM, IsMapValid, "Returns true is the supplied string is a valid map name.");
 	ScriptRegisterFunction(g_pScriptVM, GetDeveloperLevelP2MM, "Returns the value of ConVar p2mm_developer.");
 	ScriptRegisterFunction(g_pScriptVM, SetPhysTypeConvar, "Sets 'player_held_object_use_view_model' to the supplied integer value.");
@@ -270,6 +265,8 @@ void RegisterFuncsAndRun()
 	ScriptRegisterFunction(g_pScriptVM, GetLastMap, "Returns the last map recorded by the launcher's Last Map system.");
 	ScriptRegisterFunction(g_pScriptVM, FirstRunState, "Get or set the state of whether the first map was run or not. Set false/true = 0/1 | -1 to get state.");
 	ScriptRegisterFunction(g_pScriptVM, CallFirstRunPrompt, "Shows the first run prompt if enabled in config.nut.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetConVarInt, "GetConVarInt", "Get the integer value of a ConVar.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetConVarString, "GetConVarString", "Get the string value of a ConVar.");
 
 	// Set all the plugin function check bools to true and start the P2:MM VScript
 	g_pScriptVM->Run(

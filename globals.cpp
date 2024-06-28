@@ -76,7 +76,7 @@ void ReplacePattern(std::string target_module, std::string patternBytes, std::st
 //---------------------------------------------------------------------------------
 // Purpose: Gets player entity index by userid.
 //---------------------------------------------------------------------------------
-int UserIDToPlayerIndex(int userid)
+int GFunc::UserIDToPlayerIndex(int userid)
 {
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
@@ -95,7 +95,7 @@ int UserIDToPlayerIndex(int userid)
 }
 
 // Get the script scope of a entity, thanks to Nullderef/Vista for this.
-HSCRIPT GetScriptScope(CBaseEntity* entity)
+HSCRIPT GFunc::GetScriptScope(CBaseEntity* entity)
 {
 	if (entity == NULL)
 	{ 
@@ -108,7 +108,7 @@ HSCRIPT GetScriptScope(CBaseEntity* entity)
 //---------------------------------------------------------------------------------
 // Purpose: Gets player base class by player entity index. Thanks to Nanoman2525 for this.
 //---------------------------------------------------------------------------------
-CBasePlayer* PlayerIndexToPlayer(int playerIndex)
+CBasePlayer* GFunc::PlayerIndexToPlayer(int playerIndex)
 {
 #ifdef _WIN32
 	static auto _PlayerIndexToPlayer = reinterpret_cast<CBasePlayer* (__cdecl*)(int)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 8B 4D 08 33 C0 85 C9 7E 30"));
@@ -121,7 +121,7 @@ CBasePlayer* PlayerIndexToPlayer(int playerIndex)
 //---------------------------------------------------------------------------------
 // Purpose: Gets player username by index.
 //---------------------------------------------------------------------------------
-const char* GetPlayerName(int index)
+const char* GFunc::GetPlayerName(int index)
 {
 	if (index <= 0)
 	{
@@ -140,7 +140,7 @@ const char* GetPlayerName(int index)
 //---------------------------------------------------------------------------------
 // Purpose: Gets the account ID component of player SteamID by index.
 //---------------------------------------------------------------------------------
-int GetSteamID(int index)
+int GFunc::GetSteamID(int index)
 {
 	edict_t* pEdict = NULL;
 	if (index >= 0 && index < gpGlobals->maxEntities)
@@ -165,4 +165,40 @@ int GetSteamID(int index)
 	}
 
 	return pSteamID->GetAccountID();
+}
+
+void GFunc::RemoveEntity(CBaseEntity* pEntity)
+{
+	reinterpret_cast<void (*)(void*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 57 8B 7D 08 85 FF 74 72"))(reinterpret_cast<IServerEntity*>(pEntity)->GetNetworkable());
+}
+
+
+//---------------------------------------------------------------------------------
+// Purpose: Self-explanatory.
+//---------------------------------------------------------------------------------
+int GFunc::GetConVarInt(const char* cvname)
+{
+	ConVar* pVar = g_pCVar->FindVar(cvname);
+	if (!pVar)
+	{
+		P2MMLog(1, false, "Could not find ConVar: \"%s\"! Returning -1!", cvname);
+		return -1;
+	}
+
+	return pVar->GetInt();
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Self-explanatory.
+//---------------------------------------------------------------------------------
+const char* GFunc::GetConVarString(const char* cvname)
+{
+	ConVar* pVar = g_pCVar->FindVar(cvname);
+	if (!pVar)
+	{
+		P2MMLog(1, false, "Could not find ConVar: \"%s\"! Returning \"\"!", cvname);
+		return "";
+	}
+
+	return pVar->GetString();
 }

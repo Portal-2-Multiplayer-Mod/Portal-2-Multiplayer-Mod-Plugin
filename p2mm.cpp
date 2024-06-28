@@ -10,8 +10,6 @@
 
 #include "p2mm.hpp"
 
-//#include <matchmaking/iplayer.h>
-
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -390,14 +388,15 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 	const char* fargs = args.ArgS();
 	
 	short userid = engineServer->GetPlayerUserId(pEntity);
-	int entindex = UserIDToPlayerIndex(userid);
-	const char* playername = GetPlayerName(entindex);
+	int entindex = GFunc::UserIDToPlayerIndex(userid);
+	const char* playername = GFunc::GetPlayerName(entindex);
 
 	P2MMLog(0, true, "ClientCommand called: %s", pcmd);
 	P2MMLog(0, true, "ClientCommand args: %s", fargs);
 	P2MMLog(0, true, "userid: %i", userid);
 	P2MMLog(0, true, "entindex: %i", entindex);
 	P2MMLog(0, true, "playername: %s", playername);
+
 	P2MMLog(0, true, "VScript VM Working?: %s", (g_pScriptVM != NULL) ? "Working" : "Not Working!");
 
 	// Call the "GEClientCommand" VScript function
@@ -406,7 +405,7 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 		HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEClientCommand");
 		if (ge_func)
 		{
-			g_pScriptVM->Call<const char*, const char*, short, int>(ge_func, NULL, true, NULL, pcmd, fargs, userid, entindex);
+			g_pScriptVM->Call<const char*, const char*, short, int, const char*>(ge_func, NULL, true, NULL, pcmd, fargs, userid, entindex, playername);
 		}
 	}
 	
@@ -512,7 +511,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		float ping_x = event->GetFloat("ping_x");
 		float ping_y = event->GetFloat("ping_y");
 		float ping_z = event->GetFloat("ping_z");
-		int entindex = UserIDToPlayerIndex(userid);
+		int entindex = GFunc::UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{
@@ -540,7 +539,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	{
 		short userid = event->GetInt("userid");
 		bool portal2 = event->GetString("text");
-		int entindex = UserIDToPlayerIndex(userid);
+		int entindex = GFunc::UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{
@@ -646,7 +645,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	{
 		short userid = event->GetInt("userid");
 		const char* text = event->GetString("text");
-		int entindex = UserIDToPlayerIndex(userid);
+		int entindex = GFunc::UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{

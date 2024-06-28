@@ -29,6 +29,8 @@ class CBasePlayer;
 #define P2MM_PLUGIN_CONSOLE_COLOR Color(100, 192, 252, 255)
 #define P2MM_VSCRIPT_CONSOLE_COLOR Color(110, 247, 76, 255)
 
+#define CURRENTMAPNAME STRING(gpGlobals->mapname)
+
 //---------------------------------------------------------------------------------
 // Any ConVars or CON_COMMANDS that need to be globally available
 //---------------------------------------------------------------------------------
@@ -48,11 +50,17 @@ extern IServerPluginHelpers* pluginHelpers;
 
 void P2MMLog(int level, bool dev, const char* pMsgFormat, ...);
 void ReplacePattern(std::string target_module, std::string patternBytes, std::string replace_with);
-int UserIDToPlayerIndex(int userid);
-HSCRIPT GetScriptScope(CBaseEntity* entity);
-CBasePlayer* PlayerIndexToPlayer(int playerIndex);
-const char* GetPlayerName(int index);
-int GetSteamID(int index);
+
+namespace GFunc {
+	int UserIDToPlayerIndex(int userid);
+	HSCRIPT GetScriptScope(CBaseEntity* entity);
+	CBasePlayer* PlayerIndexToPlayer(int playerIndex);
+	const char* GetPlayerName(int index);
+	int GetSteamID(int index);
+	void RemoveEntity(CBaseEntity* pEntity);
+	int GetConVarInt(const char* cvname);
+	const char* GetConVarString(const char* cvname);
+}
 
 // If String Equals String helper function
 inline bool FStrEq(const char* sz1, const char* sz2)

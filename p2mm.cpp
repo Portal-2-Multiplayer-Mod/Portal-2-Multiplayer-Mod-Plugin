@@ -37,11 +37,12 @@ IGameUISystemMgr* gameuiSystemMgr = NULL;
 CP2MMServerPlugin g_P2MMServerPlugin;
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CP2MMServerPlugin, IServerPluginCallbacks, INTERFACEVERSION_ISERVERPLUGINCALLBACKS, g_P2MMServerPlugin);
 
-// Core P2:MM ConVars
-ConVar p2mm_lastmap("p2mm_lastmap", "", FCVAR_HIDDEN, "Last map recorded for the Last Map system."); // Hidden to prevent accidentally breaking something
-ConVar p2mm_splitscreen("p2mm_splitscreen", "0", FCVAR_HIDDEN, "Flag for the main menu buttons and launcher to start in splitscreen or not."); // Hidden to prevent accidentally breaking something
+// Core P2:MM ConVars | These shouldn't be modfied manually. Hidden to prevent accidentally breaking something
+ConVar p2mm_loop("p2mm_loop", "0", FCVAR_HIDDEN, "Flag if P2MMLoop should be looping.");
+ConVar p2mm_lastmap("p2mm_lastmap", "", FCVAR_HIDDEN, "Last map recorded for the Last Map system.");
+ConVar p2mm_splitscreen("p2mm_splitscreen", "0", FCVAR_HIDDEN, "Flag for the main menu buttons and launcher to start in splitscreen or not.");
 
-// UTIL ConVars
+// UTIL ConVars | ConVars the host can change.
 ConVar p2mm_forbidclientcommands("p2mm_forbidclientcommands", "1", FCVAR_NONE, "Stop client commands clients shouldn't be executing.");
 ConVar p2mm_deathicons("p2mm_deathicons", "1", FCVAR_NONE, "Whether or not when players die the death icon should appear.");
 
@@ -96,7 +97,7 @@ CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map."
 	}
 	P2MMLog(0, true, "Map String: %s", mapString.c_str());
 
-	// Set first run ConVar flag on and set the last map ConVar value so the system
+	// Set first run flag on and set the last map ConVar value so the system
 	// can change from mp_coop_community_hub to the requested map.
 	// Also set m_bSeenFirstRunPrompt back to false so the prompt can be triggered again.
 	g_P2MMServerPlugin.m_bFirstMapRan = true;
@@ -142,10 +143,12 @@ CP2MMServerPlugin::~CP2MMServerPlugin()
 	m_nDebugID = EVENT_DEBUG_ID_SHUTDOWN;
 }
 
+//---------------------------------------------------------------------------------
+// Purpose: Description of plugin outputted when the "plugin_print" console command is executed.
+//---------------------------------------------------------------------------------
 const char* CP2MMServerPlugin::GetPluginDescription(void)
 {
-	static std::string pluginDescription = "Portal 2: Multiplayer Mod Server Plugin | Plugin Version: " + std::string(P2MM_PLUGIN_VERSION) + " | For P2:MM Version: " + std::string(P2MM_VERSION);
-	return pluginDescription.c_str();
+	return "Portal 2: Multiplayer Mod Server Plugin | Plugin Version: " P2MM_PLUGIN_VERSION " | For P2:MM Version: " P2MM_VERSION;
 }
 
 //---------------------------------------------------------------------------------
@@ -673,6 +676,26 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		P2MMLog(0, true, "entindex: %i", entindex);
 		return;
 	}
+
+//---------------------------------------------------------------------------------
+// Purpose: Called every server frame, used for the VScript loop. Warning: Don't do too intensive tasks with this!
+//---------------------------------------------------------------------------------
+void CP2MMServerPlugin::GameFrame(bool simulating)
+{
+	HSCRIPT loop_func = g_pScriptVM->LookupFunction("P2MMLoop");
+	if (loop_func && p2mm_loop.GetBool())
+	{
+		g_pScriptVM->Call(loop_func, NULL, true, NULL);
+	}
+
+	// Handle VScript game event function
+	HSCRIPT gf_func = g_pScriptVM->LookupFunction("GEGameFrame");
+	if (gf_func)
+	{
+		g_pScriptVM->Call<bool>(gf_func, NULL, true, NULL, simulating);
+	}
+}
+
 }
 
 //---------------------------------------------------------------------------------
@@ -681,7 +704,6 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 #pragma region UNUSED_CALLBACKS
 void CP2MMServerPlugin::Pause(void) {}
 void CP2MMServerPlugin::UnPause(void) {}
-void CP2MMServerPlugin::GameFrame(bool simulating) {}
 void CP2MMServerPlugin::LevelInit(char const* pMapName) {}
 void CP2MMServerPlugin::LevelShutdown(void) {}
 void CP2MMServerPlugin::ClientActive(edict_t* pEntity) {}

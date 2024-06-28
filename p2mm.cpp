@@ -45,6 +45,7 @@ ConVar p2mm_splitscreen("p2mm_splitscreen", "0", FCVAR_HIDDEN, "Flag for the mai
 // UTIL ConVars | ConVars the host can change.
 ConVar p2mm_forbidclientcommands("p2mm_forbidclientcommands", "1", FCVAR_NONE, "Stop client commands clients shouldn't be executing.");
 ConVar p2mm_deathicons("p2mm_deathicons", "1", FCVAR_NONE, "Whether or not when players die the death icon should appear.");
+ConVar p2mm_ds_enable_paint("p2mm_ds_enable_paint", "0", FCVAR_NONE, "Re-enables gel functionality in dedicated servers on the next map load.");
 
 // Debug ConVars
 ConVar p2mm_developer("p2mm_developer", "0", FCVAR_NONE, "Enable for P2:MM developer messages.");
@@ -380,6 +381,42 @@ void CP2MMServerPlugin::ServerActivate(edict_t* pEdictList, int edictCount, int 
 	RegisterFuncsAndRun();
 }
 
+//---------------------------------------------------------------------------------
+// Purpose: Called when a map has started loading. Does gel patching and Last Map System stuff.
+//---------------------------------------------------------------------------------
+void CP2MMServerPlugin::LevelInit(char const* pMapName)
+{
+	// Dedicated server paintmap patch
+	// Paint usage doesn't function naturally on dedicated servers, so this will help enable it again.
+	if (p2mm_ds_enable_paint.GetBool() && engineServer->IsDedicatedServer())
+	{
+		if (!p2mm_ds_enable_paint.GetBool())
+		{
+			return;
+		}
+
+		// Hook R_LoadWorldGeometry (gl_rmisc.cpp)
+		static auto R_LoadWorldGeometry =
+#ifdef _WIN32
+			reinterpret_cast<void(__cdecl*)(bool bDXChange)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "55 8B EC 83 EC 14 53 33 DB 89"));
+#else
+			NULL; // TODO: Linux & MacOS
+#endif //  _WIN32
+		if (R_LoadWorldGeometry)
+		{
+			CUtlVector< uint32 > paintData;
+			engineServer->GetPaintmapDataRLE(paintData);
+			R_LoadWorldGeometry(false);
+			CUtlVector< uint32 > paintData2;
+			engineServer->GetPaintmapDataRLE(paintData2);
+		}
+		else
+		{
+			P2MMLog(1, true, "Couldn't find R_LoadWorldGeometry! Paint will not work on this map load.");
+		}
+	}
+}
+
 PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand& args)
 {
 	if (!pEntity || pEntity->IsFree())
@@ -704,7 +741,6 @@ void CP2MMServerPlugin::GameFrame(bool simulating)
 #pragma region UNUSED_CALLBACKS
 void CP2MMServerPlugin::Pause(void) {}
 void CP2MMServerPlugin::UnPause(void) {}
-void CP2MMServerPlugin::LevelInit(char const* pMapName) {}
 void CP2MMServerPlugin::LevelShutdown(void) {}
 void CP2MMServerPlugin::ClientActive(edict_t* pEntity) {}
 void CP2MMServerPlugin::ClientDisconnect(edict_t* pEntity) {}

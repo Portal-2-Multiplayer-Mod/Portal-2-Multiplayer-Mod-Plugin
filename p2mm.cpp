@@ -37,6 +37,52 @@ IGameUISystemMgr* gameuiSystemMgr = NULL;
 CP2MMServerPlugin g_P2MMServerPlugin;
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CP2MMServerPlugin, IServerPluginCallbacks, INTERFACEVERSION_ISERVERPLUGINCALLBACKS, g_P2MMServerPlugin);
 
+// List of game events the plugin interfaces used to load each one
+static const char* gameevents[] =
+{
+	"portal_player_ping",
+	"portal_player_portaled",
+	"turret_hit_turret",
+	"security_camera_detached",
+	"player_landed",
+	"player_connect",
+	"player_say",
+	"player_activate",
+};
+
+// List of console commands that clients can't execute but the host can
+static const char* forbiddenconcommands[] =
+{
+	"mp_earn_taunt",
+	"taunt_auto", // Apparently mp_earn_taunt doesn't get called to ClientCommand but this does
+	"restart_level",
+	"pre_go_to_hub",
+	"pre_go_to_calibration",
+	"go_to_calibration",
+	"go_to_hub",
+	"restart_level",
+	"mp_restart_level",
+	"transition_map",
+	"select_map",
+	"mp_select_level",
+	"erase_mp_progress",
+	"mp_mark_all_maps_complete", // Doesn't get called to ClientCommand at all
+	"mp_mark_all_maps_incomplete", // Doesn't get called to ClientCommand at all
+	"mp_mark_course_complete", // Doesn't get called to ClientCommand at all
+	"report_entities", // Doesn't get called to ClientCommand at all
+	"script", // Doesn't get called to ClientCommand at all, Valve patched this
+	"script_debug", // Doesn't get called to ClientCommand at all, Valve patched this
+	"script_dump_all", // Doesn't get called to ClientCommand at all, Valve patched this
+	"script_execute", // Doesn't get called to ClientCommand at all, Valve patched this
+	"script_help", // Doesn't get called to ClientCommand at all, Valve patched this
+	"script_reload_code", // Doesn't get called to ClientCommand at all, Valve patched this
+	"script_reload_entity_code", // Doesn't get called to ClientCommand at all, Valve patched this
+	"script_reload_think", // Doesn't get called to ClientCommand at all, Valve patched this
+	"ent_fire", // Doesn't get called to ClientCommand at all, sv_cheats is the only protection
+	"bugpause",
+	"bugunpause"
+};
+
 // Core P2:MM ConVars | These shouldn't be modfied manually. Hidden to prevent accidentally breaking something
 ConVar p2mm_loop("p2mm_loop", "0", FCVAR_HIDDEN, "Flag if P2MMLoop should be looping.");
 ConVar p2mm_lastmap("p2mm_lastmap", "", FCVAR_HIDDEN, "Last map recorded for the Last Map system.");
@@ -266,19 +312,6 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	MathLib_Init(2.2f, 2.2f, 0.0f, 2.0f);
 	ConVar_Register(0);
 
-	// List of game events the plugin interfaces used to load each one
-	static const char* gameevents[] =
-	{
-		"portal_player_ping",
-		"portal_player_portaled",
-		"turret_hit_turret",
-		"security_camera_detached",
-		"player_landed",
-		"player_connect",
-		"player_say",
-		"player_activate",
-	};
-
 	// Add listener for all used game events
 	for (const char* gameevent : gameevents)
 	{
@@ -459,64 +492,38 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 			g_pScriptVM->Call<const char*, const char*, short, int, const char*>(ge_func, NULL, true, NULL, pcmd, fargs, userid, entindex, playername);
 		}
 	}
-	
-	// Stop certain client commands from being excecated by clients and not the host
-	if ((  FStrEq(pcmd, "mp_earn_taunt")
-		|| FStrEq(pcmd, "restart_level")
-		|| FStrEq(pcmd, "survey_done")
-		|| FStrEq(pcmd, "pre_go_to_hub")
-		|| FStrEq(pcmd, "pre_go_to_calibration")
-		|| FStrEq(pcmd, "go_to_calibration")
-		|| FStrEq(pcmd, "go_to_hub")
-		|| FStrEq(pcmd, "restart_level")
-		|| FStrEq(pcmd, "mp_restart_level")
-		|| FStrEq(pcmd, "transition_map")
-		|| FStrEq(pcmd, "select_map")
-		|| FStrEq(pcmd, "mp_select_level")
-		|| FStrEq(pcmd, "erase_mp_progress")
-		|| FStrEq(pcmd, "mp_mark_all_maps_complete")
-		|| FStrEq(pcmd, "mp_mark_all_maps_incomplete")
-		|| FStrEq(pcmd, "mp_mark_course_complete")
-		|| FStrEq(pcmd, "script_reload_think")
-		|| FStrEq(pcmd, "report_entities")
-		|| FStrEq(pcmd, "script")
-		|| FStrEq(pcmd, "script_debug")
-		|| FStrEq(pcmd, "script_dump_all")
-		|| FStrEq(pcmd, "script_execute")
-		|| FStrEq(pcmd, "script_help")
-		|| FStrEq(pcmd, "script_reload_code")
-		|| FStrEq(pcmd, "script_reload_entity_code")
-		|| FStrEq(pcmd, "script_reload_think")
-		|| FStrEq(pcmd, "stopvideos"))
 
-		|| FStrEq(pcmd, "bugpause")
-		|| FStrEq(pcmd, "bugunpause")
-		&& entindex != 1)
-	{
-		if (p2mm_forbidclientcommands.GetBool())
-		{
-			P2MMLog(1, false, "##########################################################################################");
-			P2MMLog(1, false, "UH OH! Somebody did a no no and executed a blocked console command! Here's all their information! :D");
-			P2MMLog(1, false, "ClientCommand called: %s", pcmd);
-			P2MMLog(1, false, "ClientCommand args: %s", args.ArgS());
-			P2MMLog(1, false, "userid: %i", userid);
-			P2MMLog(1, false, "entindex: %i", entindex);
-			P2MMLog(1, false, "playername: %s", playername);
-			P2MMLog(1, false, "##########################################################################################");
-			return PLUGIN_STOP;
-		}
-		return PLUGIN_CONTINUE;
-	}
 	// signify is the client command used to make on screen icons appear
-	else if (FStrEq(pcmd, "signify"))
+	if (FStrEq(pcmd, "signify"))
 	{
 		// Check if its the death icons and if the death icons disable ConVar is on
 		if ((FStrEq(args[1], "death_blue") || FStrEq(args[1], "death_orange")) && !p2mm_deathicons.GetBool())
 		{
 			return PLUGIN_STOP;
 		}
-		return PLUGIN_CONTINUE;
 	}
+
+	// Stop certain client commands from being excecated by clients and not the host
+	for (const char* badcc : forbiddenconcommands)
+	{
+		if (FSubStr(pcmd, "taunt_auto") || FSubStr(pcmd, "mp_earn_taunt"))
+		{
+			return PLUGIN_STOP;
+		}
+		if (entindex != 1 && (FSubStr(pcmd, badcc)) && p2mm_forbidclientcommands.GetBool())
+		{
+			P2MMLog(1, false, "##########################################################################################");
+			P2MMLog(1, false, "UH OH! Somebody executed a blocked console command!");
+			P2MMLog(1, false, "ClientCommand called: %s", pcmd);
+			P2MMLog(1, false, "ClientCommand args: %s", fargs);
+			P2MMLog(1, false, "userid: %i", userid);
+			P2MMLog(1, false, "entindex: %i", entindex);
+			P2MMLog(1, false, "playername: %s", GFunc::GetPlayerName(entindex));
+			P2MMLog(1, false, "##########################################################################################");
+			return PLUGIN_STOP;
+		}
+	}
+
 	return PLUGIN_CONTINUE;
 }
 

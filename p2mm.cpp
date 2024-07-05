@@ -95,6 +95,7 @@ ConVar p2mm_ds_enable_paint("p2mm_ds_enable_paint", "0", FCVAR_NONE, "Re-enables
 
 // Debug ConVars
 ConVar p2mm_developer("p2mm_developer", "0", FCVAR_NONE, "Enable for P2:MM developer messages.");
+ConVar p2mm_spewgameeventinfo("p2mm_spewgameevents", "0", FCVAR_NONE, "Log information from called game events in the console, p2mm_developer must also be on. Can cause lots of console spam.");
 
 // ConCommands
 
@@ -461,6 +462,9 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 	}
 }
 
+//---------------------------------------------------------------------------------
+// Purpose: Called when a client inputs a console command.
+//---------------------------------------------------------------------------------
 PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand& args)
 {
 	if (!pEntity || pEntity->IsFree())
@@ -468,6 +472,7 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 		return PLUGIN_CONTINUE;
 	}
 
+	bool spewinfo = p2mm_spewgameeventinfo.GetBool();
 	const char* pcmd = args[0];
 	const char* fargs = args.ArgS();
 	
@@ -475,13 +480,15 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 	int entindex = GFunc::UserIDToPlayerIndex(userid);
 	const char* playername = GFunc::GetPlayerName(entindex);
 
-	P2MMLog(0, true, "ClientCommand called: %s", pcmd);
-	P2MMLog(0, true, "ClientCommand args: %s", fargs);
-	P2MMLog(0, true, "userid: %i", userid);
-	P2MMLog(0, true, "entindex: %i", entindex);
-	P2MMLog(0, true, "playername: %s", playername);
-
-	P2MMLog(0, true, "VScript VM Working?: %s", (g_pScriptVM != NULL) ? "Working" : "Not Working!");
+	if (spewinfo)
+	{
+		P2MMLog(0, true, "ClientCommand called: %s", pcmd);
+		P2MMLog(0, true, "ClientCommand args: %s", fargs);
+		P2MMLog(0, true, "userid: %i", userid);
+		P2MMLog(0, true, "entindex: %i", entindex);
+		P2MMLog(0, true, "playername: %s", playername);
+		P2MMLog(0, true, "VScript VM Working?: %s", (g_pScriptVM != NULL) ? "Working" : "Not Working!");
+	}
 
 	// Call the "GEClientCommand" VScript function
 	if (g_pScriptVM)
@@ -532,8 +539,12 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 //---------------------------------------------------------------------------------
 void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 {
-	P2MMLog(0, true, "Game Event Fired: %s", event->GetName());
-	P2MMLog(0, true, "VScript VM Working?: %s", (g_pScriptVM != NULL) ? "Working" : "Not Working!");
+	bool spewinfo = p2mm_spewgameeventinfo.GetBool();
+	if (spewinfo)
+	{
+		P2MMLog(0, true, "Game Event Fired: %s", event->GetName());
+		P2MMLog(0, true, "VScript VM Working?: %s", (g_pScriptVM != NULL) ? "Working" : "Not Working!");
+	}
 
 	// Event called when a player pings, "portal_player_ping" returns:
 	/*
@@ -560,11 +571,15 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			}
 		}
 
-		P2MMLog(0, true, "userid: %i", userid);
-		P2MMLog(0, true, "ping_x: %f", ping_x);
-		P2MMLog(0, true, "ping_y: %f", ping_y);
-		P2MMLog(0, true, "ping_z: %f", ping_z);
-		P2MMLog(0, true, "entindex: %i", entindex);
+		if (spewinfo)
+		{
+			P2MMLog(0, true, "userid: %i", userid);
+			P2MMLog(0, true, "ping_x: %f", ping_x);
+			P2MMLog(0, true, "ping_y: %f", ping_y);
+			P2MMLog(0, true, "ping_z: %f", ping_z);
+			P2MMLog(0, true, "entindex: %i", entindex);
+		}
+		
 		return;
 	}
 	// Event called when a player goes through a portal, "portal_player_portaled" returns:
@@ -588,9 +603,13 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			}
 		}
 
-		P2MMLog(0, true, "userid: %i", userid);
-		P2MMLog(0, true, "portal2: %s", portal2 ? "true" : "false");
-		P2MMLog(0, true, "entindex: %i", entindex);
+		if (spewinfo)
+		{
+			P2MMLog(0, true, "userid: %i", userid);
+			P2MMLog(0, true, "portal2: %s", portal2 ? "true" : "false");
+			P2MMLog(0, true, "entindex: %i", entindex);
+		}
+		
 		return;
 	}
 	// Event called when a player goes through a portal, "turret_hit_turret" returns nothing.
@@ -605,6 +624,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				g_pScriptVM->Call(ge_func, NULL, true, NULL);
 			}
 		}
+
 		return;
 	}
 	// Event called when a player goes through a portal, "security_camera_detached" returns nothing.
@@ -639,9 +659,14 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				g_pScriptVM->Call<short, int>(ge_func, NULL, true, NULL, userid, entindex);
 			}
 		}
+		
+		// This gets spammed too much
+		//if (spewinfo)
+		//{
+		//	P2MMLog(0, true, "userid: %i", userid);
+		//	P2MMLog(0, true, "entindex: %i", entindex);
+		//}
 
-		P2MMLog(0, true, "userid: %i", userid);
-		P2MMLog(0, true, "entindex: %i", entindex);
 		return;
 	}
 	// Event called when a player connects to the server, "player_connect" returns:
@@ -676,14 +701,18 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			}
 		}
 
-		P2MMLog(0, true, "name: %s", name);
-		P2MMLog(0, true, "index: %i", index);
-		P2MMLog(0, true, "userid: %i", userid);
-		P2MMLog(0, true, "xuid: %d", xuid);
-		P2MMLog(0, true, "networkid: %s", networkid);
-		P2MMLog(0, true, "address: %s", address);
-		P2MMLog(0, true, "bot: %i", bot);
-		P2MMLog(0, true, "entindex: %i", entindex);
+		if (spewinfo)
+		{
+			P2MMLog(0, true, "name: %s", name);
+			P2MMLog(0, true, "index: %i", index);
+			P2MMLog(0, true, "userid: %i", userid);
+			P2MMLog(0, true, "xuid: %d", xuid);
+			P2MMLog(0, true, "networkid: %s", networkid);
+			P2MMLog(0, true, "address: %s", address);
+			P2MMLog(0, true, "bot: %i", bot);
+			P2MMLog(0, true, "entindex: %i", entindex);
+		}
+		
 		return;
 	}
 	// Event called when a player changes their name, "player_info" returns:
@@ -715,13 +744,17 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			}
 		}
 
-		P2MMLog(0, true, "name: %s", name);
-		P2MMLog(0, true, "index: %i", index);
-		P2MMLog(0, true, "userid: %i", userid);
-		P2MMLog(0, true, "networkid: %s", networkid);
-		P2MMLog(0, true, "address: %s", address);
-		P2MMLog(0, true, "bot: %i", bot);
-		P2MMLog(0, true, "entindex: %i", entindex);
+		if (spewinfo)
+		{
+			P2MMLog(0, true, "name: %s", name);
+			P2MMLog(0, true, "index: %i", index);
+			P2MMLog(0, true, "userid: %i", userid);
+			P2MMLog(0, true, "networkid: %s", networkid);
+			P2MMLog(0, true, "address: %s", address);
+			P2MMLog(0, true, "bot: %i", bot);
+			P2MMLog(0, true, "entindex: %i", entindex);
+		}
+		
 		return;
 	}
 	// Event called when a player inputs a message into the chat, "player_say" returns:
@@ -756,9 +789,13 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			
 		}
 
-		P2MMLog(0, true, "userid: %i", userid);
-		P2MMLog(0, true, "text: %s", text);
-		P2MMLog(0, true, "entindex: %i", entindex);
+		if (spewinfo)
+		{
+			P2MMLog(0, true, "userid: %i", userid);
+			P2MMLog(0, true, "text: %s", text);
+			P2MMLog(0, true, "entindex: %i", entindex);
+		}
+		
 		return;
 	}
 

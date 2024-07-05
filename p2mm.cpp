@@ -64,14 +64,22 @@ CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map."
 	// A check done by the menu to request to use the last recorded map in the p2mm_lastmap ConVar
 	std::string requestedMap = args.Arg(1);
 	P2MMLog(0, true, "Requested Map: %s", requestedMap.c_str());
+	P2MMLog(0, true, "p2mm_lastmap: %s", p2mm_lastmap.GetString());
 	if (FSubStr(requestedMap.c_str(), "P2MM_LASTMAP"))
 	{
-		P2MMLog(0, true, "p2mm_lastmap: %s", p2mm_lastmap.GetString());
 		if (!engineServer->IsMapValid(p2mm_lastmap.GetString()))
 		{
+			// Get the current act so we can start the right main menu music
+			int iAct = ConVarRef("ui_lastact_played").GetInt();
+			if (iAct > 5) { iAct = 5; } else if (iAct < 1) { iAct = 1; }
+			
+			// Put the command to start the music and the act number together
+			char completePVCmd[sizeof("playvol \"#music/mainmenu/portal2_background0%d\" 0.35") + sizeof(iAct)];
+			V_snprintf(completePVCmd, sizeof(completePVCmd), "playvol \"#music/mainmenu/portal2_background0%i\" 0.35", iAct);
+
 			P2MMLog(1, false, "p2mm_session was called with P2MM_LASTMAP, but p2mm_lastmap is empty or invalid!");
-			engineClient->ExecuteClientCmd("disconnect \"There is no last map recorded or it doesn't exist! Please start a play session with the other options first.\"");
-			engineClient->ExecuteClientCmd("playvol \"music/mainmenu/portal2_background01\" 0.35");
+			engineClient->ExecuteClientCmd("disconnect \"There is no last map recorded or the map doesn't exist! Please start a play session with the other options first.\"");
+			engineClient->ExecuteClientCmd(completePVCmd);
 			return;
 		}
 		requestedMap = p2mm_lastmap.GetString();
@@ -105,13 +113,15 @@ CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map."
 	g_P2MMServerPlugin.m_bSeenFirstRunPrompt = false;
 	if (!FSubStr(requestedMap.c_str(), "mp_coop"))
 	{
-		P2MMLog(0, true, "'mp_coop' not found, singleplayer map being run.");
+		P2MMLog(0, true, "'mp_coop' not found, singleplayer map being run. Full ExecuteClientCmd: \"%s\"", std::string(mapString + "mp_coop_community_hub").c_str());
+		P2MMLog(0, true, "requestedMap: \"%s\"", requestedMap.c_str());
 		p2mm_lastmap.SetValue(requestedMap.c_str());
 		engineClient->ExecuteClientCmd(std::string(mapString + "mp_coop_community_hub").c_str());
 	}
 	else
 	{
-		P2MMLog(0, true, "'mp_coop' found, multiplayer map being run.");
+		P2MMLog(0, true, "'mp_coop' found, multiplayer map being run. Full ExecuteClientCmd: \"%s\"", std::string(mapString + requestedMap).c_str());
+		P2MMLog(0, true, "requestedMap: \"%s\"", requestedMap.c_str());
 		engineClient->ExecuteClientCmd(std::string(mapString + requestedMap).c_str());
 	}
 }

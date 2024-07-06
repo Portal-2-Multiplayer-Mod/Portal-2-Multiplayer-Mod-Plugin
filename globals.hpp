@@ -12,9 +12,24 @@
 #include "game/server/iplayerinfo.h"
 #include "engine/iserverplugin.h"
 #include "public/localize/ilocalize.h"
+#include "public/steam/steamclientpublic.h"
+
+#include "scanner.hpp"
+#include "modules.hpp"
+
+#ifdef _WIN32
+#pragma once
+#include <Windows.h>
+#endif
+
+#include <sstream>
+
+class CBasePlayer;
 
 #define P2MM_PLUGIN_CONSOLE_COLOR Color(100, 192, 252, 255)
 #define P2MM_VSCRIPT_CONSOLE_COLOR Color(110, 247, 76, 255)
+
+#define CURRENTMAPNAME STRING(gpGlobals->mapname)
 
 //---------------------------------------------------------------------------------
 // Any ConVars or CON_COMMANDS that need to be globally available
@@ -32,11 +47,20 @@ extern IScriptVM* g_pScriptVM;
 extern IServerTools* g_pServerTools;
 extern IGameEventManager2* gameeventmanager_;
 extern IServerPluginHelpers* pluginHelpers;
-extern ILocalize* localize;
 
 void P2MMLog(int level, bool dev, const char* pMsgFormat, ...);
+void ReplacePattern(std::string target_module, std::string patternBytes, std::string replace_with);
 
-extern int GetPlayerIndex(int userid);
+namespace GFunc {
+	int UserIDToPlayerIndex(int userid);
+	HSCRIPT GetScriptScope(CBaseEntity* entity);
+	CBasePlayer* PlayerIndexToPlayer(int playerIndex);
+	const char* GetPlayerName(int index);
+	int GetSteamID(int index);
+	void RemoveEntity(CBaseEntity* pEntity);
+	int GetConVarInt(const char* cvname);
+	const char* GetConVarString(const char* cvname);
+}
 
 // If String Equals String helper function
 inline bool FStrEq(const char* sz1, const char* sz2)
@@ -50,7 +74,7 @@ inline bool FSubStr(const char* sz1, const char* search)
 	return (Q_strstr(sz1, search));
 }
 
-// Helper functions taken from utils.h which entity to entity index and entity index to entity conversion
+// Helper functions taken from utils.h which involves entity to entity index and entity index to entity conversion
 // Entity to entity index
 inline int ENTINDEX(edict_t* pEdict)
 {

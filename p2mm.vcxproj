@@ -93,7 +93,7 @@
       <UseFullPaths>true</UseFullPaths>
       <ErrorReporting>Prompt</ErrorReporting>
       <MinimalRebuild>false</MinimalRebuild>
-      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <CompileAsManaged>false</CompileAsManaged>
     </ClCompile>

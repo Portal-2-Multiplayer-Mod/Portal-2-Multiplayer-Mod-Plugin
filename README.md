@@ -36,11 +36,18 @@ bool        FirstRunState();                                         | "Get or s
 Note: While represented in C++, below functions are for Squirrel. `const char*` type is translated to `string` type, and `byte`, `short`, and `long` types are translated to `integer` type in Squirrel. `void` types are simply the `function` type in Squirrel.
 
 ```c++
-void GEClientCommand(short userid, int entindex, const char* pcmd, const char* fargs); | "Called whenever a player runs a console command."
-void GEPlayerLanded(short userid);                                                     | "Called whenever a player lands on the ground. Game event: 'portal_player_touchedground'"
+void GEClientCommand(short userid, int entindex, const char* pcmd, const char* fargs); | "Called when a client inputs a console command."
+void GEClientActive(short userid, int entindex);                                       | "Called when a player is 'activated' in the server, meaning fully loaded, not fully connect which happens before that."
+void GEGameFrame(bool simulating);                                                     | "Called every server frame, used for the VScript loop. Warning: Don't do too intensive tasks with this!"
 void GEPlayerPing(short userid, float ping_x, float ping_y, float ping_z);             | "Called whenever a player pings. Game event: 'portal_player_ping'"
 void GEPlayerPortaled(bool portal2);                                                   | "Called whenever a player goes through a portal. `portal2` is false when portal1/blue portal is entered. Game event: 'portal_player_portaled'"
 void GETurretHitTurret();                                                              | "Called whenever a turret hits another turret. Game event: 'turret_hit_turret'"
 void GECamDetach();                                                                    | "Called whenever a camera is detached from a surface. Game event: 'security_camera_detached'"
+void GEPlayerLanded(short userid);                                                     | "Called whenever a player lands on the ground. Game event: 'player_landed'"
+void GEPlayerConnect(const char* name, int index, short userid, const char* xuid, 
+                const char* networkid, const char* address, bool bot, int entindex);   | "Called where a player connects to the server. 'index' is the entity index minus 1. Game event: 'player_connect'"
+void GEPlayerInfo(const char* name, int index, short userid, const char* networkid,
+                 const char* address, bool bot, int entindex);                         | "Called when a player changes their name."
+
 void GEPlayerSay(short userid, const char* text, int entindex);                        | "Called whenever a player inputs a chat message. Game event: 'player_say'"
 ```

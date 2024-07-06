@@ -9,7 +9,6 @@
 #include "modules.hpp"
 #include "p2mm.hpp"
 
-#include "public/steam/steamclientpublic.h"
 #include "irecipientfilter.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -50,55 +49,6 @@ static void printlP2MM(int level, bool dev, const char* pMsgFormat)
 		ConColorMsg(P2MM_VSCRIPT_CONSOLE_COLOR, completeMsg);
 		return;
 	}
-}
-
-//---------------------------------------------------------------------------------
-// Purpose: Gets player username by index.
-//---------------------------------------------------------------------------------
-static const char* GetPlayerName(int index)
-{
-	if (index <= 0)
-	{
-		return "";
-	}
-
-	player_info_t playerinfo;
-	if (!engineServer->GetPlayerInfo(index, &playerinfo))
-	{
-		return "";
-	}
-
-	return playerinfo.name;
-}
-
-//---------------------------------------------------------------------------------
-// Purpose: Gets the account ID component of player SteamID by index.
-//---------------------------------------------------------------------------------
-static int GetSteamID(int index)
-{
-	edict_t* pEdict = NULL;
-	if (index >= 0 && index < gpGlobals->maxEntities)
-	{
-		pEdict = (edict_t*)(gpGlobals->pEdicts + index);
-	}
-	if (!pEdict)
-	{
-		return -1;
-	}
-
-	player_info_t playerinfo;
-	if (!engineServer->GetPlayerInfo(index, &playerinfo))
-	{
-		return -1;
-	}
-
-	const CSteamID* pSteamID = engineServer->GetClientSteamID(pEdict);
-	if (!pSteamID || pSteamID->GetAccountID() == 0)
-	{
-		return -1;
-	}
-
-	return pSteamID->GetAccountID();
 }
 
 //---------------------------------------------------------------------------------
@@ -270,10 +220,10 @@ static void CallFirstRunPrompt()
 
 	// Put together KeyValues to pass to CreateMessage.
 	KeyValues* kv = new KeyValues("firstrunprompt");
-	kv->SetWString("title", localize->Find("#P2MM_FirstRunPrompt_t"));
+	kv->SetInt("level", 0);
+	kv->SetWString("title", g_pLocalize->FindSafe("#P2MM_FirstRunPrompt_t"));
 	//kv->SetString("title", "Welcome to the Portal 2: Multiplayer Mod!");
-	kv->SetInt("level", 0);	
-	kv->SetWString("msg", localize->Find("#P2MM_FirstRunPrompt_d"));
+	kv->SetWString("msg", g_pLocalize->FindSafe("#P2MM_FirstRunPrompt_d"));
 	/*kv->SetString("msg", 
 		"Welcome to the Portal 2: Multiplayer Mod!\n\n"
 		"Input '!help' into chat to see a full list of chat commands you can use!\n"
@@ -301,9 +251,9 @@ void RegisterFuncsAndRun()
 	}
 
 	ScriptRegisterFunction(g_pScriptVM, printlP2MM, "Logging for the P2MM VScript. The log message must be passed as a string or it will error.");
-	ScriptRegisterFunction(g_pScriptVM, GetPlayerName, "Gets player username by index.");
-	ScriptRegisterFunction(g_pScriptVM, GetSteamID, "Gets the account ID component of player SteamID by index.");
-	ScriptRegisterFunction(g_pScriptVM, GetPlayerIndex, "Gets player entity index by userid."); // Located in globals.cpp because its also used throughout the plugin
+	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetPlayerName, "GetPlayerName", "Gets player username by index.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetSteamID, "GetSteamID", "Gets the account ID component of player SteamID by index.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::UserIDToPlayerIndex, "UserIDToPlayerIndex", "Gets player entity index by userid.");
 	ScriptRegisterFunction(g_pScriptVM, IsMapValid, "Returns true is the supplied string is a valid map name.");
 	ScriptRegisterFunction(g_pScriptVM, GetDeveloperLevelP2MM, "Returns the value of ConVar p2mm_developer.");
 	ScriptRegisterFunction(g_pScriptVM, SetPhysTypeConvar, "Sets 'player_held_object_use_view_model' to the supplied integer value.");
@@ -315,9 +265,12 @@ void RegisterFuncsAndRun()
 	ScriptRegisterFunction(g_pScriptVM, GetLastMap, "Returns the last map recorded by the launcher's Last Map system.");
 	ScriptRegisterFunction(g_pScriptVM, FirstRunState, "Get or set the state of whether the first map was run or not. Set false/true = 0/1 | -1 to get state.");
 	ScriptRegisterFunction(g_pScriptVM, CallFirstRunPrompt, "Shows the first run prompt if enabled in config.nut.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetConVarInt, "GetConVarInt", "Get the integer value of a ConVar.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetConVarString, "GetConVarString", "Get the string value of a ConVar.");
 
 	// Set all the plugin function check bools to true and start the P2:MM VScript
 	g_pScriptVM->Run(
+		"P2MMPluginLoaded <- true;"
 		"printlP2MMLoaded <- true;"
 		"GetPlayerNameLoaded <- true;"
 		"GetSteamIDLoaded <- true;"
@@ -333,5 +286,6 @@ void RegisterFuncsAndRun()
 		"GetLastMapLoaded <- true;"
 		"FirstRunStateLoaded <- true;"
 		"CallFirstRunPromptLoaded <- true;"
-		"IncludeScript(\"multiplayermod/p2mm\");");
+		"IncludeScript(\"multiplayermod/p2mm\");"
+	);
 }

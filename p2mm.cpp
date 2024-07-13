@@ -341,6 +341,9 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	// Fix sv_password
 	ReplacePattern("engine", "0F 95 C1 51 8D 4D E8", "03 C9 90 51 8D 4D E8");
 
+	// runtime max 0.03 -> 0.5
+	ReplacePattern("vscript", "00 00 00 E0 51 B8 9E 3F", "00 00 00 00 00 00 E0 3F");
+
 	// Make sure -allowspectators is there so we get our 33 max players
 	if (!CommandLine()->FindParm("-allowspectators"))
 	{
@@ -411,6 +414,9 @@ void CP2MMServerPlugin::Unload(void)
 
 	// sv_password
 	ReplacePattern("engine", "03 C9 90 51 8D 4D E8", "0F 95 C1 51 8D 4D E8");
+
+	// runtime max 0.03 -> 0.5
+	ReplacePattern("vscript", "00 00 00 00 00 00 E0 3F", "00 00 00 E0 51 B8 9E 3F");
 
 	m_bPluginLoaded = false;
 }
@@ -818,11 +824,15 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 	if (g_pScriptVM)
 	{
 		//// Handling OnPlayerJoin VScript event
-		//HSCRIPT opj_func = g_pScriptVM->LookupFunction("OnPlayerJoin");
-		//if (opj_func)
-		//{
-		//	g_pScriptVM->Call<int>(opj_func, NULL, true, NULL, entindex);
-		//}
+		HSCRIPT opj_func = g_pScriptVM->LookupFunction("OnPlayerJoin");
+		if (opj_func)
+		{
+			CBaseEntity* baseEntity = pEntity->GetUnknown()->GetBaseEntity();
+			if(baseEntity && GFunc::GetScriptScope(baseEntity) == INVALID_HSCRIPT) {
+				// player does not have a script scope yet, fire OnPlayerJoin
+				g_pScriptVM->Call<HSCRIPT>(opj_func, NULL, true, NULL, GFunc::GetScriptInstance(baseEntity));
+			}
+		}
 
 		// Handle VScript game event function
 		HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEClientActive");

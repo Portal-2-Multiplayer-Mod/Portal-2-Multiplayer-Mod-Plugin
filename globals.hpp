@@ -54,6 +54,7 @@ void ReplacePattern(std::string target_module, std::string patternBytes, std::st
 namespace GFunc {
 	int UserIDToPlayerIndex(int userid);
 	HSCRIPT GetScriptScope(CBaseEntity* entity);
+	HSCRIPT GetScriptInstance(CBaseEntity* entity);
 	CBasePlayer* PlayerIndexToPlayer(int playerIndex);
 	const char* GetPlayerName(int index);
 	int GetSteamID(int index);

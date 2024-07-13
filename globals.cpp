@@ -102,7 +102,17 @@ HSCRIPT GFunc::GetScriptScope(CBaseEntity* entity)
 
 		return NULL;
 	}
-	return reinterpret_cast<HSCRIPT>(reinterpret_cast<uintptr_t>(entity) + 0x33c);
+	return *reinterpret_cast<HSCRIPT*>(reinterpret_cast<uintptr_t>(entity) + 0x33c);
+}
+
+HSCRIPT GFunc::GetScriptInstance(CBaseEntity* entity) {
+	static auto _GetScriptInstance = reinterpret_cast<HSCRIPT (__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 51 56 8B F1 83 BE 50"));
+	if(!_GetScriptInstance) {
+		Error("GetScriptEntity not found");
+		return nullptr;
+	}
+
+	return _GetScriptInstance(entity);
 }
 
 //---------------------------------------------------------------------------------

@@ -45,6 +45,7 @@ static const char* gameevents[] =
 	"turret_hit_turret",
 	"security_camera_detached",
 	"player_landed",
+	"player_death",
 	"player_connect",
 	"player_say",
 	"player_activate",
@@ -341,32 +342,13 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	// Fix sv_password
 	ReplacePattern("engine", "0F 95 C1 51 8D 4D E8", "03 C9 90 51 8D 4D E8");
 
-	// runtime max 0.03 -> 0.5
-	ReplacePattern("vscript", "00 00 00 E0 51 B8 9E 3F", "00 00 00 00 00 00 E0 3F");
+	// runtime max 0.03 -> 0.05
+	ReplacePattern("vscript", "00 00 00 E0 51 B8 9E 3F", "9a 99 99 99 99 99 a9 3f");
 
 	// Make sure -allowspectators is there so we get our 33 max players
 	if (!CommandLine()->FindParm("-allowspectators"))
 	{
 		CommandLine()->AppendParm("-allowspectators", "");
-	}
-
-	// List of some ConCommands and ConVars that Valve has messed up and we need to fix
-	static const char* commandsToFix[] = {
-		"stopvideos",
-		"r_portal_fastpath",
-		"r_portal_use_pvs_optimization",
-		"mat_motion_blur_forward_enabled",
-		"+score",
-		"-score"
-	};
-	for (const char* command : commandsToFix)
-	{
-		ConCommandBase* commandBase = g_pCVar->FindCommandBase(command);
-		if (commandBase)
-		{
-			commandBase->RemoveFlags(FCVAR_SERVER_CAN_EXECUTE);
-			commandBase->AddFlags(FCVAR_CLIENTCMD_CAN_EXECUTE);
-		}
 	}
 
 	P2MMLog(0, false, "Loaded plugin!");
@@ -415,7 +397,7 @@ void CP2MMServerPlugin::Unload(void)
 	// sv_password
 	ReplacePattern("engine", "03 C9 90 51 8D 4D E8", "0F 95 C1 51 8D 4D E8");
 
-	// runtime max 0.03 -> 0.5
+	// runtime max 0.05 -> 0.03
 	ReplacePattern("vscript", "00 00 00 00 00 00 E0 3F", "00 00 00 E0 51 B8 9E 3F");
 
 	m_bPluginLoaded = false;
@@ -647,7 +629,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		}
 		return;
 	}
-	// Event called when a player touches the ground, "player_landed" returns:
+	// Event called when a player touches the ground, "player_landed" returns:	
 	/*
 		"userid"	"short"		// user ID on server
 	*/
@@ -665,13 +647,49 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				g_pScriptVM->Call<short, int>(ge_func, NULL, true, NULL, userid, entindex);
 			}
 		}
+
+		return;
+	}
+	// Event called when a player dies, "player_death" returns:	
+	/*
+		"userid"	"short"   	// user ID who died
+		"attacker"	"short"	 	// user ID who killed
+	*/
+	else if (FStrEq(event->GetName(), "player_death"))
+	{
+		short userid = event->GetInt("userid");
+		short attacker = event -> GetInt("attacker");
+		int entindex = GFunc::UserIDToPlayerIndex(userid);
+
+		if (g_pScriptVM)
+		{
+			// Handling OnDeath VScript event
+			HSCRIPT od_func = g_pScriptVM->LookupFunction("OnDeath");
+			if (od_func)
+			{
+				edict_t* pEntity = INDEXENT(entindex);
+				CBaseEntity* baseEntity = pEntity->GetUnknown()->GetBaseEntity();
+				if (baseEntity)
+				{
+					// player does not have a script scope yet, fire OnPlayerJoin
+					g_pScriptVM->Call<HSCRIPT>(od_func, NULL, true, NULL, GFunc::GetScriptInstance(baseEntity));
+				}
+			}
+
+			// Handle VScript game event function
+			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerDeath");
+			if (ge_func)
+			{
+				g_pScriptVM->Call<short, short, int>(ge_func, NULL, true, NULL, userid, attacker, entindex);
+			}
+		}
 		
-		// This gets spammed too much
-		//if (spewinfo)
-		//{
-		//	P2MMLog(0, true, "userid: %i", userid);
-		//	P2MMLog(0, true, "entindex: %i", entindex);
-		//}
+		if (spewinfo)
+		{
+			P2MMLog(0, true, "userid: %i", userid);
+			P2MMLog(0, true, "attacker: %i", attacker);
+			P2MMLog(0, true, "entindex: %i", entindex);
+		}
 
 		return;
 	}
@@ -823,12 +841,13 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 
 	if (g_pScriptVM)
 	{
-		//// Handling OnPlayerJoin VScript event
+		// Handling OnPlayerJoin VScript event
 		HSCRIPT opj_func = g_pScriptVM->LookupFunction("OnPlayerJoin");
 		if (opj_func)
 		{
 			CBaseEntity* baseEntity = pEntity->GetUnknown()->GetBaseEntity();
-			if(baseEntity && GFunc::GetScriptScope(baseEntity) == INVALID_HSCRIPT) {
+			if (baseEntity)
+			{
 				// player does not have a script scope yet, fire OnPlayerJoin
 				g_pScriptVM->Call<HSCRIPT>(opj_func, NULL, true, NULL, GFunc::GetScriptInstance(baseEntity));
 			}

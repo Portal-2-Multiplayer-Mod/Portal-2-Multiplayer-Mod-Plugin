@@ -81,7 +81,11 @@ static const char* forbiddenconcommands[] =
 	"script_reload_think", // Doesn't get called to ClientCommand at all, Valve patched this
 	"ent_fire", // Doesn't get called to ClientCommand at all, sv_cheats is the only protection
 	"bugpause",
-	"bugunpause"
+	"bugunpause",
+	"fire_rocket_projectile",
+	"fire_energy_ball",
+	"ent_remove",
+	"ent_remove_all"
 };
 
 // Core P2:MM ConVars | These shouldn't be modfied manually. Hidden to prevent accidentally breaking something

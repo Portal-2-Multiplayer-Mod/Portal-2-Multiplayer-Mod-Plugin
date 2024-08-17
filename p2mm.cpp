@@ -9,6 +9,7 @@
 //===========================================================================//
 
 #include "p2mm.hpp"
+#include "minhook/include/MinHook.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -214,6 +215,18 @@ const char* CP2MMServerPlugin::GetPluginDescription(void)
 	return "Portal 2: Multiplayer Mod Server Plugin | Plugin Version: " P2MM_PLUGIN_VERSION " | For P2:MM Version: " P2MM_VERSION;
 }
 
+void(__fastcall* disconnect_orig)(void *, const char *, ...);
+void __fastcall disconnect_hook(void *thisptr, const char *fmt, ...)
+{	
+	if (FStrEq(fmt, "No Steam logon\n"))
+		return;
+
+	va_list	vargs;
+	char string[1024];
+	V_snprintf(string, sizeof(string), fmt, vargs);
+	disconnect_orig(thisptr, fmt);
+}
+
 //---------------------------------------------------------------------------------
 // Purpose: Called when the plugin is loaded, initialization process.
 //			Loads the interfaces we need from the engine and applies our patches.
@@ -355,6 +368,8 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		CommandLine()->AppendParm("-allowspectators", "");
 	}
 
+	MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "55 8B EC 81 EC 14 08"), &disconnect_hook, (LPVOID*)&disconnect_orig);
+
 	P2MMLog(0, false, "Loaded plugin!");
 	m_bPluginLoaded = true;
 	return true;
@@ -403,6 +418,9 @@ void CP2MMServerPlugin::Unload(void)
 
 	// runtime max 0.05 -> 0.03
 	ReplacePattern("vscript", "00 00 00 00 00 00 E0 3F", "00 00 00 E0 51 B8 9E 3F");
+
+	MH_DisableHook(MH_ALL_HOOKS);
+	MH_Uninitialize();
 
 	m_bPluginLoaded = false;
 }

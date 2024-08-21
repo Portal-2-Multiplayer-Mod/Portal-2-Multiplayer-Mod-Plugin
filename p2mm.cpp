@@ -56,7 +56,29 @@ static const char* gameevents[] =
 static const char* forbiddenconcommands[] =
 {
 	"mp_earn_taunt",
-	"taunt_auto", // Apparently mp_earn_taunt doesn't get called to ClientCommand but this does
+	"mp_mark_all_maps_complete",
+	"mp_mark_all_maps_incomplete",
+	"mp_mark_course_complete",
+	"report_entities",
+	"script", // Valve patched this, here just in case
+	"script_debug", // Valve patched this, here just in case
+	"script_dump_all", // Valve patched this, here just in case
+	"script_execute", // Valve patched this, here just in case
+	"script_help", // Valve patched this, here just in case
+	"script_reload_code", // Valve patched this, here just in case
+	"script_reload_entity_code", // Valve patched this, here just in case
+	"script_reload_think", // Valve patched this, here just in case
+	"ent_fire",
+	"fire_rocket_projectile",
+	"fire_energy_ball",
+	"ent_remove",
+	"ent_remove_all"
+};
+
+// List of client commands that need to be blocked from client execution, but can be executed by the host
+static const char* forbiddenclientcommands[] =
+{
+	"taunt_auto", // Apparently mp_earn_taunt calls this also to ClientCommand
 	"restart_level",
 	"pre_go_to_hub",
 	"pre_go_to_calibration",
@@ -68,25 +90,8 @@ static const char* forbiddenconcommands[] =
 	"select_map",
 	"mp_select_level",
 	"erase_mp_progress",
-	"mp_mark_all_maps_complete", // Doesn't get called to ClientCommand at all
-	"mp_mark_all_maps_incomplete", // Doesn't get called to ClientCommand at all
-	"mp_mark_course_complete", // Doesn't get called to ClientCommand at all
-	"report_entities", // Doesn't get called to ClientCommand at all
-	"script", // Doesn't get called to ClientCommand at all, Valve patched this
-	"script_debug", // Doesn't get called to ClientCommand at all, Valve patched this
-	"script_dump_all", // Doesn't get called to ClientCommand at all, Valve patched this
-	"script_execute", // Doesn't get called to ClientCommand at all, Valve patched this
-	"script_help", // Doesn't get called to ClientCommand at all, Valve patched this
-	"script_reload_code", // Doesn't get called to ClientCommand at all, Valve patched this
-	"script_reload_entity_code", // Doesn't get called to ClientCommand at all, Valve patched this
-	"script_reload_think", // Doesn't get called to ClientCommand at all, Valve patched this
-	"ent_fire", // Doesn't get called to ClientCommand at all, sv_cheats is the only protection
 	"bugpause",
-	"bugunpause",
-	"fire_rocket_projectile",
-	"fire_energy_ball",
-	"ent_remove",
-	"ent_remove_all"
+	"bugunpause"
 };
 
 // Core P2:MM ConVars | These shouldn't be modfied manually. Hidden to prevent accidentally breaking something
@@ -122,6 +127,8 @@ CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map."
 	{
 		if (!engineServer->IsMapValid(p2mm_lastmap.GetString()))
 		{
+			// Running disconnect causes the music to stop, we don't want that to happen, so here we start it again.
+
 			// Get the current act so we can start the right main menu music
 			int iAct = ConVarRef("ui_lastact_played").GetInt();
 			if (iAct > 5) { iAct = 5; } else if (iAct < 1) { iAct = 1; }
@@ -149,14 +156,7 @@ CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map."
 
 	// Check if the user requested it to start in splitscreen or not
 	std::string mapString = "";
-	if (p2mm_splitscreen.GetBool())
-	{
-		mapString = "ss_map ";
-	}
-	else
-	{
-		mapString = "map ";
-	}
+	if (p2mm_splitscreen.GetBool()) { mapString = "ss_map "; } else { mapString = "map "; }
 	P2MMLog(0, true, "Map String: %s", mapString.c_str());
 
 	// Set first run flag on and set the last map ConVar value so the system
@@ -336,6 +336,15 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	{
 		gameeventmanager->AddListener(this, gameevent, true);
 		P2MMLog(0, true, "Listener for gamevent '%s' has been added!", gameevent);
+	}
+
+	for (const char* concommand : forbiddenconcommands)
+	{
+		ConCommandBase* commandbase = g_pCVar->FindCommandBase(concommand);
+		if (commandbase)
+		{
+			commandbase->RemoveFlags(FCVAR_GAMEDLL);
+		}
 	}
 	
 	// Byte patches
@@ -521,7 +530,7 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 	}
 
 	// Stop certain client commands from being excecated by clients and not the host
-	for (const char* badcc : forbiddenconcommands)
+	for (const char* badcc : forbiddenclientcommands)
 	{
 		if (FSubStr(pcmd, "taunt_auto") || FSubStr(pcmd, "mp_earn_taunt"))
 		{
@@ -529,14 +538,7 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 		}
 		if (entindex != 1 && (FSubStr(pcmd, badcc)) && p2mm_forbidclientcommands.GetBool())
 		{
-			P2MMLog(1, false, "##########################################################################################");
-			P2MMLog(1, false, "UH OH! Somebody executed a blocked console command!");
-			P2MMLog(1, false, "ClientCommand called: %s", pcmd);
-			P2MMLog(1, false, "ClientCommand args: %s", fargs);
-			P2MMLog(1, false, "userid: %i", userid);
-			P2MMLog(1, false, "entindex: %i", entindex);
-			P2MMLog(1, false, "playername: %s", GFunc::GetPlayerName(entindex));
-			P2MMLog(1, false, "##########################################################################################");
+			engineServer->ClientPrintf(INDEXENT(entindex), "This command is blocked from execution!");
 			return PLUGIN_STOP;
 		}
 	}

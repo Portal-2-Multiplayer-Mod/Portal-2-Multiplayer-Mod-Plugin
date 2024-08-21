@@ -906,23 +906,16 @@ void CP2MMServerPlugin::GameFrame(bool simulating)
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Called when a player is fully connected to the server. Player entity still has not spawned in so manipulation is not possible.
+// Purpose: Called when a the map is changing to another map, or the server is shutting down.
 //---------------------------------------------------------------------------------
-void CP2MMServerPlugin::ClientFullyConnect(edict_t* pEntity)
-{
-	if (ENTINDEX(pEntity) == 1)
-	{
-		// Prints the current map, needed for the Last Map System
-		// \n was here :>
-		P2MMLog(0, false, "MAP LOADED: %s", CURRENTMAPNAME);
-		p2mm_lastmap.SetValue(CURRENTMAPNAME);
-	}
-	return;
-}
-
 void CP2MMServerPlugin::LevelShutdown(void)
 {
 	p2mm_loop.SetValue("0");
+}
+
+void CP2MMServerPlugin::ClientDisconnect(edict_t* pEntity) 
+{
+	P2MMLog(0, false, "Player disconnected");
 }
 
 //---------------------------------------------------------------------------------
@@ -931,7 +924,7 @@ void CP2MMServerPlugin::LevelShutdown(void)
 #pragma region UNUSED_CALLBACKS
 void CP2MMServerPlugin::Pause(void) {}
 void CP2MMServerPlugin::UnPause(void) {}
-void CP2MMServerPlugin::ClientDisconnect(edict_t* pEntity) {}
+void CP2MMServerPlugin::ClientFullyConnect(edict_t* pEntity) {} // Purpose: Called when a player is fully connected to the server. Player entity still has not spawned in so manipulation is not possible.
 void CP2MMServerPlugin::ClientPutInServer(edict_t* pEntity, char const* playername) {}
 void CP2MMServerPlugin::ClientSettingsChanged(edict_t* pEdict) {}
 PLUGIN_RESULT CP2MMServerPlugin::ClientConnect(bool* bAllowConnect, edict_t* pEntity, const char* pszName, const char* pszAddress, char* reject, int maxrejectlen) { return PLUGIN_CONTINUE; }

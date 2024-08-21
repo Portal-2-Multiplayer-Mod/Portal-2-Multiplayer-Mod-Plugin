@@ -196,7 +196,7 @@ static const char* GetLastMap()
 // Purpose: Get or set the state of whether the first map was run or not.
 // Set false/true = 0/1 | -1 to get state.
 //---------------------------------------------------------------------------------
-static bool FirstRunState(int state = -1)
+static bool FirstRunState(int state)
 {
 	if (state == 0 || state == 1) {
 		return g_P2MMServerPlugin.m_bFirstMapRan = !!state;

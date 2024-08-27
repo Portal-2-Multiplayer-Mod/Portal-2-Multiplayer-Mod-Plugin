@@ -538,7 +538,7 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 		}
 		if (entindex != 1 && (FSubStr(pcmd, badcc)) && p2mm_forbidclientcommands.GetBool())
 		{
-			engineServer->ClientPrintf(INDEXENT(entindex), "This command is blocked from execution!");
+			engineServer->ClientPrintf(INDEXENT(entindex), "This command is blocked from execution!\n");
 			return PLUGIN_STOP;
 		}
 	}

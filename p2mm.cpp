@@ -25,9 +25,6 @@ IScriptVM* g_pScriptVM = NULL; // Access VScript interface
 IServerTools* g_pServerTools = NULL; // Access to interface from engine to tools for manipulating entities
 IGameEventManager2* gameeventmanager_ = NULL; // Access game events interface
 IServerPluginHelpers* pluginHelpers = NULL; // Access interface for plugin helper functions
-IInputSystem* inputSystem = NULL;
-IInputStackSystem* inputStackSystem = NULL;
-IGameUISystemMgr* gameuiSystemMgr = NULL;
 #ifndef GAME_DLL
 #define gameeventmanager gameeventmanager_
 #endif
@@ -302,30 +299,6 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		this->m_bNoUnload = true;
 		return false;
 	}
-
-	//inputSystem = (IInputSystem*)interfaceFactory(INPUTSYSTEM_INTERFACE_VERSION, 0);
-	//if (!inputSystem)
-	//{
-	//	P2MMLog(1, false, "Unable to load inputSystem!");
-	//	this->m_bNoUnload = true;
-	//	return false;
-	//}
-
-	//inputStackSystem = (IInputStackSystem*)interfaceFactory(INPUTSTACKSYSTEM_INTERFACE_VERSION, 0);
-	//if (!inputStackSystem)
-	//{
-	//	P2MMLog(1, false, "Unable to load inputStackSystem!");
-	//	this->m_bNoUnload = true;
-	//	return false;
-	//}
-
-	//gameuiSystemMgr = (IGameUISystemMgr*)interfaceFactory(GAMEUISYSTEMMGR_INTERFACE_VERSION, 0);
-	//if (!gameuiSystemMgr)
-	//{
-	//	P2MMLog(1, false, "Unable to load gameuiSystemMgr!");
-	//	this->m_bNoUnload = true;
-	//	return false;
-	//}
 
 	gpGlobals = playerinfomanager->GetGlobalVars();
 	MathLib_Init(2.2f, 2.2f, 0.0f, 2.0f);

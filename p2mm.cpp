@@ -885,12 +885,7 @@ void CP2MMServerPlugin::GameFrame(bool simulating)
 //---------------------------------------------------------------------------------
 void CP2MMServerPlugin::LevelShutdown(void)
 {
-	p2mm_loop.SetValue("0");
-}
-
-void CP2MMServerPlugin::ClientDisconnect(edict_t* pEntity) 
-{
-	P2MMLog(0, false, "Player disconnected");
+	p2mm_loop.SetValue("0"); // REMOVE THIS
 }
 
 //---------------------------------------------------------------------------------
@@ -899,6 +894,7 @@ void CP2MMServerPlugin::ClientDisconnect(edict_t* pEntity)
 #pragma region UNUSED_CALLBACKS
 void CP2MMServerPlugin::Pause(void) {}
 void CP2MMServerPlugin::UnPause(void) {}
+void CP2MMServerPlugin::ClientDisconnect(edict_t* pEntity) {}
 void CP2MMServerPlugin::ClientFullyConnect(edict_t* pEntity) {} // Purpose: Called when a player is fully connected to the server. Player entity still has not spawned in so manipulation is not possible.
 void CP2MMServerPlugin::ClientPutInServer(edict_t* pEntity, char const* playername) {}
 void CP2MMServerPlugin::ClientSettingsChanged(edict_t* pEdict) {}

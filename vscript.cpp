@@ -8,7 +8,7 @@
 #include "scanner.hpp"
 #include "modules.hpp"
 #include "p2mm.hpp"
-
+#include "discord.hpp"
 #include "irecipientfilter.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -16,6 +16,8 @@
 
 extern ConVar p2mm_developer;
 extern ConVar p2mm_lastmap;
+
+
 
 //---------------------------------------------------------------------------------
 // Purpose: Logging for the P2MM VScript. The log message must be passed as a string or it will error.
@@ -267,6 +269,7 @@ void RegisterFuncsAndRun()
 	ScriptRegisterFunction(g_pScriptVM, CallFirstRunPrompt, "Shows the first run prompt if enabled in config.nut.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetConVarInt, "GetConVarInt", "Get the integer value of a ConVar.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetConVarString, "GetConVarString", "Get the string value of a ConVar.");
+	ScriptRegisterFunction(g_pScriptVM, sendMessageToDiscord, "Forwards chat to a discord webhook.");
 
 	// Set all the plugin function check bools to true and start the P2:MM VScript
 	g_pScriptVM->Run(

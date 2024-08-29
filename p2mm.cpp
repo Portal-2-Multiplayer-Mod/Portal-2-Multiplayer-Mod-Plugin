@@ -10,7 +10,7 @@
 
 #include "p2mm.hpp"
 #include "minhook/include/MinHook.h"
-
+#include "discord.hpp"
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -98,6 +98,7 @@ static const char* forbiddenclientcommands[] =
 ConVar p2mm_loop("p2mm_loop", "0", FCVAR_HIDDEN, "Flag if P2MMLoop should be looping.");
 ConVar p2mm_lastmap("p2mm_lastmap", "", FCVAR_HIDDEN, "Last map recorded for the Last Map system.");
 ConVar p2mm_splitscreen("p2mm_splitscreen", "0", FCVAR_HIDDEN, "Flag for the main menu buttons and launcher to start in splitscreen or not.");
+ConVar p2mm_bridge_webhook("p2mm_bridge_webhook", "", FCVAR_HIDDEN, "Variable used to forward chat messages to a discord webhook.");
 
 // UTIL ConVars | ConVars the host can change.
 ConVar p2mm_forbidclientcommands("p2mm_forbidclientcommands", "1", FCVAR_NONE, "Stop client commands clients shouldn't be executing.");
@@ -178,7 +179,6 @@ CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map."
 		engineClient->ExecuteClientCmd(std::string(mapString + requestedMap).c_str());
 	}
 }
-
 
 
 //---------------------------------------------------------------------------------

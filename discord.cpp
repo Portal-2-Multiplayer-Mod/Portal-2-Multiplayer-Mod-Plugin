@@ -8,12 +8,13 @@ extern ConVar p2mm_bridge_webhook;
 struct DiscordMessageParams {
     std::string author;
     std::string message;
+    std::string footer;
     int color;
 };
 
 unsigned SendMessageThread(void* params) {
     DiscordMessageParams* msgParams = (DiscordMessageParams*)params;
-    sendMessage(msgParams->author.c_str(), msgParams->message.c_str(), msgParams->color);
+    sendMessage(msgParams->author.c_str(), msgParams->message.c_str(), msgParams->footer.c_str(), msgParams->color);
 
     // Free the memory
     delete msgParams;
@@ -21,17 +22,18 @@ unsigned SendMessageThread(void* params) {
     return 0;
 }
 
-void sendMessageToDiscord(const char* author, const char* message, int color) {
+void sendMessageToDiscord(const char* author, const char* message, const char* footer, int color) {
     // Allocate memory for the parameters
     DiscordMessageParams* params = new DiscordMessageParams;
     params->author = author;
     params->message = message;
+    params->footer = footer;
     params->color = color;
 
     CreateSimpleThread(SendMessageThread, params);
 }
 
-void sendMessage(const char* author, const char* message, int color) {
+void sendMessage(const char* author, const char* message, const char* footer, int color) {
     CURL* curl;
     CURLcode res;
     curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -41,8 +43,8 @@ void sendMessage(const char* author, const char* message, int color) {
         curl_easy_setopt(curl, CURLOPT_POST, 1L);
 
         // Create the JSON payload
-        char jsonPayload[284];
-        V_snprintf(jsonPayload, sizeof(jsonPayload), "{ \"content\": null, \"embeds\" : [ {\"title\": \"%s\", \"description\" : \"%s\", \"color\" : %i }] , \"attachments\": [] }", author, message, color);
+        char jsonPayload[320];
+        V_snprintf(jsonPayload, sizeof(jsonPayload), "{ \"content\": null, \"embeds\" : [ {\"title\": \"%s\", \"description\" : \"%s\", \"color\" : %i, \"footer\": { \"text\": \"%s\" }}], \"attachments\": [] }", author, message, color, footer);
 
         // Set the POST data
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonPayload);

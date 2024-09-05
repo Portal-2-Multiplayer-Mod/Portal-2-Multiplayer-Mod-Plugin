@@ -24,12 +24,18 @@
 
 #include <sstream>
 
-class CBasePlayer;
-
 #define P2MM_PLUGIN_CONSOLE_COLOR Color(100, 192, 252, 255)
 #define P2MM_VSCRIPT_CONSOLE_COLOR Color(110, 247, 76, 255)
 
-#define CURRENTMAPNAME STRING(gpGlobals->mapname)
+#define CURMAPNAME STRING(gpGlobals->mapname)
+
+#if _WIN32
+#define MIMIMIMI(ms) Sleep(ms); // MIMIMIMI *snore* MIMIMIMI
+#else
+#define MIMIMIMI(ms) usleep(ms); // MIMIMIMI *snores in Linux* MIMIMIMI
+#endif
+
+class CBasePlayer;
 
 //---------------------------------------------------------------------------------
 // Any ConVars or CON_COMMANDS that need to be globally available
@@ -98,4 +104,19 @@ inline edict_t* INDEXENT(int iEdictNum)
 		return pEdict;
 	}
 	return NULL;
+}
+
+// Get the current player count on the server
+inline int CURPLAYERCOUNT() {
+	int playerCount = 0;
+	for (int i = 1; i < gpGlobals->maxClients; i++)
+	{
+		IPlayerInfo* playerinfo = playerinfomanager->GetPlayerInfo(INDEXENT(i));
+		if (playerinfo->IsConnected())
+		{
+			playerCount++;
+		}
+		
+	}
+	return playerCount;
 }

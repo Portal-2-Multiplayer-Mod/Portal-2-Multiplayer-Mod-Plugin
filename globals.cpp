@@ -98,7 +98,7 @@ int GFunc::UserIDToPlayerIndex(int userid)
 HSCRIPT GFunc::GetScriptScope(CBaseEntity* entity)
 {
 	if (entity == NULL)
-	{ 
+	{
 
 		return NULL;
 	}
@@ -106,8 +106,8 @@ HSCRIPT GFunc::GetScriptScope(CBaseEntity* entity)
 }
 
 HSCRIPT GFunc::GetScriptInstance(CBaseEntity* entity) {
-	static auto _GetScriptInstance = reinterpret_cast<HSCRIPT (__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 51 56 8B F1 83 BE 50"));
-	if(!_GetScriptInstance) {
+	static auto _GetScriptInstance = reinterpret_cast<HSCRIPT(__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 51 56 8B F1 83 BE 50"));
+	if (!_GetScriptInstance) {
 		Error("GetScriptEntity not found");
 		return nullptr;
 	}

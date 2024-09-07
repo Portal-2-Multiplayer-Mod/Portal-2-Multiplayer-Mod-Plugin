@@ -112,11 +112,10 @@ inline int CURPLAYERCOUNT() {
 	for (int i = 1; i < gpGlobals->maxClients; i++)
 	{
 		IPlayerInfo* playerinfo = playerinfomanager->GetPlayerInfo(INDEXENT(i));
-		if (playerinfo->IsConnected())
+		if (playerinfo)
 		{
 			playerCount++;
 		}
-		
 	}
 	return playerCount;
 }

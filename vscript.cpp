@@ -8,7 +8,6 @@
 #include "scanner.hpp"
 #include "modules.hpp"
 #include "p2mm.hpp"
-#include "discord.hpp"
 #include "irecipientfilter.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -16,8 +15,6 @@
 
 extern ConVar p2mm_developer;
 extern ConVar p2mm_lastmap;
-
-
 
 //---------------------------------------------------------------------------------
 // Purpose: Logging for the P2MM VScript. The log message must be passed as a string or it will error.

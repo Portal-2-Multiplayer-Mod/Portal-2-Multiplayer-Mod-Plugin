@@ -4,13 +4,12 @@
 // Maintainer: Orsell
 // Purpose: Portal 2: Multiplayer Mod server plugin
 // 
-// Note: This plugin was made in like 20 mins, but everything works.
-// 
 //===========================================================================//
 
 #include "p2mm.hpp"
+#include "discordrpc.hpp"
 #include "minhook/include/MinHook.h"
-#include "discord.hpp"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -28,6 +27,11 @@ IServerPluginHelpers* pluginHelpers = NULL; // Access interface for plugin helpe
 #ifndef GAME_DLL
 #define gameeventmanager gameeventmanager_
 #endif
+
+//---------------------------------------------------------------------------------
+// Class declarations
+//---------------------------------------------------------------------------------
+CDiscordIntegration discord;
 
 //---------------------------------------------------------------------------------
 // The plugin is a static singleton that is exported as an interface
@@ -91,11 +95,10 @@ static const char* forbiddenclientcommands[] =
 	"bugunpause"
 };
 
-// Core P2:MM ConVars | These shouldn't be modfied manually. Hidden to prevent accidentally breaking something
+// Core P2:MM ConVars | These shouldn't be modfied manually. These are hidden to prevent someone accidentally breaking something.
 ConVar p2mm_loop("p2mm_loop", "0", FCVAR_HIDDEN, "Flag if P2MMLoop should be looping.");
 ConVar p2mm_lastmap("p2mm_lastmap", "", FCVAR_HIDDEN, "Last map recorded for the Last Map system.");
 ConVar p2mm_splitscreen("p2mm_splitscreen", "0", FCVAR_HIDDEN, "Flag for the main menu buttons and launcher to start in splitscreen or not.");
-ConVar p2mm_bridge_webhook("p2mm_bridge_webhook", "", FCVAR_HIDDEN, "Variable used to forward chat messages to a discord webhook.");
 
 // UTIL ConVars | ConVars the host can change.
 ConVar p2mm_forbidclientcommands("p2mm_forbidclientcommands", "1", FCVAR_NONE, "Stop client commands clients shouldn't be executing.");
@@ -130,7 +133,7 @@ CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map."
 			// Get the current act so we can start the right main menu music
 			int iAct = ConVarRef("ui_lastact_played").GetInt();
 			if (iAct > 5) { iAct = 5; } else if (iAct < 1) { iAct = 1; }
-			
+
 			// Put the command to start the music and the act number together
 			char completePVCmd[sizeof("playvol \"#music/mainmenu/portal2_background0%d\" 0.35") + sizeof(iAct)];
 			V_snprintf(completePVCmd, sizeof(completePVCmd), "playvol \"#music/mainmenu/portal2_background0%i\" 0.35", iAct);
@@ -168,12 +171,18 @@ CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map."
 		P2MMLog(0, true, "requestedMap: \"%s\"", requestedMap.c_str());
 		p2mm_lastmap.SetValue(requestedMap.c_str());
 		engineClient->ExecuteClientCmd(std::string(mapString + "mp_coop_community_hub").c_str());
+		
+		std::string initmapstr = std::string("Server has started with map: `" + requestedMap + "`");
+		discord.SendWebHookEmbed(std::string("Server"), initmapstr, EMBEDCOLOR_SERVER, false);
 	}
 	else
 	{
 		P2MMLog(0, true, "'mp_coop' found, multiplayer map being run. Full ExecuteClientCmd: \"%s\"", std::string(mapString + requestedMap).c_str());
 		P2MMLog(0, true, "requestedMap: \"%s\"", requestedMap.c_str());
 		engineClient->ExecuteClientCmd(std::string(mapString + requestedMap).c_str());
+
+		std::string initmapstr = std::string("Server has started with map: `" + requestedMap + "`");
+		discord.SendWebHookEmbed(std::string("Server"), initmapstr, EMBEDCOLOR_SERVER, false);
 	}
 }
 
@@ -212,9 +221,10 @@ const char* CP2MMServerPlugin::GetPluginDescription(void)
 	return "Portal 2: Multiplayer Mod Server Plugin | Plugin Version: " P2MM_PLUGIN_VERSION " | For P2:MM Version: " P2MM_VERSION;
 }
 
-void(__fastcall* disconnect_orig)(void *, const char *, ...);
-void __fastcall disconnect_hook(void *thisptr, const char *fmt, ...)
-{	
+// MinHook hook to catch the notorius "No Steam logon" issue and stop it disconnecting the host killing the server 
+void(__fastcall* disconnect_orig)(void*, const char*, ...);
+void __fastcall disconnect_hook(void* thisptr, const char* fmt, ...)
+{
 	if (FStrEq(fmt, "No Steam logon\n"))
 		return;
 
@@ -275,7 +285,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		this->m_bNoUnload = true;
 		return false;
 	}
-	
+
 	g_pServerTools = (IServerTools*)gameServerFactory(VSERVERTOOLS_INTERFACE_VERSION, 0);
 	if (!g_pServerTools)
 	{
@@ -319,7 +329,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 			commandbase->RemoveFlags(FCVAR_GAMEDLL);
 		}
 	}
-	
+
 	// Byte patches
 
 	// Linked portal doors event crash patch
@@ -419,7 +429,7 @@ void CP2MMServerPlugin::ServerActivate(edict_t* pEdictList, int edictCount, int 
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Called when a map has started loading. Does gel patching and Last Map System stuff.
+// Purpose: Called when a map has started loading.
 //---------------------------------------------------------------------------------
 void CP2MMServerPlugin::LevelInit(char const* pMapName)
 {
@@ -452,6 +462,9 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 			P2MMLog(1, true, "Couldn't find R_LoadWorldGeometry! Paint will not work on this map load.");
 		}
 	}
+
+	std::string changemapstr = std::string("The server has changed the map to: `" + std::string(CURMAPNAME) + "`");
+	discord.SendWebHookEmbed(std::string("Server"), changemapstr, EMBEDCOLOR_SERVER, false);
 }
 
 //---------------------------------------------------------------------------------
@@ -467,7 +480,7 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 	bool spewinfo = p2mm_spewgameeventinfo.GetBool();
 	const char* pcmd = args[0];
 	const char* fargs = args.ArgS();
-	
+
 	short userid = engineServer->GetPlayerUserId(pEntity);
 	int entindex = GFunc::UserIDToPlayerIndex(userid);
 	const char* playername = GFunc::GetPlayerName(entindex);
@@ -564,7 +577,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			P2MMLog(0, true, "ping_z: %f", ping_z);
 			P2MMLog(0, true, "entindex: %i", entindex);
 		}
-		
+
 		return;
 	}
 	// Event called when a player goes through a portal, "portal_player_portaled" returns:
@@ -594,7 +607,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			P2MMLog(0, true, "portal2: %s", portal2 ? "true" : "false");
 			P2MMLog(0, true, "entindex: %i", entindex);
 		}
-		
+
 		return;
 	}
 	// Event called when a player goes through a portal, "turret_hit_turret" returns nothing.
@@ -624,6 +637,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				g_pScriptVM->Call(ge_func, NULL, true, NULL);
 			}
 		}
+
 		return;
 	}
 	// Event called when a player touches the ground, "player_landed" returns:	
@@ -655,7 +669,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	else if (FStrEq(event->GetName(), "player_death"))
 	{
 		short userid = event->GetInt("userid");
-		short attacker = event -> GetInt("attacker");
+		short attacker = event->GetInt("attacker");
 		int entindex = GFunc::UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
@@ -668,8 +682,12 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				CBaseEntity* baseEntity = pEntity->GetUnknown()->GetBaseEntity();
 				if (baseEntity)
 				{
-					// player does not have a script scope yet, fire OnPlayerJoin
 					g_pScriptVM->Call<HSCRIPT>(od_func, NULL, true, NULL, GFunc::GetScriptInstance(baseEntity));
+
+					std::string playerdied = std::string(GFunc::GetPlayerName(entindex));
+					std::string deathtitlestr = playerdied + std::string(" Died!");
+					std::string deathdescstr = playerdied + std::string(" was killed by ") + std::to_string(attacker) + ".";
+					discord.SendWebHookEmbed(deathtitlestr, deathdescstr, EMBEDCOLOR_PLAYERDEATH);
 				}
 			}
 
@@ -680,7 +698,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				g_pScriptVM->Call<short, short, int>(ge_func, NULL, true, NULL, userid, attacker, entindex);
 			}
 		}
-		
+
 		if (spewinfo)
 		{
 			P2MMLog(0, true, "userid: %i", userid);
@@ -719,6 +737,10 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			if (ge_func)
 			{
 				g_pScriptVM->Call<const char*, int, short, const char*, const char*, const char*, bool, int>(ge_func, NULL, true, NULL, name, index, userid, xuid, networkid, address, bot, entindex);
+				
+				std::string jointitlestr = std::string(name + std::string(" Joinned!"));
+				std::string joindescstr = std::string(name + std::string(" joinned the server!"));
+				discord.SendWebHookEmbed(jointitlestr, joindescstr);
 			}
 		}
 
@@ -733,7 +755,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			P2MMLog(0, true, "bot: %i", bot);
 			P2MMLog(0, true, "entindex: %i", entindex);
 		}
-		
+
 		return;
 	}
 	// Event called when a player changes their name, "player_info" returns:
@@ -775,7 +797,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			P2MMLog(0, true, "bot: %i", bot);
 			P2MMLog(0, true, "entindex: %i", entindex);
 		}
-		
+
 		return;
 	}
 	// Event called when a player inputs a message into the chat, "player_say" returns:
@@ -798,16 +820,44 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				if (cc_func)
 				{
 					g_pScriptVM->Call<const char*, int>(cc_func, NULL, true, NULL, text, entindex);
+
+					std::string playerName = GFunc::GetPlayerName(entindex);
+					std::string chatMsg = text;
+
+					playerName.reserve(playerName.size());
+					chatMsg.reserve(chatMsg.size());
+
+					for (char ch : playerName) {
+						if (ch == '\\') {
+							playerName += '\\';
+							playerName += '\\';
+						}
+						else {
+							playerName += ch;
+						}
+					}
+
+					for (char ch : chatMsg) {
+						if (ch == '\\') {
+							chatMsg += '\\';
+							chatMsg += '\\';
+						}
+						else {
+							chatMsg += ch;
+						}
+					}
+					
+					discord.SendWebHookEmbed(playerName, chatMsg);
 				}
 			}
-			
+
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSay");
 			if (ge_func)
 			{
 				g_pScriptVM->Call<short, const char*, int>(ge_func, NULL, true, NULL, userid, text, entindex);
 			}
-			
+
 		}
 
 		if (spewinfo)
@@ -816,7 +866,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			P2MMLog(0, true, "text: %s", text);
 			P2MMLog(0, true, "entindex: %i", entindex);
 		}
-		
+
 		return;
 	}
 
@@ -885,7 +935,7 @@ void CP2MMServerPlugin::GameFrame(bool simulating)
 //---------------------------------------------------------------------------------
 void CP2MMServerPlugin::LevelShutdown(void)
 {
-	p2mm_loop.SetValue("0"); // REMOVE THIS
+	p2mm_loop.SetValue("0");
 }
 
 //---------------------------------------------------------------------------------

@@ -266,8 +266,6 @@ void RegisterFuncsAndRun()
 	ScriptRegisterFunction(g_pScriptVM, CallFirstRunPrompt, "Shows the first run prompt if enabled in config.nut.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetConVarInt, "GetConVarInt", "Get the integer value of a ConVar.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetConVarString, "GetConVarString", "Get the string value of a ConVar.");
-	ScriptRegisterFunction(g_pScriptVM, sendMessageToDiscord, "Forwards chat to a discord webhook.");
-
 	// Set all the plugin function check bools to true and start the P2:MM VScript
 	g_pScriptVM->Run(
 		"P2MMPluginLoaded <- true;"

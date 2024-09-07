@@ -212,16 +212,13 @@ const char* CP2MMServerPlugin::GetPluginDescription(void)
 	return "Portal 2: Multiplayer Mod Server Plugin | Plugin Version: " P2MM_PLUGIN_VERSION " | For P2:MM Version: " P2MM_VERSION;
 }
 
-void(__fastcall* disconnect_orig)(void *, const char *, ...);
-void __fastcall disconnect_hook(void *thisptr, const char *fmt, ...)
+void(__fastcall* disconnect_orig)(void *thisptr, void *edx, void *cl, void *eDenyReason, const char *pchOptionalText);
+void __fastcall disconnect_hook(void *thisptr, void *edx, void *cl, void *eDenyReason, const char *pchOptionalText)
 {	
-	if (FStrEq(fmt, "No Steam logon\n"))
+	if ((int)eDenyReason == 0xC)
 		return;
 
-	va_list	vargs;
-	char string[1024];
-	V_snprintf(string, sizeof(string), fmt, vargs);
-	disconnect_orig(thisptr, fmt);
+	disconnect_orig(thisptr, edx, cl, eDenyReason, pchOptionalText);
 }
 
 //---------------------------------------------------------------------------------
@@ -350,7 +347,8 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		CommandLine()->AppendParm("-allowspectators", "");
 	}
 
-	MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "55 8B EC 81 EC 14 08"), &disconnect_hook, (LPVOID*)&disconnect_orig);
+	MH_Initialize();
+	MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "55 8B EC 83 EC 08 53 56 57 8B F1 E8 ?? ?? ?? ?? 8B"), &disconnect_hook, (LPVOID*)&disconnect_orig);
 
 	P2MMLog(0, false, "Loaded plugin!");
 	m_bPluginLoaded = true;

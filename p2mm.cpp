@@ -686,8 +686,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 
 					std::string playerdied = std::string(GFunc::GetPlayerName(entindex));
 					std::string deathtitlestr = playerdied + std::string(" Died!");
-					std::string deathdescstr = playerdied + std::string(" was killed by ") + std::to_string(attacker) + ".";
-					discord.SendWebHookEmbed(deathtitlestr, deathdescstr, EMBEDCOLOR_PLAYERDEATH);
+					discord.SendWebHookEmbed(deathtitlestr, "", EMBEDCOLOR_PLAYERDEATH);
 				}
 			}
 
@@ -824,29 +823,21 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 					std::string playerName = GFunc::GetPlayerName(entindex);
 					std::string chatMsg = text;
 
-					playerName.reserve(playerName.size());
-					chatMsg.reserve(chatMsg.size());
+					P2MMLog(0, false, playerName.c_str());
+					P2MMLog(0, false, chatMsg.c_str());
 
-					for (char ch : playerName) {
-						if (ch == '\\') {
-							playerName += '\\';
-							playerName += '\\';
-						}
-						else {
-							playerName += ch;
-						}
+					// Replace any "\\" characters with "\\\\" so backslashes can exist but not break anything
+					size_t pos = 0;
+					while ((pos = playerName.find("\\", pos)) != std::string::npos) {
+						playerName.replace(pos, 1, std::string("\\\\"));
+						pos += std::string("\\\\").length();
+					}
+					pos = 0;
+					while ((pos = chatMsg.find("\\", pos)) != std::string::npos) {
+						chatMsg.replace(pos, 1, std::string("\\\\"));
+						pos += std::string("\\\\").length();
 					}
 
-					for (char ch : chatMsg) {
-						if (ch == '\\') {
-							chatMsg += '\\';
-							chatMsg += '\\';
-						}
-						else {
-							chatMsg += ch;
-						}
-					}
-					
 					discord.SendWebHookEmbed(playerName, chatMsg);
 				}
 			}

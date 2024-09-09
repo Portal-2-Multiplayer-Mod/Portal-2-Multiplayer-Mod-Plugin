@@ -209,10 +209,10 @@ static bool FirstRunState(int state)
 static void CallFirstRunPrompt()
 {
 	// Don't display again once the first one is shown.
-	if (g_P2MMServerPlugin.m_bSeenFirstRunPrompt) 
-	{ 
+	if (g_P2MMServerPlugin.m_bSeenFirstRunPrompt)
+	{
 		P2MMLog(0, true, "First run prompt already shown...");
-		return; 
+		return;
 	}
 
 	P2MMLog(0, false, "DISPLAYING FIRST RUN PROMPT!");
@@ -223,7 +223,7 @@ static void CallFirstRunPrompt()
 	kv->SetWString("title", g_pLocalize->FindSafe("#P2MM_FirstRunPrompt_t"));
 	//kv->SetString("title", "Welcome to the Portal 2: Multiplayer Mod!");
 	kv->SetWString("msg", g_pLocalize->FindSafe("#P2MM_FirstRunPrompt_d"));
-	/*kv->SetString("msg", 
+	/*kv->SetString("msg",
 		"Welcome to the Portal 2: Multiplayer Mod!\n\n"
 		"Input '!help' into chat to see a full list of chat commands you can use!\n"
 		"Hope you enjoy the mod! - Portal 2: Multiplayer Mod Team\n\n"
@@ -235,7 +235,7 @@ static void CallFirstRunPrompt()
 	engineClient->ExecuteClientCmd("gameui_activate");
 	pluginHelpers->CreateMessage(INDEXENT(1), DIALOG_TEXT, kv, &g_P2MMServerPlugin);
 	kv->deleteThis();
-	
+
 	// Set the plugin variable flag that the host seen the prompt to true so its not reshown.
 	g_P2MMServerPlugin.m_bSeenFirstRunPrompt = true;
 }

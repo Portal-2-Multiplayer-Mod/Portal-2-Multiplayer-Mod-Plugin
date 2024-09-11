@@ -19,6 +19,8 @@
 //---------------------------------------------------------------------------------
 void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 {
+	if (dev && !p2mm_developer.GetBool()) { return; } // Stop developer messages when p2mm_developer isn't enabled.
+
 	va_list argptr;
 	char szFormattedText[1024];
 	va_start(argptr, pMsgFormat);
@@ -27,11 +29,6 @@ void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 
 	char completeMsg[1024];
 	V_snprintf(completeMsg, sizeof(completeMsg), "(P2:MM PLUGIN): %s\n", szFormattedText);
-
-	if (dev && !p2mm_developer.GetBool())
-	{
-		return;
-	}
 
 	switch (level)
 	{

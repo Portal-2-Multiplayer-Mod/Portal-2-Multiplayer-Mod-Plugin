@@ -24,8 +24,9 @@
 
 #include <sstream>
 
-#define P2MM_PLUGIN_CONSOLE_COLOR Color(100, 192, 252, 255)
-#define P2MM_VSCRIPT_CONSOLE_COLOR Color(110, 247, 76, 255)
+#define P2MM_PLUGIN_CONSOLE_COLOR Color(100, 192, 252)
+#define P2MM_VSCRIPT_CONSOLE_COLOR Color(110, 247, 76)
+#define P2MM_DISCORD_CONSOLE_COLOR Color(0, 55, 175)
 
 #define CURMAPNAME STRING(gpGlobals->mapname)
 

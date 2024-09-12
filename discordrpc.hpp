@@ -5,11 +5,6 @@
 // 
 //===========================================================================//
 
-#include "globals.hpp"
-
-#include <thread>
-#include <discord/discord.h>
-
 // Discord Embed Color Codes
 // !Change the color system to standard RGB format which translates to int HEX for the Discord Embed!
 #define EMBEDCOLOR_PLAYER 61297 // Light Green
@@ -20,17 +15,6 @@
 extern ConVar p2mm_discord_webhook_footer;
 
 class CDiscordIntegration {
-public:
-	void SendWebHookEmbed(std::string title = "Unknown", std::string description = "*Insert Yapping Here*", int color = EMBEDCOLOR_PLAYER, bool hasFooter = true);
-	bool StartDiscordRPC();
-	void ShutdownDiscordRPC();
-
-private:
-	unsigned RPCThread();
-
-	discord::Core* core{};
-	discord::Activity activity = {};
-
-	bool rpcActive;
-	std::thread rpcthread;
+    public:
+		void SendWebHookEmbed(std::string title = "Unknown", std::string description = "*Insert Yapping Here*", int color = EMBEDCOLOR_PLAYER, bool hasFooter = true);
 };

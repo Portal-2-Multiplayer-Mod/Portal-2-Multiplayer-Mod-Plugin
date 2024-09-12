@@ -31,7 +31,7 @@ IServerPluginHelpers* pluginHelpers = NULL; // Access interface for plugin helpe
 //---------------------------------------------------------------------------------
 // Class declarations
 //---------------------------------------------------------------------------------
-CDiscordIntegration discordIntegration;
+CDiscordIntegration discord;
 
 //---------------------------------------------------------------------------------
 // The plugin is a static singleton that is exported as an interface
@@ -173,7 +173,7 @@ CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map."
 		engineClient->ExecuteClientCmd(std::string(mapString + "mp_coop_community_hub").c_str());
 		
 		std::string initmapstr = std::string("Server has started with map: `" + requestedMap + "`");
-		discordIntegration.SendWebHookEmbed(std::string("Server"), initmapstr, EMBEDCOLOR_SERVER, false);
+		discord.SendWebHookEmbed(std::string("Server"), initmapstr, EMBEDCOLOR_SERVER, false);
 	}
 	else
 	{
@@ -182,7 +182,7 @@ CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map."
 		engineClient->ExecuteClientCmd(std::string(mapString + requestedMap).c_str());
 
 		std::string initmapstr = std::string("Server has started with map: `" + requestedMap + "`");
-		discordIntegration.SendWebHookEmbed(std::string("Server"), initmapstr, EMBEDCOLOR_SERVER, false);
+		discord.SendWebHookEmbed(std::string("Server"), initmapstr, EMBEDCOLOR_SERVER, false);
 	}
 }
 
@@ -361,8 +361,6 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	}
 
 	MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "55 8B EC 81 EC 14 08"), &disconnect_hook, (LPVOID*)&disconnect_orig);
-	
-	discordIntegration.StartDiscordRPC();
 
 	P2MMLog(0, false, "Loaded plugin!");
 	m_bPluginLoaded = true;
@@ -416,8 +414,6 @@ void CP2MMServerPlugin::Unload(void)
 	MH_DisableHook(MH_ALL_HOOKS);
 	MH_Uninitialize();
 
-	discordIntegration.ShutdownDiscordRPC();
-
 	m_bPluginLoaded = false;
 }
 
@@ -468,7 +464,7 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 	}
 
 	std::string changemapstr = std::string("The server has changed the map to: `" + std::string(CURMAPNAME) + "`");
-	discordIntegration.SendWebHookEmbed(std::string("Server"), changemapstr, EMBEDCOLOR_SERVER, false);
+	discord.SendWebHookEmbed(std::string("Server"), changemapstr, EMBEDCOLOR_SERVER, false);
 }
 
 //---------------------------------------------------------------------------------
@@ -690,7 +686,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 
 					std::string playerdied = std::string(GFunc::GetPlayerName(entindex));
 					std::string deathtitlestr = playerdied + std::string(" Died!");
-					discordIntegration.SendWebHookEmbed(deathtitlestr, "", EMBEDCOLOR_PLAYERDEATH);
+					discord.SendWebHookEmbed(deathtitlestr, "", EMBEDCOLOR_PLAYERDEATH);
 				}
 			}
 
@@ -743,7 +739,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				
 				std::string jointitlestr = std::string(name + std::string(" Joinned!"));
 				std::string joindescstr = std::string(name + std::string(" joinned the server!"));
-				discordIntegration.SendWebHookEmbed(jointitlestr, joindescstr);
+				discord.SendWebHookEmbed(jointitlestr, joindescstr);
 			}
 		}
 
@@ -842,7 +838,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 						pos += std::string("\\\\").length();
 					}
 
-					discordIntegration.SendWebHookEmbed(playerName, chatMsg);
+					discord.SendWebHookEmbed(playerName, chatMsg);
 				}
 			}
 

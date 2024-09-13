@@ -31,7 +31,7 @@ std::string DefaultFooter()
 }
 
 // Discord integration ConVars
-ConVar p2mm_discord_webhook("p2mm_discord_webhook", "https://discord.com/api/webhooks/1283885221367779350/c64Md9duQCN6kwodqrsGnBCceDNOyAHvfyKY4s9RK94a7w1Sg1Pavna1FDSdjvgQ5y7c", FCVAR_HIDDEN, "Channel webhook URL to send messages to. Should be set in launcher, not here.");
+ConVar p2mm_discord_webhook("p2mm_discord_webhook", "", FCVAR_HIDDEN, "Channel webhook URL to send messages to. Should be set in launcher, not here.");
 ConVar p2mm_discord_webhook_defaultfooter("p2mm_discord_webhook_defaultfooter", "1", FCVAR_NONE, "Enable or disable the default embed footer for webhooks.", true, 0, true, 1);
 ConVar p2mm_discord_webhook_customfooter("p2mm_discord_webhook_customfooter", "", FCVAR_NONE, "Set a custom embed footer for webhook messages.");
 ConVar p2mm_discord_rpc("p2mm_discord_rpc", "1", FCVAR_NONE, "Enable or disable Discord RPC with P2:MM.", true, 0, true, 1);

@@ -8,7 +8,9 @@
 #include "globals.hpp"
 
 #include <thread>
-#include <discord/discord.h>
+
+#include "discord/discord.h"
+#include "curl/curl.h"
 
 // Discord Embed Color Codes
 // !Change the color system to standard RGB format which translates to int HEX for the Discord Embed!

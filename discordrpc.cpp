@@ -5,16 +5,57 @@
 // 
 //===========================================================================//
 
-#include "globals.hpp"
 #include "discordrpc.hpp"
 
 #include <iostream>
 #include <string>
+
 #include <curl/curl.h>
-#include <discord/discord.h>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+
+// Discord integration ConVars
+ConVar p2mm_discord_webhook("p2mm_discord_webhook", "", FCVAR_HIDDEN, "Channel webhook URL to send messages to. Should be set in launcher, not here.");
+ConVar p2mm_discord_webhook_defaultfooter("p2mm_discord_webhook_defaultfooter", "1", FCVAR_NONE, "Enable or disable the default embed footer for webhooks.", true, 0, true, 1);
+ConVar p2mm_discord_webhook_customfooter("p2mm_discord_webhook_customfooter", "", FCVAR_NONE, "Set a custom embed footer for webhook messages.");
+ConVar p2mm_discord_rpc("p2mm_discord_rpc", "1", FCVAR_NONE, "Enable or disable Discord RPC with P2:MM.");
+ConVar p2mm_discord_rpc_appid("p2mm_discord_rpc_appid", "1201562647880015954", FCVAR_DEVELOPMENTONLY, "Application ID used for Discord RPC with P2:MM.");
+
+// Log Discord GameSDK logs to the console. This is mainly a developer mode only logging system and only the warning and error logs should be shown.
+void DiscordLog(discord::LogLevel level, const char* pMsgFormat)
+{
+	if (!p2mm_developer.GetBool() && (level == discord::LogLevel::Debug || level == discord::LogLevel::Info)) { return; } // Stop debug and info messages when p2mm_developer isn't enabled.
+
+	// Take our log message and format any arguments it has into the message.
+	va_list argptr;
+	char szFormattedText[1024];
+	va_start(argptr, pMsgFormat);
+	V_vsnprintf(szFormattedText, sizeof(szFormattedText), pMsgFormat, argptr);
+	va_end(argptr);
+
+	// Add a header to the log message.
+	char completeMsg[1024];
+	V_snprintf(completeMsg, sizeof(completeMsg), "(P2:MM DISCORD): %s\n", szFormattedText);
+
+	switch (level)
+	{
+	case discord::LogLevel::Debug:
+	case discord::LogLevel::Info:
+		ConColorMsg(P2MM_DISCORD_CONSOLE_COLOR_NORMAL, completeMsg);
+		return;
+	case discord::LogLevel::Warn:
+		ConColorMsg(P2MM_DISCORD_CONSOLE_COLOR_WARNING, completeMsg);
+		return;
+	case discord::LogLevel::Error:
+		Warning(completeMsg);
+		return;
+	default:
+		Warning("(P2:MM DISCORD): DiscordLog level out of range, \"%i\". Defaulting to discord::LogLevel::Info.\n", level);
+		ConColorMsg(P2MM_DISCORD_CONSOLE_COLOR_NORMAL, completeMsg);
+		return;
+	}
+}
 
 // Generates a footer with the player count with max allowed client count and also the current map name
 std::string DefaultFooter()
@@ -29,13 +70,6 @@ std::string DefaultFooter()
 
 	return footer;
 }
-
-// Discord integration ConVars
-ConVar p2mm_discord_webhook("p2mm_discord_webhook", "", FCVAR_HIDDEN, "Channel webhook URL to send messages to. Should be set in launcher, not here.");
-ConVar p2mm_discord_webhook_defaultfooter("p2mm_discord_webhook_defaultfooter", "1", FCVAR_NONE, "Enable or disable the default embed footer for webhooks.", true, 0, true, 1);
-ConVar p2mm_discord_webhook_customfooter("p2mm_discord_webhook_customfooter", "", FCVAR_NONE, "Set a custom embed footer for webhook messages.");
-ConVar p2mm_discord_rpc("p2mm_discord_rpc", "1", FCVAR_NONE, "Enable or disable Discord RPC with P2:MM.", true, 0, true, 1);
-ConVar p2mm_discord_rpc_appid("p2mm_discord_rpc_appid", "1201562647880015954", FCVAR_HIDDEN, "Application ID used for Discord RPC with P2:MM.");
 
 struct WebHookParams
 {

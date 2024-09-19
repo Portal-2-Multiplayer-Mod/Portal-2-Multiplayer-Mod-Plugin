@@ -24,17 +24,23 @@
 
 #include <sstream>
 
-#define P2MM_PLUGIN_CONSOLE_COLOR Color(100, 192, 252, 255)
-#define P2MM_VSCRIPT_CONSOLE_COLOR Color(110, 247, 76, 255)
+// Console logging colors
+#define P2MM_PLUGIN_CONSOLE_COLOR Color(100, 192, 252)
+#define P2MM_VSCRIPT_CONSOLE_COLOR Color(110, 247, 76)
+#define P2MM_DISCORD_CONSOLE_COLOR_NORMAL Color(88, 101, 242)
+#define P2MM_DISCORD_CONSOLE_COLOR_WARNING Color(255, 187, 28)
+#define P2MM_DISCORD_CONSOLE_COLOR_NORMAL Color(88, 101, 242)
 
 #define CURMAPNAME STRING(gpGlobals->mapname)
 
+// Even programs have to sleep sometimes
 #if _WIN32
 #define MIMIMIMI(ms) Sleep(ms); // MIMIMIMI *snore* MIMIMIMI
 #else
 #define MIMIMIMI(ms) usleep(ms); // MIMIMIMI *snores in Linux* MIMIMIMI
 #endif
 
+// Class definitions
 class CBasePlayer;
 
 //---------------------------------------------------------------------------------

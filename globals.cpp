@@ -21,12 +21,14 @@ void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 {
 	if (dev && !p2mm_developer.GetBool()) { return; } // Stop developer messages when p2mm_developer isn't enabled.
 
+	// Take our log message and format any arguments it has into the message.
 	va_list argptr;
 	char szFormattedText[1024];
 	va_start(argptr, pMsgFormat);
 	V_vsnprintf(szFormattedText, sizeof(szFormattedText), pMsgFormat, argptr);
 	va_end(argptr);
 
+	// Add a header to the log message.
 	char completeMsg[1024];
 	V_snprintf(completeMsg, sizeof(completeMsg), "(P2:MM PLUGIN): %s\n", szFormattedText);
 
@@ -39,7 +41,7 @@ void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 		Warning(completeMsg);
 		return;
 	default:
-		Warning("(P2:MM PLUGIN): P2MMLog level set outside of 0-1, \"%i\", defaulting to ConColorMsg().\n", level);
+		Warning("(P2:MM PLUGIN): P2MMLog level set outside of 0-1, \"%i\". Defaulting to level 0.\n", level);
 		ConColorMsg(P2MM_PLUGIN_CONSOLE_COLOR, completeMsg);
 		return;
 	}

@@ -899,6 +899,21 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 		}
 	}
 
+	std::string curplayercount = std::to_string(CURPLAYERCOUNT());
+	std::string maxplayercount = std::to_string(gpGlobals->maxClients);
+	std::string activityState = std::string("Players: (") + curplayercount + "/" + maxplayercount + ")";
+
+	//DiscordRichPresence discordPresence;
+	//memset(&discordPresence, 0, sizeof(discordPresence));
+
+	//char buffer[256];
+	//discordPresence.state = activityState.c_str();
+	//sprintf(buffer, "Map: %s", CURMAPNAME);
+	//discordPresence.details = buffer;
+	//discordPresence.largeImageKey = "p2mmlogo";
+	//discordPresence.largeImageText = "P2:MM";
+	//Discord_UpdatePresence(&discordPresence);
+
 	return;
 }
 

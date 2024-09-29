@@ -57,8 +57,8 @@ void DiscordLog(discord::LogLevel level, const char* pMsgFormat)
 
 // Generates a footer with the player count with max allowed client count and also the current map name
 std::string DefaultFooter()
-{	
-	// gpGlobals doesn't exist yet at certain situations
+{
+	// gpGlobals doesn't exist yet at certain situations, so return a blank string.
 	if (!gpGlobals) { return ""; }
 
 	std::string curplayercount = std::to_string(CURPLAYERCOUNT());
@@ -69,6 +69,7 @@ std::string DefaultFooter()
 	return footer;
 }
 
+// Parameters that are sent through to the Discord webhook
 struct WebHookParams
 {
 	std::string title;
@@ -102,10 +103,10 @@ unsigned SendWebHook(void* webhookParams)
 	WebHookParams* params = (WebHookParams*)webhookParams;
 
 	std::string jsonPayload = std::string(
-		"{ \"content\": null, \"embeds\" : [ {\"title\": \"" + 
-		params->title + "\", \"description\" : \"" + 
-		params->description + "\", \"color\" : " + 
-		std::to_string(params->color) + ", \"footer\": { \"text\": \"" + 
+		"{ \"content\": null, \"embeds\" : [ {\"title\": \"" +
+		params->title + "\", \"description\" : \"" +
+		params->description + "\", \"color\" : " +
+		std::to_string(params->color) + ", \"footer\": { \"text\": \"" +
 		params->footer + "\" }}], \"attachments\": [] }"
 	);
 
@@ -146,7 +147,7 @@ void CDiscordIntegration::SendWebHookEmbed(std::string title, std::string descri
 {
 	// Allocate memory for the parameters
 	WebHookParams* webhookParams = new WebHookParams;
-	webhookParams->title = title;
+	webhookParams->title = title;	
 	webhookParams->description = description;
 	webhookParams->color = color;
 	webhookParams->footer = "";
@@ -155,18 +156,175 @@ void CDiscordIntegration::SendWebHookEmbed(std::string title, std::string descri
 	if (p2mm_discord_webhook_defaultfooter.GetBool() && hasFooter)
 	{
 		webhookParams->footer = DefaultFooter();
-	} 
+	}
 	else if (!p2mm_discord_webhook_defaultfooter.GetBool() && hasFooter)
 	{
 		webhookParams->footer = std::string(p2mm_discord_webhook_customfooter.GetString());
 	}
-	
+
 	P2MMLog(0, true, "Embed webhookParams:");
 	P2MMLog(0, true, std::string("title: " + title).c_str());
 	P2MMLog(0, true, std::string("description: " + description).c_str());
 	P2MMLog(0, true, std::string("color: " + std::to_string(color)).c_str());
 	P2MMLog(0, true, std::string("footer: " + webhookParams->footer).c_str());
-	
+
 	// Send the curl request in a seperate thread
 	CreateSimpleThread(SendWebHook, webhookParams);
 }
+
+unsigned CDiscordIntegration::RPCThread()
+{
+	this->rpcthread = std::thread([this]() {
+		state.core->RunCallbacks();
+		MIMIMIMI(1000);
+		});
+
+	return 0;
+}
+
+bool CDiscordIntegration::StartDiscordRPC()
+{
+	rpcActive = false;
+
+	discord::Result coreResult = discord::Core::Create(p2mm_discord_rpc_appid.GetInt(), DiscordCreateFlags_Default, &core);
+	state.core.reset(core);
+	//if (coreResult != discord::Result::Ok)
+	if (!state.core)
+	{
+		P2MMLog(1, false, "Discord GameSDK failed to initalize!");
+		return false;
+	}
+
+	// Hook Discord's logging system onto DiscordLog
+	core->SetLogHook(discord::LogLevel::Debug, DiscordLog);
+	core->SetLogHook(discord::LogLevel::Info, DiscordLog);
+	core->SetLogHook(discord::LogLevel::Warn, DiscordLog);
+	core->SetLogHook(discord::LogLevel::Error, DiscordLog);
+
+	//discord::ActivityManager* activityManager = &core->ActivityManager();
+
+	//discord::ActivityParty activityParty;
+
+	std::string curplayercount = std::to_string(CURPLAYERCOUNT());
+	std::string maxplayercount = std::to_string(gpGlobals->maxClients);
+	std::string activityState = std::string("Players: (") + curplayercount + "/" + maxplayercount + ")";
+
+	discord::Timestamp startTimestamp = time(0);
+
+	activity.SetDetails("Playing P2:MM!");
+	activity.SetState(activityState.c_str());
+	activity.GetTimestamps().SetStart(startTimestamp);
+	activity.GetAssets().SetLargeImage("p2mmlogo");
+	activity.GetAssets().SetLargeText("P2:MM");
+	activity.SetType(discord::ActivityType::Playing);
+
+	state.core->ActivityManager().RegisterSteam(620); // Register the RPC with Portal 2
+
+	state.core->ActivityManager().UpdateActivity(activity, [](discord::Result result)
+		{
+			if (result != discord::Result::Ok)
+			{
+				DiscordLog(discord::LogLevel::Error, "Failed to update RPC!");
+			}
+		});
+
+	rpcActive = true;
+
+	RPCThread();
+
+	return true;
+}
+
+void CDiscordIntegration::ShutdownDiscordRPC()
+{
+	rpcActive = false;
+}
+
+////-----------------------------------------------------------------------------
+//// Discord RPC
+////-----------------------------------------------------------------------------
+//static void HandleDiscordReady(const DiscordUser* connectedUser)
+//{
+//	P2MMLog(0, false, "Discord: Connected to user %s#%s - %s\n",
+//		connectedUser->username,
+//		connectedUser->discriminator,
+//		connectedUser->userId);
+//}
+//
+//static void HandleDiscordDisconnected(int errcode, const char* message)
+//{
+//	P2MMLog(0, false, "Discord: Disconnected (%d: %s)\n", errcode, message);
+//}
+//
+//static void HandleDiscordError(int errcode, const char* message)
+//{
+//	P2MMLog(1, false, "Discord: Error (%d: %s)\n", errcode, message);
+//}
+//
+//static void HandleDiscordJoin(const char* secret)
+//{
+//	// Not implemented
+//}
+//
+//static void HandleDiscordSpectate(const char* secret)
+//{
+//	// Not implemented
+//}
+//
+//static void HandleDiscordJoinRequest(const DiscordUser* request)
+//{
+//	// Not implemented
+//}
+//
+//static int64_t startTimestamp = time(0);
+//
+//bool CDiscordIntegration::StartDiscordRPC()
+//{
+//	// Discord RPC
+//	DiscordEventHandlers handlers;
+//	memset(&handlers, 0, sizeof(handlers));
+//
+//	handlers.ready = HandleDiscordReady;
+//	handlers.disconnected = HandleDiscordDisconnected;
+//	handlers.errored = HandleDiscordError;
+//	handlers.joinGame = HandleDiscordJoin;
+//	handlers.spectateGame = HandleDiscordSpectate;
+//	handlers.joinRequest = HandleDiscordJoinRequest;
+//
+//	char appid[255];
+//	sprintf(appid, "%d", engineServer->GetAppID());
+//	Discord_Initialize(p2mm_discord_rpc_appid.GetString(), &handlers, 1, appid);
+//	
+//	DiscordRichPresence discordPresence;
+//	memset(&discordPresence, 0, sizeof(discordPresence));
+//
+//	std::string curplayercount = std::to_string(CURPLAYERCOUNT());
+//	std::string maxplayercount = std::to_string(gpGlobals->maxClients);
+//	std::string activityState = std::string("Players: (") + curplayercount + "/" + maxplayercount + ")";
+//
+//	discordPresence.state = activityState.c_str();
+//	discordPresence.details = "Main Menu";
+//	discordPresence.startTimestamp = startTimestamp;
+//	discordPresence.largeImageKey = "p2mmlogo";
+//	discordPresence.largeImageText = "P2:MM";
+//	Discord_UpdatePresence(&discordPresence);
+//	
+//	return true;
+//}
+//
+//void CDiscordIntegration::ShutdownDiscordRPC()
+//{
+//	DiscordRichPresence discordPresence;
+//	memset(&discordPresence, 0, sizeof(discordPresence));
+//
+//	std::string curplayercount = std::to_string(CURPLAYERCOUNT());
+//	std::string maxplayercount = std::to_string(gpGlobals->maxClients);
+//	std::string activityState = std::string("Players: (") + curplayercount + "/" + maxplayercount + ")";
+//
+//	discordPresence.state = activityState.c_str();
+//	discordPresence.details = "Main Menu";
+//	discordPresence.startTimestamp = startTimestamp;
+//	discordPresence.largeImageKey = "p2mmlogo";
+//	discordPresence.largeImageText = "P2:MM";
+//	Discord_UpdatePresence(&discordPresence);
+//}

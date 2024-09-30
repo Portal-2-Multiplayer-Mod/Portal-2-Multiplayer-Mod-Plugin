@@ -362,6 +362,8 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 
 	MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "55 8B EC 81 EC 14 08"), &disconnect_hook, (LPVOID*)&disconnect_orig);
 
+	//discordIntegration.StartDiscordRPC();
+
 	P2MMLog(0, false, "Loaded plugin!");
 	m_bPluginLoaded = true;
 	return true;
@@ -413,6 +415,8 @@ void CP2MMServerPlugin::Unload(void)
 
 	MH_DisableHook(MH_ALL_HOOKS);
 	MH_Uninitialize();
+
+	discordIntegration.ShutdownDiscordRPC();
 
 	m_bPluginLoaded = false;
 }

@@ -10,7 +10,6 @@
 #include <thread>
 
 #include "discord/discord.h"
-//#include "discord-rpc/include/discord_rpc.h"
 #include "curl/curl.h"
 
 // Discord Embed Color Codes
@@ -19,10 +18,6 @@
 #define EMBEDCOLOR_PLAYERDEATH 6881280 // Crimson Red
 #define EMBEDCOLOR_SERVER 4390995 // Dark Purple
 //#define EMBEDCOLOR_PLAYER Color()
-
-struct DiscordState {
-	std::unique_ptr<discord::Core> core;
-};
 
 class CDiscordIntegration {
 public:
@@ -34,7 +29,6 @@ private:
 	std::thread rpcthread;
 
 	discord::Core* core{};
-	DiscordState state{};
 	discord::Activity activity{};
 
 	unsigned RPCThread();

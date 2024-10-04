@@ -18,12 +18,12 @@ ConVar p2mm_discord_webhook("p2mm_discord_webhook", "", FCVAR_HIDDEN, "Channel w
 ConVar p2mm_discord_webhook_defaultfooter("p2mm_discord_webhook_defaultfooter", "1", FCVAR_NONE, "Enable or disable the default embed footer for webhooks.", true, 0, true, 1);
 ConVar p2mm_discord_webhook_customfooter("p2mm_discord_webhook_customfooter", "", FCVAR_NONE, "Set a custom embed footer for webhook messages.");
 ConVar p2mm_discord_rpc("p2mm_discord_rpc", "1", FCVAR_NONE, "Enable or disable Discord RPC with P2:MM.");
-ConVar p2mm_discord_rpc_appid("p2mm_discord_rpc_appid", "1201562647880015954", FCVAR_DEVELOPMENTONLY, "Application ID used for Discord RPC with P2:MM.");
+ConVar p2mm_discord_rpc_appid("p2mm_discord_rpc_appid", "1201562647880015954", FCVAR_DEVELOPMENTONLY | FCVAR_CHEAT, "Application ID used for Discord RPC with P2:MM.");
 
 // Log Discord GameSDK logs to the console. This is mainly a developer mode only logging system and only the warning and error logs should be shown.
-void DiscordLog(discord::LogLevel level, const char* pMsgFormat)
+void DiscordLog(int level, bool dev, const char* pMsgFormat, ...)
 {
-	if (!p2mm_developer.GetBool() && (level == discord::LogLevel::Debug || level == discord::LogLevel::Info)) { return; } // Stop debug and info messages when p2mm_developer isn't enabled.
+	if (!p2mm_developer.GetBool()) { return; } // Stop debug and info messages when p2mm_developer isn't enabled.
 
 	// Take our log message and format any arguments it has into the message.
 	va_list argptr;
@@ -38,15 +38,11 @@ void DiscordLog(discord::LogLevel level, const char* pMsgFormat)
 
 	switch (level)
 	{
-	case discord::LogLevel::Debug:
-	case discord::LogLevel::Info:
+	case 0:
 		ConColorMsg(P2MM_DISCORD_CONSOLE_COLOR_NORMAL, completeMsg);
 		return;
-	case discord::LogLevel::Warn:
+	case 1:
 		ConColorMsg(P2MM_DISCORD_CONSOLE_COLOR_WARNING, completeMsg);
-		return;
-	case discord::LogLevel::Error:
-		Warning(completeMsg);
 		return;
 	default:
 		Warning("(P2:MM DISCORD): DiscordLog level out of range, \"%i\". Defaulting to discord::LogLevel::Info.\n", level);
@@ -54,6 +50,10 @@ void DiscordLog(discord::LogLevel level, const char* pMsgFormat)
 		return;
 	}
 }
+
+////-----------------------------------------------------------------------------
+//// Discord Webhooks
+////-----------------------------------------------------------------------------
 
 // Generates a footer with the player count with max allowed client count and also the current map name
 std::string DefaultFooter()
@@ -125,11 +125,11 @@ unsigned SendWebHook(void* webhookParams)
 	// Perform the request and check for errors
 	if (curlCode != CURLE_OK)
 	{
-		P2MMLog(1, false, std::to_string(curlCode).c_str());
-		P2MMLog(1, false, "Failed to send curl request!");
+		P2MMLog(1, false, "Failed to send curl request! Error Code: %i", curlCode);
 	}
-
-	P2MMLog(0, true, "Send webhook curl request!");
+	else {
+		P2MMLog(0, true, "Send webhook curl request!");
+	}
 
 	// Cleanup curl request
 	curl_slist_free_all(headers);
@@ -172,68 +172,114 @@ void CDiscordIntegration::SendWebHookEmbed(std::string title, std::string descri
 	CreateSimpleThread(SendWebHook, webhookParams);
 }
 
-unsigned CDiscordIntegration::RPCThread()
-{
-	this->rpcthread = std::thread([this]() {
-		if (rpcActive) {
-			core->RunCallbacks();
-			MIMIMIMI(1000);
-		}
-	});
+////-----------------------------------------------------------------------------
+//// Discord Rich Presence
+//// OLD API Documentation: https://github.com/discord/discord-api-docs/tree/legacy-gamesdk/docs/rich_presence
+////-----------------------------------------------------------------------------
 
-	return 0;
+void UpdateDiscordRPC(
+	const char* state = "", /* max 128 bytes */
+	const char* details = "", /* max 128 bytes */
+	int64_t startTimestamp = time(0),
+	int64_t endTimestamp = time(0),
+	const char* largeImageKey = "p2mmlogo", /* max 32 bytes */
+	const char* largeImageText = "P2:MM", /* max 128 bytes */
+	const char* smallImageKey = "", /* max 32 bytes */
+	const char* smallImageText = "", /* max 128 bytes */
+	const char* partyId = "", /* max 128 bytes */
+	int partySize = 0,
+	int partyMax = 33,
+	const char* matchSecret = "", /* max 128 bytes */
+	const char* joinSecret = "", /* max 128 bytes */
+	const char* spectateSecret = "", /* max 128 bytes */
+	int8_t instance = 0
+)
+{
+	DiscordRichPresence discordPresence;
+	discordPresence.state = state;
+	discordPresence.details = details;
+	discordPresence.startTimestamp = startTimestamp;
+	discordPresence.endTimestamp = time(0) + 5 * 60;
+	discordPresence.largeImageKey = "canary-large";
+	discordPresence.smallImageKey = "ptb-small";
+	discordPresence.partyId = "party1234";
+	discordPresence.partySize = 1;
+	discordPresence.partyMax = 6;
+	//discordPresence.partyPrivacy = DISCORD_PARTY_PUBLIC;
+	discordPresence.matchSecret = "xyzzy";
+	discordPresence.joinSecret = "join";
+	discordPresence.spectateSecret = "look";
+	discordPresence.instance = 0;
+}
+
+static void HandleDiscordReady(const DiscordUser* connectedUser)
+{
+	DiscordLog(0, false, "Discord: Connected to user %s#%s - %s\n",
+		connectedUser->username,
+		connectedUser->discriminator,
+		connectedUser->userId);
+}
+
+static void HandleDiscordDisconnected(int errcode, const char* message)
+{
+	DiscordLog(0, false, "Discord: Disconnected (%d: %s)\n", errcode, message);
+}
+
+static void HandleDiscordError(int errcode, const char* message)
+{
+	DiscordLog(1, false, "Discord: Error (%d: %s)\n", errcode, message);
+}
+
+static void HandleDiscordJoin(const char* secret)
+{
+	// Not implemented
+}
+
+static void HandleDiscordSpectate(const char* secret)
+{
+	// Not implemented
+}
+
+static void HandleDiscordJoinRequest(const DiscordUser* request)
+{
+	// Not implemented
 }
 
 bool CDiscordIntegration::StartDiscordRPC()
 {
-	discord::Result coreResult = discord::Core::Create(p2mm_discord_rpc_appid.GetInt(), DiscordCreateFlags_Default, &core);
-	if (coreResult != discord::Result::Ok)
-	{
-		P2MMLog(1, false, "Discord GameSDK failed to initalize!");
-		return false;
-	}
+	// Discord RPC
+	DiscordEventHandlers handlers;
+	memset(&handlers, 0, sizeof(handlers));
 
-	// Hook Discord's logging system onto DiscordLog
-	core->SetLogHook(discord::LogLevel::Debug, DiscordLog);
-	core->SetLogHook(discord::LogLevel::Info, DiscordLog);
-	core->SetLogHook(discord::LogLevel::Warn, DiscordLog);
-	core->SetLogHook(discord::LogLevel::Error, DiscordLog);
+	handlers.ready = HandleDiscordReady;
+	handlers.disconnected = HandleDiscordDisconnected;
+	handlers.errored = HandleDiscordError;
+	handlers.joinGame = HandleDiscordJoin;
+	handlers.spectateGame = HandleDiscordSpectate;
+	handlers.joinRequest = HandleDiscordJoinRequest;
 
-	discord::ActivityManager* activityManager = &core->ActivityManager();
+	char appid[255];
+	sprintf(appid, "%d", engineServer->GetAppID());
+	Discord_Initialize(p2mm_discord_rpc_appid.GetString(), &handlers, 1, appid);
+	
+	DiscordRichPresence discordPresence;
+	memset(&discordPresence, 0, sizeof(discordPresence));
 
-	//discord::ActivityParty activityParty;
-
-	std::string curplayercount = std::to_string(CURPLAYERCOUNT());
-	std::string maxplayercount = std::to_string(gpGlobals->maxClients);
-	std::string activityState = std::string("Players: (") + curplayercount + "/" + maxplayercount + ")";
-
-	discord::Timestamp startTimestamp = time(0);
-
-	activity.SetDetails("Playing P2:MM!");
-	activity.SetState(activityState.c_str());
-	activity.GetTimestamps().SetStart(startTimestamp);
-	activity.GetAssets().SetLargeImage("p2mmlogo");
-	activity.GetAssets().SetLargeText("P2:MM");
-	activity.SetType(discord::ActivityType::Playing);
-
-	activityManager->RegisterSteam(620); // Register the RPC with Portal 2
-
-	activityManager->UpdateActivity(activity, [](discord::Result result)
-	{
-		if (result != discord::Result::Ok)
-		{
-			DiscordLog(discord::LogLevel::Error, "Failed to update RPC!");
-		}
-	});
-
-	rpcActive = true;
-
-	RPCThread();
-
+	discordPresence.details = "Starting up...";
+	discordPresence.startTimestamp = time(0);
+	discordPresence.largeImageKey = "p2mmlogo";
+	Discord_UpdatePresence(&discordPresence);
+	
 	return true;
 }
 
 void CDiscordIntegration::ShutdownDiscordRPC()
 {
-	rpcActive = false;
+	DiscordRichPresence discordPresence;
+	memset(&discordPresence, 0, sizeof(discordPresence));
+
+	discordPresence.details = "Shutting down...";
+	discordPresence.startTimestamp = time(0);
+	discordPresence.largeImageKey = "p2mmlogo";
+	Discord_UpdatePresence(&discordPresence);
 }

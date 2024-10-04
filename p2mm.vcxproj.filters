@@ -7,48 +7,6 @@
     <ClCompile Include="p2mm.cpp" />
     <ClCompile Include="scanner.cpp" />
     <ClCompile Include="vscript.cpp" />
-    <ClCompile Include="discord\achievement_manager.cpp">
-      <Filter>Discord GameSDK</Filter>
-    </ClCompile>
-    <ClCompile Include="discord\activity_manager.cpp">
-      <Filter>Discord GameSDK</Filter>
-    </ClCompile>
-    <ClCompile Include="discord\application_manager.cpp">
-      <Filter>Discord GameSDK</Filter>
-    </ClCompile>
-    <ClCompile Include="discord\core.cpp">
-      <Filter>Discord GameSDK</Filter>
-    </ClCompile>
-    <ClCompile Include="discord\image_manager.cpp">
-      <Filter>Discord GameSDK</Filter>
-    </ClCompile>
-    <ClCompile Include="discord\lobby_manager.cpp">
-      <Filter>Discord GameSDK</Filter>
-    </ClCompile>
-    <ClCompile Include="discord\network_manager.cpp">
-      <Filter>Discord GameSDK</Filter>
-    </ClCompile>
-    <ClCompile Include="discord\overlay_manager.cpp">
-      <Filter>Discord GameSDK</Filter>
-    </ClCompile>
-    <ClCompile Include="discord\relationship_manager.cpp">
-      <Filter>Discord GameSDK</Filter>
-    </ClCompile>
-    <ClCompile Include="discord\storage_manager.cpp">
-      <Filter>Discord GameSDK</Filter>
-    </ClCompile>
-    <ClCompile Include="discord\store_manager.cpp">
-      <Filter>Discord GameSDK</Filter>
-    </ClCompile>
-    <ClCompile Include="discord\types.cpp">
-      <Filter>Discord GameSDK</Filter>
-    </ClCompile>
-    <ClCompile Include="discord\user_manager.cpp">
-      <Filter>Discord GameSDK</Filter>
-    </ClCompile>
-    <ClCompile Include="discord\voice_manager.cpp">
-      <Filter>Discord GameSDK</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="discordrpc.hpp" />
@@ -56,61 +14,16 @@
     <ClInclude Include="modules.hpp" />
     <ClInclude Include="p2mm.hpp" />
     <ClInclude Include="scanner.hpp" />
-    <ClInclude Include="discord\achievement_manager.h">
-      <Filter>Discord GameSDK</Filter>
+    <ClInclude Include="discord-rpc\include\discord_register.h">
+      <Filter>Discord-RPC</Filter>
     </ClInclude>
-    <ClInclude Include="discord\activity_manager.h">
-      <Filter>Discord GameSDK</Filter>
-    </ClInclude>
-    <ClInclude Include="discord\application_manager.h">
-      <Filter>Discord GameSDK</Filter>
-    </ClInclude>
-    <ClInclude Include="discord\core.h">
-      <Filter>Discord GameSDK</Filter>
-    </ClInclude>
-    <ClInclude Include="discord\discord.h">
-      <Filter>Discord GameSDK</Filter>
-    </ClInclude>
-    <ClInclude Include="discord\event.h">
-      <Filter>Discord GameSDK</Filter>
-    </ClInclude>
-    <ClInclude Include="discord\ffi.h">
-      <Filter>Discord GameSDK</Filter>
-    </ClInclude>
-    <ClInclude Include="discord\image_manager.h">
-      <Filter>Discord GameSDK</Filter>
-    </ClInclude>
-    <ClInclude Include="discord\lobby_manager.h">
-      <Filter>Discord GameSDK</Filter>
-    </ClInclude>
-    <ClInclude Include="discord\network_manager.h">
-      <Filter>Discord GameSDK</Filter>
-    </ClInclude>
-    <ClInclude Include="discord\overlay_manager.h">
-      <Filter>Discord GameSDK</Filter>
-    </ClInclude>
-    <ClInclude Include="discord\relationship_manager.h">
-      <Filter>Discord GameSDK</Filter>
-    </ClInclude>
-    <ClInclude Include="discord\storage_manager.h">
-      <Filter>Discord GameSDK</Filter>
-    </ClInclude>
-    <ClInclude Include="discord\store_manager.h">
-      <Filter>Discord GameSDK</Filter>
-    </ClInclude>
-    <ClInclude Include="discord\types.h">
-      <Filter>Discord GameSDK</Filter>
-    </ClInclude>
-    <ClInclude Include="discord\user_manager.h">
-      <Filter>Discord GameSDK</Filter>
-    </ClInclude>
-    <ClInclude Include="discord\voice_manager.h">
-      <Filter>Discord GameSDK</Filter>
+    <ClInclude Include="discord-rpc\include\discord_rpc.h">
+      <Filter>Discord-RPC</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="Discord GameSDK">
-      <UniqueIdentifier>{b874857f-8e68-408b-8c78-465b16b4a798}</UniqueIdentifier>
+    <Filter Include="Discord-RPC">
+      <UniqueIdentifier>{431999ac-fb36-479e-a1ba-d09583f3f6cd}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

@@ -74,7 +74,7 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>;public;public\tier0;public\tier1;$(SolutionDir)\lib;discord;discord-rpc</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>public;public\tier0;public\tier1;$(SolutionDir)\lib;discord-rpc;curl</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <PreprocessorDefinitions>VPC;RAD_TELEMETRY_DISABLED;_HAS_ITERATOR_DEBUGGING=0;WIN32;_WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_ALLOW_RUNTIME_LIBRARY_MISMATCH;_ALLOW_ITERATOR_DEBUG_LEVEL_MISMATCH;_ALLOW_MSC_VER_MISMATCH;%(PreprocessorDefinitions);COMPILER_MSVC32;COMPILER_MSVC32;COMPILER_MSVC;_DLL_EXT=.dll;DLLNAME=p2mm;BINK_VIDEO;AVI_VIDEO;WMV_VIDEO;DEV_BUILD;FRAME_POINTER_OMISSION_DISABLED;p2mmONLY;_MBCS;_EXTERNAL_DLL_EXT=.dll;VPCGAMECAPS=HL2MP;_DLL_EXT=.dll;SOURCE1=1;VPCGAME=hl2mp</PreprocessorDefinitions>
       <StringPooling>false</StringPooling>
@@ -102,8 +102,8 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>lib\public;%(AdditionalLibraryDirectories);minhook\lib;discord\lib;curl\lib;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Normaliz.lib;Crypt32.lib;Iphlpapi.lib;Advapi32.lib;Ws2_32.lib;wldap32.lib;ole32.lib;legacy_stdio_definitions.lib;vstdlib.lib;tier0.lib;tier1.lib;tier2.lib;mathlib.lib;interfaces.lib;libMinHook-x86-v141-mtd.lib;libcurl_a.lib;discord_game_sdk.dll.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>lib\public;%(AdditionalLibraryDirectories);minhook\lib;curl\lib;discord-rpc\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Normaliz.lib;Crypt32.lib;Iphlpapi.lib;Advapi32.lib;Ws2_32.lib;wldap32.lib;ole32.lib;legacy_stdio_definitions.lib;vstdlib.lib;tier0.lib;tier1.lib;tier2.lib;mathlib.lib;interfaces.lib;libMinHook-x86-v141-mtd.lib;libcurl_a.lib;discord-rpc.lib</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>libc;libcd;libcmt;libcpmt;libcpmt1</IgnoreSpecificDefaultLibraries>
       <LinkStatus>
       </LinkStatus>
@@ -117,7 +117,7 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>;public;public\tier0;public\tier1;$(SolutionDir)\lib;discord;discord-rpc</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>public;public\tier0;public\tier1;$(SolutionDir)\lib;discord-rpc;curl</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <PreprocessorDefinitions>VPC;RAD_TELEMETRY_DISABLED;_HAS_ITERATOR_DEBUGGING=0;WIN32;_WIN32;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_ALLOW_RUNTIME_LIBRARY_MISMATCH;_ALLOW_ITERATOR_DEBUG_LEVEL_MISMATCH;_ALLOW_MSC_VER_MISMATCH;%(PreprocessorDefinitions);COMPILER_MSVC32;COMPILER_MSVC;_DLL_EXT=.dll;DLLNAME=p2mm;BINK_VIDEO;AVI_VIDEO;WMV_VIDEO;DEV_BUILD;FRAME_POINTER_OMISSION_DISABLED;p2mmONLY;_MBCS;_EXTERNAL_DLL_EXT=.dll;VPCGAMECAPS=HL2MP;SOURCE1=1;VPCGAME=hl2mp</PreprocessorDefinitions>
       <StringPooling>false</StringPooling>
@@ -145,8 +145,8 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>lib\public;%(AdditionalLibraryDirectories);minhook\lib;discord\lib;curl\lib;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Normaliz.lib;Crypt32.lib;Iphlpapi.lib;Advapi32.lib;Ws2_32.lib;wldap32.lib;ole32.lib;legacy_stdio_definitions.lib;vstdlib.lib;tier0.lib;tier1.lib;tier2.lib;mathlib.lib;interfaces.lib;libMinHook-x86-v141-mtd.lib;libcurl_a.lib;discord_game_sdk.dll.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>lib\public;%(AdditionalLibraryDirectories);minhook\lib;curl\lib;discord-rpc\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Normaliz.lib;Crypt32.lib;Iphlpapi.lib;Advapi32.lib;Ws2_32.lib;wldap32.lib;ole32.lib;legacy_stdio_definitions.lib;vstdlib.lib;tier0.lib;tier1.lib;tier2.lib;mathlib.lib;interfaces.lib;libMinHook-x86-v141-mtd.lib;libcurl_a.lib;discord-rpc.lib</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>libc;libcd;libcmt;libcpmt;libcpmt1</IgnoreSpecificDefaultLibraries>
       <LinkStatus>
       </LinkStatus>
@@ -158,20 +158,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="discordrpc.cpp" />
-    <ClCompile Include="discord\achievement_manager.cpp" />
-    <ClCompile Include="discord\activity_manager.cpp" />
-    <ClCompile Include="discord\application_manager.cpp" />
-    <ClCompile Include="discord\core.cpp" />
-    <ClCompile Include="discord\image_manager.cpp" />
-    <ClCompile Include="discord\lobby_manager.cpp" />
-    <ClCompile Include="discord\network_manager.cpp" />
-    <ClCompile Include="discord\overlay_manager.cpp" />
-    <ClCompile Include="discord\relationship_manager.cpp" />
-    <ClCompile Include="discord\storage_manager.cpp" />
-    <ClCompile Include="discord\store_manager.cpp" />
-    <ClCompile Include="discord\types.cpp" />
-    <ClCompile Include="discord\user_manager.cpp" />
-    <ClCompile Include="discord\voice_manager.cpp" />
     <ClCompile Include="globals.cpp" />
     <ClCompile Include="modules.cpp" />
     <ClCompile Include="p2mm.cpp" />
@@ -179,24 +165,9 @@
     <ClCompile Include="vscript.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="discord-rpc\include\discord_register.h" />
+    <ClInclude Include="discord-rpc\include\discord_rpc.h" />
     <ClInclude Include="discordrpc.hpp" />
-    <ClInclude Include="discord\achievement_manager.h" />
-    <ClInclude Include="discord\activity_manager.h" />
-    <ClInclude Include="discord\application_manager.h" />
-    <ClInclude Include="discord\core.h" />
-    <ClInclude Include="discord\discord.h" />
-    <ClInclude Include="discord\event.h" />
-    <ClInclude Include="discord\ffi.h" />
-    <ClInclude Include="discord\image_manager.h" />
-    <ClInclude Include="discord\lobby_manager.h" />
-    <ClInclude Include="discord\network_manager.h" />
-    <ClInclude Include="discord\overlay_manager.h" />
-    <ClInclude Include="discord\relationship_manager.h" />
-    <ClInclude Include="discord\storage_manager.h" />
-    <ClInclude Include="discord\store_manager.h" />
-    <ClInclude Include="discord\types.h" />
-    <ClInclude Include="discord\user_manager.h" />
-    <ClInclude Include="discord\voice_manager.h" />
     <ClInclude Include="globals.hpp" />
     <ClInclude Include="modules.hpp" />
     <ClInclude Include="p2mm.hpp" />

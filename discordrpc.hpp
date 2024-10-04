@@ -9,7 +9,8 @@
 
 #include <thread>
 
-#include "discord/discord.h"
+#include "discord-rpc/include/discord_register.h"
+#include "discord-rpc/include/discord_rpc.h"
 #include "curl/curl.h"
 
 // Discord Embed Color Codes
@@ -24,12 +25,4 @@ public:
 	void SendWebHookEmbed(std::string title = "Unknown", std::string description = "*Insert Yapping Here*", int color = EMBEDCOLOR_PLAYER, bool hasFooter = true);
 	bool StartDiscordRPC();
 	void ShutdownDiscordRPC();
-private:
-	bool rpcActive = false;
-	std::thread rpcthread;
-
-	discord::Core* core{};
-	discord::Activity activity{};
-
-	unsigned RPCThread();
 };

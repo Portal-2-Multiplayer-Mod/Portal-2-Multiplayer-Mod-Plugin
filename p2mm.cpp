@@ -362,7 +362,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 
 	MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "55 8B EC 81 EC 14 08"), &disconnect_hook, (LPVOID*)&disconnect_orig);
 
-	//discordIntegration.StartDiscordRPC();
+	discordIntegration.StartDiscordRPC();
 
 	P2MMLog(0, false, "Loaded plugin!");
 	m_bPluginLoaded = true;
@@ -469,6 +469,19 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 
 	std::string changemapstr = std::string("The server has changed the map to: `" + std::string(CURMAPNAME) + "`");
 	discordIntegration.SendWebHookEmbed(std::string("Server"), changemapstr, EMBEDCOLOR_SERVER, false);
+
+	DiscordRichPresence discordPresence;
+	memset(&discordPresence, 0, sizeof(discordPresence));
+
+	std::string curplayercount = std::to_string(CURPLAYERCOUNT());
+	std::string maxplayercount = std::to_string(gpGlobals->maxClients);
+	std::string activityState = std::string("Players: (") + curplayercount + "/" + maxplayercount + ")";
+
+	discordPresence.state = activityState.c_str();
+	discordPresence.details = "Starting map...";
+	discordPresence.startTimestamp = time(0);
+	discordPresence.largeImageKey = "p2mmlogo";
+	Discord_UpdatePresence(&discordPresence);
 }
 
 //---------------------------------------------------------------------------------

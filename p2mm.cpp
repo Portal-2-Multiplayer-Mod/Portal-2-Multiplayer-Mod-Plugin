@@ -348,7 +348,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		CommandLine()->AppendParm("-allowspectators", "");
 	}
 
-	MH_Initialize();
+	//MH_Initialize();
 	// NoSteamLogon disconnect hook patch.
 	//MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "55 8B EC 83 EC 08 53 56 57 8B F1 E8 ?? ?? ?? ?? 8B"), &disconnect_hook, (LPVOID*)&disconnect_orig);
 
@@ -401,8 +401,8 @@ void CP2MMServerPlugin::Unload(void)
 	// runtime max 0.05 -> 0.03
 	ReplacePattern("vscript", "00 00 00 00 00 00 E0 3F", "00 00 00 E0 51 B8 9E 3F");
 
-	MH_DisableHook(MH_ALL_HOOKS);
-	MH_Uninitialize();
+	//MH_DisableHook(MH_ALL_HOOKS);
+	//MH_Uninitialize();
 
 	m_bPluginLoaded = false;
 }

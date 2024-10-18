@@ -10,30 +10,34 @@ This plugin has been put into a separate repository due to the nature of the dev
 
 The purpose of this plugin is to patch Portal 2 to make the mod work as well as fix some bugs that impact multiplayer sessions. The plugin also provides access to features of the Source Engine directly that can be interfaced with by VScript. The added VScript functions are used to access Source Engine interfaces and ConVars. The interfaced game event VScript functions are called by plugin and can be used to do certain things based on those game events. portal2allgameevents.res in the main repository (<https://github.com/Portal-2-Multiplayer-Mod/Portal-2-Multiplayer-Mod/blob/dev/mapmaking/portal2allgameevents.res>) also lists what game events Portal 2 has and which ones the plugin interfaces. When game events are called, the plugins operations take priority over the interfaced VScript calls.
 
-`GEClientCommand` is the only exception of not being a game event being the plugin's ClientCommand function being interfaced to VScript.
-
 ## VScript Functions Added By C++ Plugin To Interface With The Engine:
+
+Note: While represented in C++, below functions are for Squirrel. `const char*` type is translated to `string` type. `byte`, `short`, and `long` types are translated to `integer` type. `void` types are simply the `function` type in Squirrel. `HSCRIPT` is a VScript script handle which is an entity instance.
 
 ```c++
 void        printlP2MM(int level, bool dev, const char* pMsgFormat); | "Logging for the P2MM VScript. The log message must be passed as a string or it will error."
 const char* GetPlayerName(int index);                                | "Gets player username by index."
 int         GetSteamID(int index);                                   | "Gets the account ID component of player SteamID by index."
-int         int GetPlayerIndex(int userid);                          | "Gets player entity index by userid."
+int         UserIDToPlayerIndex(int userid);                         | "Gets player entity index by userid."
 bool        IsMapValid(const char* map);                             | "Returns true is the supplied string is a valid map name."
 int         GetDeveloperLevelP2MM();                                 | "Returns the value of ConVar p2mm_developer."
 void        SetPhysTypeConvar(int newval);                           | "Sets 'player_held_object_use_view_model' to the supplied integer value."
 void        SetMaxPortalSeparationConvar(int newval);                | "Sets 'portal_max_separation_force' to the supplied integer value."
 bool        IsDedicatedServer();                                     | "Returns true if this is a dedicated server."
-void        InitializeEntity(HSCRIPT ent);                           | "Initializes an entity."
+void        InitializeEntity(HSCRIPT ent);                           | "Initializes an entity. Note: Not all entities will work even after being initialized with this function."
 void        SendToChat(const char* msg, int index);                  | "Sends a raw message to the chat HUD."
-const char* GetGameDirectory();                                      | "Returns the game directory."
+const char* GetGameMainDir();                                        | "Returns the game directory. Ex. portal2/portal_stories"
+const char* GetGameBaseDir();                                        | "Get the main game directory being used. Ex. Portal 2/Portal Stories Mel"
 const char* GetLastMap();                                            | "Returns the last map recorded by the launcher's Last Map system."
 bool        FirstRunState();                                         | "Get or set the state of whether the first map was run or not. Set false/true = 0/1 | -1 to get state."
+void        CallFirstRunPrompt();                                    | "Shows the first run prompt if enabled in config.nut."
+int         GetConVarInt(const char* cvname);                        | "Get the integer value of a ConVar."
+const char* GetConVarString(const char* cvname);                     | "Get the string value of a ConVar."
 ```
 
 ## Game Events Interfaced To Squirrel VScript Functions:
 
-Note: While represented in C++, below functions are for Squirrel. `const char*` type is translated to `string` type, and `byte`, `short`, and `long` types are translated to `integer` type in Squirrel. `void` types are simply the `function` type in Squirrel.
+`GEClientCommand` is the only exception of not being a game event, it's the plugin's ClientCommand callback being interfaced to VScript.
 
 ```c++
 void GEClientCommand(short userid, int entindex, const char* pcmd, const char* fargs);      | "Called when a client inputs a console command."

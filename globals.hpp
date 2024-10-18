@@ -61,18 +61,20 @@ namespace GFunc {
 	void RemoveEntity(CBaseEntity* pEntity);
 	int GetConVarInt(const char* cvname);
 	const char* GetConVarString(const char* cvname);
+	inline const char* GetGameMainDir();
+	inline const char* GetGameBaseDir();
 }
 
 // If String Equals String helper function
 inline bool FStrEq(const char* sz1, const char* sz2)
 {
-	return (Q_stricmp(sz1, sz2) == 0);
+	return (V_stricmp(sz1, sz2) == 0);
 }
 
 // If String Has Substring helper function
 inline bool FSubStr(const char* sz1, const char* search)
 {
-	return (Q_strstr(sz1, search));
+	return (V_strstr(sz1, search));
 }
 
 // Helper functions taken from utils.h which involves entity to entity index and entity index to entity conversion
@@ -98,4 +100,23 @@ inline edict_t* INDEXENT(int iEdictNum)
 		return pEdict;
 	}
 	return NULL;
+}
+
+// Get the main game directory being used. Ex. portal2/portal_stories
+static inline const char* GFunc::GetGameMainDir()
+{
+	return CommandLine()->ParmValue("-game", CommandLine()->ParmValue("-defaultgamedir", "portal2"));
+}
+
+// Get base game directory. Ex. Portal 2/Portal Stories Mel
+static inline const char* GFunc::GetGameBaseDir()
+{
+	char baseDir[MAX_PATH];
+	std::string fullGameDirectoryPath = engineClient->GetGameDirectory();
+	size_t firstSlash = fullGameDirectoryPath.find_last_of("\\");
+	size_t secondSlash = fullGameDirectoryPath.find_last_of("\\", firstSlash - 1);
+	std::string tempBaseDir = fullGameDirectoryPath.substr(secondSlash + 1, firstSlash - secondSlash - 1);
+	V_strcpy(baseDir, tempBaseDir.c_str());
+	V_FixSlashes(baseDir);
+	return baseDir;
 }

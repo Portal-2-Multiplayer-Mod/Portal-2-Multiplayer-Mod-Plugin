@@ -8,6 +8,7 @@
 #include "scanner.hpp"
 #include "modules.hpp"
 #include "p2mm.hpp"
+#include "globals.hpp"
 
 #include "irecipientfilter.h"
 
@@ -177,14 +178,6 @@ static void SendToChat(const char* msg, int index)
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Returns the game directory.
-//---------------------------------------------------------------------------------
-static const char* GetGameDirectory()
-{
-	return CommandLine()->ParmValue("-game", CommandLine()->ParmValue("-defaultgamedir", "hl2"));
-}
-
-//---------------------------------------------------------------------------------
 // Purpose: Returns the last map recorded by the launcher's Last Map System.
 //---------------------------------------------------------------------------------
 static const char* GetLastMap()
@@ -259,9 +252,10 @@ void RegisterFuncsAndRun()
 	ScriptRegisterFunction(g_pScriptVM, SetPhysTypeConvar, "Sets 'player_held_object_use_view_model' to the supplied integer value.");
 	ScriptRegisterFunction(g_pScriptVM, SetMaxPortalSeparationConvar, "Sets 'portal_max_separation_force' to the supplied integer value.");
 	ScriptRegisterFunction(g_pScriptVM, IsDedicatedServer, "Returns true if this is a dedicated server.");
-	ScriptRegisterFunction(g_pScriptVM, InitializeEntity, "Initializes an entity.");
+	ScriptRegisterFunction(g_pScriptVM, InitializeEntity, "Initializes an entity. Note: Not all entities will work even after being initialized with this function.");
 	ScriptRegisterFunction(g_pScriptVM, SendToChat, "Sends a raw message to the chat HUD.");
-	ScriptRegisterFunction(g_pScriptVM, GetGameDirectory, "Returns the game directory.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetGameMainDir, "GetGameMainDir", "Returns the game directory. Ex. portal2/portal_stories");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetGameBaseDir, "GetGameBaseDir", "Get the main game directory being used. Ex. Portal 2/Portal Stories Mel");
 	ScriptRegisterFunction(g_pScriptVM, GetLastMap, "Returns the last map recorded by the launcher's Last Map system.");
 	ScriptRegisterFunction(g_pScriptVM, FirstRunState, "Get or set the state of whether the first map was run or not. Set false/true = 0/1 | -1 to get state.");
 	ScriptRegisterFunction(g_pScriptVM, CallFirstRunPrompt, "Shows the first run prompt if enabled in config.nut.");
@@ -269,12 +263,11 @@ void RegisterFuncsAndRun()
 	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetConVarString, "GetConVarString", "Get the string value of a ConVar.");
 
 	// Set all the plugin function check bools to true and start the P2:MM VScript
-	g_pScriptVM->Run(
-		"P2MMPluginLoaded <- true;"
+	g_pScriptVM->Run( ""
 		"printlP2MMLoaded <- true;"
 		"GetPlayerNameLoaded <- true;"
 		"GetSteamIDLoaded <- true;"
-		"GetPlayerIndexLoaded <- true;"
+		"UserIDToPlayerIndexLoaded <- true;"
 		"IsMapValidLoaded <- true;"
 		"GetDeveloperLevelP2MMLoaded <- true;"
 		"SetPhysTypeConvarLoaded <- true;"
@@ -282,10 +275,13 @@ void RegisterFuncsAndRun()
 		"IsDedicatedServerLoaded <- true;"
 		"InitializeEntityLoaded <- true;"
 		"SendToChatLoaded <- true;"
-		"GetGameDirectoryLoaded <- true;"
+		"GetGameMainDirLoaded <- true;"
+		"GetGameBaseDirLoaded <- true;"
 		"GetLastMapLoaded <- true;"
 		"FirstRunStateLoaded <- true;"
 		"CallFirstRunPromptLoaded <- true;"
+		"GetConVarIntLoaded <- true;"
+		"GetConVarStringLoaded <- true;"
 		"IncludeScript(\"multiplayermod/p2mm\");"
 	);
 }

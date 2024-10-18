@@ -94,7 +94,9 @@ int GFunc::UserIDToPlayerIndex(int userid)
 	return NULL; // Return NULL if the index can't be found
 }
 
-// Get the script scope of a entity, thanks to Nullderef/Vista for this.
+//---------------------------------------------------------------------------------
+// Purpose: Get the script scope of a entity. Thanks to Nullderef/Vista for this.
+//---------------------------------------------------------------------------------
 HSCRIPT GFunc::GetScriptScope(CBaseEntity* entity)
 {
 	if (entity == NULL)
@@ -105,10 +107,13 @@ HSCRIPT GFunc::GetScriptScope(CBaseEntity* entity)
 	return *reinterpret_cast<HSCRIPT*>(reinterpret_cast<uintptr_t>(entity) + 0x33c);
 }
 
+//---------------------------------------------------------------------------------
+// Purpose: Get the script instance of a entity. Thanks to Nullderef/Vista for this.
+//---------------------------------------------------------------------------------
 HSCRIPT GFunc::GetScriptInstance(CBaseEntity* entity) {
 	static auto _GetScriptInstance = reinterpret_cast<HSCRIPT (__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 51 56 8B F1 83 BE 50"));
 	if(!_GetScriptInstance) {
-		Error("GetScriptEntity not found");
+		P2MMLog(1, false, "GetScriptEntity not found");
 		return nullptr;
 	}
 
@@ -177,11 +182,13 @@ int GFunc::GetSteamID(int index)
 	return pSteamID->GetAccountID();
 }
 
+//---------------------------------------------------------------------------------
+// Purpose: Self-explanatory.
+//---------------------------------------------------------------------------------
 void GFunc::RemoveEntity(CBaseEntity* pEntity)
 {
 	reinterpret_cast<void (*)(void*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 57 8B 7D 08 85 FF 74 72"))(reinterpret_cast<IServerEntity*>(pEntity)->GetNetworkable());
 }
-
 
 //---------------------------------------------------------------------------------
 // Purpose: Self-explanatory.

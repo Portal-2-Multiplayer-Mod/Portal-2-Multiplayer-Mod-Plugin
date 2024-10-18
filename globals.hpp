@@ -117,6 +117,5 @@ static inline const char* GFunc::GetGameBaseDir()
 	size_t secondSlash = fullGameDirectoryPath.find_last_of("\\", firstSlash - 1);
 	std::string tempBaseDir = fullGameDirectoryPath.substr(secondSlash + 1, firstSlash - secondSlash - 1);
 	V_strcpy(baseDir, tempBaseDir.c_str());
-	V_FixSlashes(baseDir);
 	return baseDir;
 }

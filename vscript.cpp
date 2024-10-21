@@ -5,7 +5,6 @@
 // 
 //===========================================================================//
 
-#include "modules.hpp"
 #include "p2mm.hpp"
 
 #include "irecipientfilter.h"

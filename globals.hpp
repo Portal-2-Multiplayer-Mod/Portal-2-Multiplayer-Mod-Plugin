@@ -52,14 +52,13 @@ void P2MMLog(int level, bool dev, const char* pMsgFormat, ...);
 void ReplacePattern(std::string target_module, std::string patternBytes, std::string replace_with);
 
 namespace GFunc {
-	int UserIDToPlayerIndex(int userid);
-	const char* GetPlayerName(int index);
-	int GetSteamID(int index);
-	void RemoveEntity(CBaseEntity* pEntity);
-	int GetConVarInt(const char* cvname);
-	const char* GetConVarString(const char* cvname);
-	inline const char* GetGameMainDir();
-	inline const char* GetGameBaseDir();
+	int					UserIDToPlayerIndex(int userid);
+	const char*			GetPlayerName(int index);
+	int					GetSteamID(int index);
+	int					GetConVarInt(const char* cvname);
+	const char*			GetConVarString(const char* cvname);
+	inline const char*	GetGameMainDir();
+	inline const char*	GetGameBaseDir();
 }
 
 HSCRIPT CBaseEntity__GetScriptScope(CBaseEntity* entity);
@@ -79,8 +78,9 @@ inline bool FSubStr(const char* sz1, const char* search)
 	return (V_strstr(sz1, search));
 }
 
-// Helper functions taken from utils.h which involves entity to entity index and entity index to entity conversion
-// Entity to entity index
+//---------------------------------------------------------------------------------
+// Purpose: Entity edict to entity index. Taken from utils.h.
+//---------------------------------------------------------------------------------
 inline int ENTINDEX(edict_t* pEdict)
 {
 	if (!pEdict)
@@ -90,7 +90,9 @@ inline int ENTINDEX(edict_t* pEdict)
 	return edictIndex;
 }
 
-// Entity index to entity
+//---------------------------------------------------------------------------------
+// Purpose: Entity index to entity edict. Taken from utils.h.
+//---------------------------------------------------------------------------------
 inline edict_t* INDEXENT(int iEdictNum)
 {
 	Assert(iEdictNum >= 0 && iEdictNum < MAX_EDICTS);
@@ -104,14 +106,28 @@ inline edict_t* INDEXENT(int iEdictNum)
 	return NULL;
 }
 
+//---------------------------------------------------------------------------------
+// Purpose: Entity index to script handle.
+//---------------------------------------------------------------------------------
+inline HSCRIPT INDEXHANDLE(int iEdictNum) {
+	edict_t* pEntity = INDEXENT(iEdictNum);
+	CBaseEntity* p_baseEntity = pEntity->GetUnknown()->GetBaseEntity();
+	if (!p_baseEntity)
+	{
+		return nullptr;
+	}
+	HSCRIPT entityHandle = CBaseEntity__GetScriptInstance(p_baseEntity);
+	return entityHandle;
+}
+
 // Get the main game directory being used. Ex. portal2/portal_stories
-static inline const char* GFunc::GetGameMainDir()
+inline const char* GFunc::GetGameMainDir()
 {
 	return CommandLine()->ParmValue("-game", CommandLine()->ParmValue("-defaultgamedir", "portal2"));
 }
 
 // Get base game directory. Ex. Portal 2/Portal Stories Mel
-static inline const char* GFunc::GetGameBaseDir()
+inline const char* GFunc::GetGameBaseDir()
 {
 	char baseDir[MAX_PATH];
 	std::string fullGameDirectoryPath = engineClient->GetGameDirectory();

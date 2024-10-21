@@ -33,6 +33,7 @@ bool        FirstRunState();                                         | "Get or s
 void        CallFirstRunPrompt();                                    | "Shows the first run prompt if enabled in config.nut."
 int         GetConVarInt(const char* cvname);                        | "Get the integer value of a ConVar."
 const char* GetConVarString(const char* cvname);                     | "Get the string value of a ConVar."
+HSCRIPT     PlayerIndexToPlayerHandle(int playerIndex)               | "Takes the player's entity index and returns the player's script handle."
 ```
 
 ## Game Events Interfaced To Squirrel VScript Functions:

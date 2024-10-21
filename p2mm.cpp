@@ -669,7 +669,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				if (baseEntity)
 				{
 					// player does not have a script scope yet, fire OnPlayerJoin
-					g_pScriptVM->Call<HSCRIPT>(od_func, NULL, true, NULL, GFunc::GetScriptInstance(baseEntity));
+					g_pScriptVM->Call<HSCRIPT>(od_func, NULL, true, NULL, CBaseEntity__GetScriptInstance(baseEntity));
 				}
 			}
 
@@ -846,7 +846,7 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 			if (baseEntity)
 			{
 				// player does not have a script scope yet, fire OnPlayerJoin
-				g_pScriptVM->Call<HSCRIPT>(opj_func, NULL, true, NULL, GFunc::GetScriptInstance(baseEntity));
+				g_pScriptVM->Call<HSCRIPT>(opj_func, NULL, true, NULL, CBaseEntity__GetScriptInstance(baseEntity));
 			}
 		}
 

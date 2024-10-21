@@ -53,9 +53,6 @@ void ReplacePattern(std::string target_module, std::string patternBytes, std::st
 
 namespace GFunc {
 	int UserIDToPlayerIndex(int userid);
-	HSCRIPT GetScriptScope(CBaseEntity* entity);
-	HSCRIPT GetScriptInstance(CBaseEntity* entity);
-	CBasePlayer* PlayerIndexToPlayer(int playerIndex);
 	const char* GetPlayerName(int index);
 	int GetSteamID(int index);
 	void RemoveEntity(CBaseEntity* pEntity);
@@ -64,6 +61,11 @@ namespace GFunc {
 	inline const char* GetGameMainDir();
 	inline const char* GetGameBaseDir();
 }
+
+HSCRIPT CBaseEntity__GetScriptScope(CBaseEntity* entity);
+HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity);
+
+CBasePlayer* CBasePlayer__PlayerIndexToPlayer(int playerIndex);
 
 // If String Equals String helper function
 inline bool FStrEq(const char* sz1, const char* sz2)

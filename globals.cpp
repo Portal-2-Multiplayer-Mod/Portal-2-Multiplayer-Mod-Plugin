@@ -95,45 +95,6 @@ int GFunc::UserIDToPlayerIndex(int userid)
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Get the script scope of a entity. Thanks to Nullderef/Vista for this.
-//---------------------------------------------------------------------------------
-HSCRIPT GFunc::GetScriptScope(CBaseEntity* entity)
-{
-	if (entity == NULL)
-	{ 
-
-		return NULL;
-	}
-	return *reinterpret_cast<HSCRIPT*>(reinterpret_cast<uintptr_t>(entity) + 0x33c);
-}
-
-//---------------------------------------------------------------------------------
-// Purpose: Get the script instance of a entity. Thanks to Nullderef/Vista for this.
-//---------------------------------------------------------------------------------
-HSCRIPT GFunc::GetScriptInstance(CBaseEntity* entity) {
-	static auto _GetScriptInstance = reinterpret_cast<HSCRIPT (__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 51 56 8B F1 83 BE 50"));
-	if(!_GetScriptInstance) {
-		P2MMLog(1, false, "GetScriptEntity not found");
-		return nullptr;
-	}
-
-	return _GetScriptInstance(entity);
-}
-
-//---------------------------------------------------------------------------------
-// Purpose: Gets player base class by player entity index. Thanks to Nanoman2525 for this.
-//---------------------------------------------------------------------------------
-CBasePlayer* GFunc::PlayerIndexToPlayer(int playerIndex)
-{
-#ifdef _WIN32
-	static auto _PlayerIndexToPlayer = reinterpret_cast<CBasePlayer* (__cdecl*)(int)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 8B 4D 08 33 C0 85 C9 7E 30"));
-	return _PlayerIndexToPlayer(playerIndex);
-#else // Linux support TODO
-	return NULL;
-#endif
-}
-
-//---------------------------------------------------------------------------------
 // Purpose: Gets player username by index.
 //---------------------------------------------------------------------------------
 const char* GFunc::GetPlayerName(int index)
@@ -219,3 +180,62 @@ const char* GFunc::GetConVarString(const char* cvname)
 
 	return pVar->GetString();
 }
+
+///			 CBaseEntity Class Functions				\\\
+
+//---------------------------------------------------------------------------------
+// Purpose: Self-explanatory. Thanks to Nanoman2525 for this.
+//---------------------------------------------------------------------------------
+void CBaseEntity__RemoveEntity(CBaseEntity* pEntity)
+{
+	//reinterpret_cast<IServerEntity*>(pEntity) trust me bro aka, we know its CBaseEntity*, but we want the IServerEntity* so cast to that to get its methods 
+	reinterpret_cast<void (*)(void*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 57 8B 7D 08 85 FF 74 72"))(reinterpret_cast<IServerEntity*>(pEntity)->GetNetworkable());
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Get the script scope of a entity. Thanks to Nullderef/Vista for this.
+//---------------------------------------------------------------------------------
+HSCRIPT CBaseEntity__GetScriptScope(CBaseEntity* entity)
+{
+	if (entity == NULL)
+	{
+		return NULL;
+	}
+	// Returing class variable of the script scope, offset being 0x33c
+	// Because we have the pointer to the scope, dereference it to get the member variable/function of the class, but in turn the type is now a pointer and the whole thing needs to be derefernenced
+	// offset the reinterpret_case and the return type
+	// 
+	return *reinterpret_cast<HSCRIPT*>(reinterpret_cast<uintptr_t>(entity) + 0x33c);
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Get the script instance of a entity. Thanks to Nullderef/Vista for this.
+//---------------------------------------------------------------------------------
+HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity)
+{
+	static auto _GetScriptInstance = reinterpret_cast<HSCRIPT(__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 51 56 8B F1 83 BE 50"));
+	if (!_GetScriptInstance) {
+		P2MMLog(1, false, "GetScriptEntity not found");
+		return nullptr;
+	}
+
+	return _GetScriptInstance(entity);
+}
+
+
+
+///			 CPortal_Player/CBasePlayer Class Functions				\\\
+
+//---------------------------------------------------------------------------------
+// Purpose: Gets player base class by player entity index. Thanks to Nanoman2525 for this.
+//---------------------------------------------------------------------------------
+CBasePlayer* CBasePlayer__PlayerIndexToPlayer(int playerIndex)
+{
+#ifdef _WIN32
+	static auto _PlayerIndexToPlayer = reinterpret_cast<CBasePlayer * (__cdecl*)(int)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 8B 4D 08 33 C0 85 C9 7E 30"));
+	return _PlayerIndexToPlayer(playerIndex);
+#else // Linux support TODO
+	return NULL;
+#endif
+}
+

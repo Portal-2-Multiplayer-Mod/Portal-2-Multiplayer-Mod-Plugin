@@ -176,7 +176,13 @@ CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map."
 	}
 }
 
-
+CON_COMMAND(p2mm_respawnall, "Respawns all players.")
+{
+	for (int i = 1; i < gpGlobals->serverCount; i++)
+	{
+		CPortal_Player__RespawnPlayer(i);
+	}
+}
 
 //---------------------------------------------------------------------------------
 // Purpose: constructor

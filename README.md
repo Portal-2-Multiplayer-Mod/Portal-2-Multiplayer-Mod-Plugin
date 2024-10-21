@@ -34,6 +34,8 @@ void        CallFirstRunPrompt();                                    | "Shows th
 int         GetConVarInt(const char* cvname);                        | "Get the integer value of a ConVar."
 const char* GetConVarString(const char* cvname);                     | "Get the string value of a ConVar."
 HSCRIPT     PlayerIndexToPlayerHandle(int playerIndex)               | "Takes the player's entity index and returns the player's script handle."
+void        RespawnPlayer(int playerIndex)                           | "Respawn the a player by their entity index."
+void        SetFlashlightState(int iIndex, bool bTurnOn)             | "Set the flashlight for a player on or off."
 ```
 
 ## Game Events Interfaced To Squirrel VScript Functions:

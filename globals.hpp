@@ -24,6 +24,7 @@
 #include <sstream>
 
 class CBasePlayer;
+class CPortal_Player;
 
 #define P2MM_PLUGIN_CONSOLE_COLOR Color(100, 192, 252, 255)
 #define P2MM_VSCRIPT_CONSOLE_COLOR Color(110, 247, 76, 255)
@@ -59,10 +60,14 @@ namespace GFunc {
 	inline const char*	GetGameBaseDir();
 }
 
+void CBaseEntity__RemoveEntity(CBaseEntity* pEntity);
 HSCRIPT CBaseEntity__GetScriptScope(CBaseEntity* entity);
 HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity);
 
-CBasePlayer* CBasePlayer__PlayerIndexToPlayer(int playerIndex);
+CBasePlayer* UTIL_PlayerByIndex(int playerIndex);
+
+void CPortal_Player__RespawnPlayer(int playerIndex);
+void CPortal_Player__SetFlashlightState(int playerIndex, bool enable);
 
 // If String Equals String helper function
 inline bool FStrEq(const char* sz1, const char* sz2)

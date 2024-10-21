@@ -48,31 +48,6 @@ void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 	}
 }
 
-void ReplacePattern(std::string target_module, std::string patternBytes, std::string replace_with)
-{
-	void* addr = Memory::Scanner::Scan<void*>(Memory::Modules::Get(target_module), patternBytes);
-	if (!addr)
-	{
-		P2MMLog(1, false, "Failed to replace pattern!");
-		return;
-	}
-
-	std::vector<uint8_t> replace;
-
-	std::istringstream patternStream(replace_with);
-	std::string patternByte;
-	while (patternStream >> patternByte)
-	{
-		replace.push_back((uint8_t)std::stoul(patternByte, nullptr, 16));
-	}
-
-	DWORD oldprotect = 0;
-	DWORD newprotect = PAGE_EXECUTE_READWRITE;
-	VirtualProtect(addr, replace.size(), newprotect, &oldprotect);
-	memcpy_s(addr, replace.size(), replace.data(), replace.size());
-	VirtualProtect(addr, replace.size(), oldprotect, &newprotect);
-}
-
 //---------------------------------------------------------------------------------
 // Purpose: Gets player entity index by userid.
 //---------------------------------------------------------------------------------

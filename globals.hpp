@@ -15,7 +15,6 @@
 #include "public/steam/steamclientpublic.h"
 
 #include "scanner.hpp"
-#include "modules.hpp"
 
 #ifdef _WIN32
 #pragma once
@@ -49,7 +48,6 @@ extern IGameEventManager2* gameeventmanager_;
 extern IServerPluginHelpers* pluginHelpers;
 
 void P2MMLog(int level, bool dev, const char* pMsgFormat, ...);
-void ReplacePattern(std::string target_module, std::string patternBytes, std::string replace_with);
 
 namespace GFunc {
 	int					UserIDToPlayerIndex(int userid);

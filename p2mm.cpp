@@ -321,26 +321,26 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	// Byte patches
 
 	// Linked portal doors event crash patch
-	ReplacePattern("server", "0F B6 87 04 05 00 00 8B 16", "EB 14 87 04 05 00 00 8B 16");
+	Memory::ReplacePattern("server", "0F B6 87 04 05 00 00 8B 16", "EB 14 87 04 05 00 00 8B 16");
 
 	// Partner disconnects
-	ReplacePattern("server", "51 50 FF D2 83 C4 10 E8", "51 50 90 90 83 C4 10 E8");
-	ReplacePattern("server", "74 28 3B 75 FC", "EB 28 3B 75 FC");
+	Memory::ReplacePattern("server", "51 50 FF D2 83 C4 10 E8", "51 50 90 90 83 C4 10 E8");
+	Memory::ReplacePattern("server", "74 28 3B 75 FC", "EB 28 3B 75 FC");
 
 	// Max players -> 33
-	ReplacePattern("server", "83 C0 02 89 01", "83 C0 20 89 01");
-	ReplacePattern("engine", "85 C0 78 13 8B 17", "31 C0 04 21 8B 17");
+	Memory::ReplacePattern("server", "83 C0 02 89 01", "83 C0 20 89 01");
+	Memory::ReplacePattern("engine", "85 C0 78 13 8B 17", "31 C0 04 21 8B 17");
 	static uintptr_t sv = *reinterpret_cast<uintptr_t*>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "74 0A B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B E5", 3));
 	*reinterpret_cast<int*>(sv + 0x228) = 33;
 
 	// Prevent disconnect by "STEAM validation rejected"
-	ReplacePattern("engine", "01 74 7D 8B", "01 EB 7D 8B");
+	Memory::ReplacePattern("engine", "01 74 7D 8B", "01 EB 7D 8B");
 
 	// Fix sv_password
-	ReplacePattern("engine", "0F 95 C1 51 8D 4D E8", "03 C9 90 51 8D 4D E8");
+	Memory::ReplacePattern("engine", "0F 95 C1 51 8D 4D E8", "03 C9 90 51 8D 4D E8");
 
 	// runtime max 0.03 -> 0.05
-	ReplacePattern("vscript", "00 00 00 E0 51 B8 9E 3F", "9a 99 99 99 99 99 a9 3f");
+	Memory::ReplacePattern("vscript", "00 00 00 E0 51 B8 9E 3F", "9a 99 99 99 99 99 a9 3f");
 
 	// Make sure -allowspectators is there so we get our 33 max players
 	if (!CommandLine()->FindParm("-allowspectators"))
@@ -380,26 +380,26 @@ void CP2MMServerPlugin::Unload(void)
 	// Undo byte patches
 
 	// Linked portal doors event crash patch
-	ReplacePattern("server", "EB 14 87 04 05 00 00 8B 16", "0F B6 87 04 05 00 00 8B 16");
+	Memory::ReplacePattern("server", "EB 14 87 04 05 00 00 8B 16", "0F B6 87 04 05 00 00 8B 16");
 
 	// Partner disconnects
-	ReplacePattern("server", "51 50 90 90 83 C4 10 E8", "51 50 FF D2 83 C4 10 E8");
-	ReplacePattern("server", "EB 28 3B 75 FC", "74 28 3B 75 FC");
+	Memory::ReplacePattern("server", "51 50 90 90 83 C4 10 E8", "51 50 FF D2 83 C4 10 E8");
+	Memory::ReplacePattern("server", "EB 28 3B 75 FC", "74 28 3B 75 FC");
 
 	// Max players -> 3
-	ReplacePattern("server", "83 C0 20 89 01", "83 C0 02 89 01");
-	ReplacePattern("engine", "31 C0 04 21 8B 17", "85 C0 78 13 8B 17");
+	Memory::ReplacePattern("server", "83 C0 20 89 01", "83 C0 02 89 01");
+	Memory::ReplacePattern("engine", "31 C0 04 21 8B 17", "85 C0 78 13 8B 17");
 	static uintptr_t sv = *reinterpret_cast<uintptr_t*>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "74 0A B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B E5", 3));
 	*reinterpret_cast<int*>(sv + 0x228) = 2;
 
 	// Disconnect by "STEAM validation rejected"
-	ReplacePattern("engine", "01 EB 7D 8B", "01 74 7D 8B");
+	Memory::ReplacePattern("engine", "01 EB 7D 8B", "01 74 7D 8B");
 
 	// sv_password
-	ReplacePattern("engine", "03 C9 90 51 8D 4D E8", "0F 95 C1 51 8D 4D E8");
+	Memory::ReplacePattern("engine", "03 C9 90 51 8D 4D E8", "0F 95 C1 51 8D 4D E8");
 
 	// runtime max 0.05 -> 0.03
-	ReplacePattern("vscript", "00 00 00 00 00 00 E0 3F", "00 00 00 E0 51 B8 9E 3F");
+	Memory::ReplacePattern("vscript", "00 00 00 00 00 00 E0 3F", "00 00 00 E0 51 B8 9E 3F");
 
 	//MH_DisableHook(MH_ALL_HOOKS);
 	//MH_Uninitialize();

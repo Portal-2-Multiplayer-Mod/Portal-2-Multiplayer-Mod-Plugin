@@ -154,14 +154,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="globals.cpp" />
-    <ClCompile Include="modules.cpp" />
     <ClCompile Include="p2mm.cpp" />
     <ClCompile Include="scanner.cpp" />
     <ClCompile Include="vscript.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="globals.hpp" />
-    <ClInclude Include="modules.hpp" />
     <ClInclude Include="p2mm.hpp" />
     <ClInclude Include="scanner.hpp" />
   </ItemGroup>

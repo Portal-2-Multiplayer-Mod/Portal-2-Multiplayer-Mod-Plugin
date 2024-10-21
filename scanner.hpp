@@ -1,7 +1,7 @@
 //===========================================================================//
 //
 // Author: NULLderef
-// Purpose: Portal 2: Multiplayer Mod server plugin
+// Purpose: Portal 2: Multiplayer Mod server plugin memory scanner
 // 
 //===========================================================================//
 
@@ -12,6 +12,8 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <span>
+#include <unordered_map>
 
 namespace Memory {
 	class ScannerImplementation {
@@ -33,6 +35,16 @@ namespace Memory {
 	private:
 		static std::unique_ptr<ScannerImplementation>& Implementation();
 	};
+	class Modules {
+	public:
+		static std::span<uint8_t> Get(std::string name);
+
+	private:
+		static void PopulateModules();
+		static std::unordered_map<std::string, std::span<uint8_t>> loadedModules;
+	};
+
+	void ReplacePattern(std::string target_module, std::string patternBytes, std::string replace_with);
 };
 
 #endif // SCANNER_HPP

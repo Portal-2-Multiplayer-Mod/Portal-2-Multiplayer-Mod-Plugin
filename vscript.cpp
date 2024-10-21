@@ -5,10 +5,8 @@
 // 
 //===========================================================================//
 
-#include "scanner.hpp"
 #include "modules.hpp"
 #include "p2mm.hpp"
-#include "globals.hpp"
 
 #include "irecipientfilter.h"
 

@@ -110,8 +110,8 @@ inline edict_t* INDEXENT(int iEdictNum)
 // Purpose: Entity index to script handle.
 //---------------------------------------------------------------------------------
 inline HSCRIPT INDEXHANDLE(int iEdictNum) {
-	edict_t* pEntity = INDEXENT(iEdictNum);
-	CBaseEntity* p_baseEntity = pEntity->GetUnknown()->GetBaseEntity();
+	edict_t* pEdict = INDEXENT(iEdictNum);
+	CBaseEntity* p_baseEntity = pEdict->GetUnknown()->GetBaseEntity();
 	if (!p_baseEntity)
 	{
 		return nullptr;

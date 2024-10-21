@@ -664,12 +664,11 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			HSCRIPT od_func = g_pScriptVM->LookupFunction("OnDeath");
 			if (od_func)
 			{
-				edict_t* pEntity = INDEXENT(entindex);
-				CBaseEntity* baseEntity = pEntity->GetUnknown()->GetBaseEntity();
-				if (baseEntity)
+				HSCRIPT playerHandle = INDEXHANDLE(entindex);
+				if (playerHandle)
 				{
 					// player does not have a script scope yet, fire OnPlayerJoin
-					g_pScriptVM->Call<HSCRIPT>(od_func, NULL, true, NULL, CBaseEntity__GetScriptInstance(baseEntity));
+					g_pScriptVM->Call<HSCRIPT>(od_func, NULL, true, NULL, playerHandle);
 				}
 			}
 
@@ -842,11 +841,11 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 		HSCRIPT opj_func = g_pScriptVM->LookupFunction("OnPlayerJoin");
 		if (opj_func)
 		{
-			CBaseEntity* baseEntity = pEntity->GetUnknown()->GetBaseEntity();
-			if (baseEntity)
+			HSCRIPT playerHandle = INDEXHANDLE(entindex);
+			if (playerHandle)
 			{
 				// player does not have a script scope yet, fire OnPlayerJoin
-				g_pScriptVM->Call<HSCRIPT>(opj_func, NULL, true, NULL, CBaseEntity__GetScriptInstance(baseEntity));
+				g_pScriptVM->Call<HSCRIPT>(opj_func, NULL, true, NULL, playerHandle);
 			}
 		}
 

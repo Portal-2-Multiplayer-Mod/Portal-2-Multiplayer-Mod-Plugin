@@ -261,6 +261,7 @@ void RegisterFuncsAndRun()
 	ScriptRegisterFunction(g_pScriptVM, CallFirstRunPrompt, "Shows the first run prompt if enabled in config.nut.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetConVarInt, "GetConVarInt", "Get the integer value of a ConVar.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetConVarString, "GetConVarString", "Get the string value of a ConVar.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, INDEXHANDLE, "PlayerIndexToPlayerHandle", "Takes the player's entity index and returns the player's script handle.");
 
 	// Set all the plugin function check bools to true and start the P2:MM VScript
 	g_pScriptVM->Run("IncludeScript(\"multiplayermod/p2mm\");");

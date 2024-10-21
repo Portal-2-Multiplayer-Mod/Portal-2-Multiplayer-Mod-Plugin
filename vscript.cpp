@@ -53,7 +53,7 @@ static void printlP2MM(int level, bool dev, const char* pMsgFormat)
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Returns true is the supplied string is a valid map name.
+// Purpose: Returns true is the supplied string is a available map to load and run.
 //---------------------------------------------------------------------------------
 static bool IsMapValid(const char* map)
 {
@@ -71,7 +71,7 @@ static int GetDeveloperLevelP2MM()
 //---------------------------------------------------------------------------------
 // Purpose: Sets 'player_held_object_use_view_model' to the supplied integer value.
 //---------------------------------------------------------------------------------
-static void SetPhysTypeConvar(int newval)
+static void SetPhysTypeConVar(int newval)
 {
 	g_pCVar->FindVar("player_held_object_use_view_model")->SetValue(newval);
 }
@@ -247,9 +247,9 @@ void RegisterFuncsAndRun()
 	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetPlayerName, "GetPlayerName", "Gets player username by index.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetSteamID, "GetSteamID", "Gets the account ID component of player SteamID by index.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::UserIDToPlayerIndex, "UserIDToPlayerIndex", "Gets player entity index by userid.");
-	ScriptRegisterFunction(g_pScriptVM, IsMapValid, "Returns true is the supplied string is a valid map name.");
+	ScriptRegisterFunction(g_pScriptVM, IsMapValid, "Returns true is the supplied string is a available map to load and run.");
 	ScriptRegisterFunction(g_pScriptVM, GetDeveloperLevelP2MM, "Returns the value of ConVar p2mm_developer.");
-	ScriptRegisterFunction(g_pScriptVM, SetPhysTypeConvar, "Sets 'player_held_object_use_view_model' to the supplied integer value.");
+	ScriptRegisterFunction(g_pScriptVM, SetPhysTypeConVar, "Sets 'player_held_object_use_view_model' to the supplied integer value.");
 	ScriptRegisterFunction(g_pScriptVM, SetMaxPortalSeparationConvar, "Sets 'portal_max_separation_force' to the supplied integer value.");
 	ScriptRegisterFunction(g_pScriptVM, IsDedicatedServer, "Returns true if this is a dedicated server.");
 	ScriptRegisterFunction(g_pScriptVM, InitializeEntity, "Initializes an entity. Note: Not all entities will work even after being initialized with this function.");
@@ -263,25 +263,5 @@ void RegisterFuncsAndRun()
 	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetConVarString, "GetConVarString", "Get the string value of a ConVar.");
 
 	// Set all the plugin function check bools to true and start the P2:MM VScript
-	g_pScriptVM->Run( ""
-		"printlP2MMLoaded <- true;"
-		"GetPlayerNameLoaded <- true;"
-		"GetSteamIDLoaded <- true;"
-		"UserIDToPlayerIndexLoaded <- true;"
-		"IsMapValidLoaded <- true;"
-		"GetDeveloperLevelP2MMLoaded <- true;"
-		"SetPhysTypeConvarLoaded <- true;"
-		"SetMaxPortalSeparationConvarLoaded <- true;"
-		"IsDedicatedServerLoaded <- true;"
-		"InitializeEntityLoaded <- true;"
-		"SendToChatLoaded <- true;"
-		"GetGameMainDirLoaded <- true;"
-		"GetGameBaseDirLoaded <- true;"
-		"GetLastMapLoaded <- true;"
-		"FirstRunStateLoaded <- true;"
-		"CallFirstRunPromptLoaded <- true;"
-		"GetConVarIntLoaded <- true;"
-		"GetConVarStringLoaded <- true;"
-		"IncludeScript(\"multiplayermod/p2mm\");"
-	);
+	g_pScriptVM->Run("IncludeScript(\"multiplayermod/p2mm\");");
 }

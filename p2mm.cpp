@@ -106,7 +106,6 @@ ConVar p2mm_developer("p2mm_developer", "0", FCVAR_NONE, "Enable for P2:MM devel
 ConVar p2mm_spewgameeventinfo("p2mm_spewgameevents", "0", FCVAR_NONE, "Log information from called game events in the console, p2mm_developer must also be on. Can cause lots of console spam.");
 
 // ConCommands
-
 CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map.")
 {
 	// Make sure the CON_COMMAND was executed correctly
@@ -231,23 +230,23 @@ const char* CP2MMServerPlugin::GetPluginDescription(void)
 const char* (__fastcall* GetBallBotModel_orig)(void* thisptr, void* edx, bool bLowRes);
 const char* __fastcall GetBallBotModel_hook(void* thisptr, void* edx, bool bLowRes)
 {
-	if (GFunc::GetGameMainDir() == "portal_stories")
+	if (strcmp(GFunc::GetGameMainDir(), "portal_stories") == 0)
 	{
 		return "models/portal_stories/player/mel.mdl";
 	}
 
-	GetBallBotModel_orig(thisptr, edx, bLowRes);
+	return GetBallBotModel_orig(thisptr, edx, bLowRes);
 }
 
 const char* (__fastcall* GetEggBotModel_orig)(void* thisptr, void* edx, bool bLowRes);
 const char* __fastcall GetEggBotModel_hook(void* thisptr, void* edx, bool bLowRes)
 {
-	if (GFunc::GetGameMainDir() == "portal_stories")
+	if (strcmp(GFunc::GetGameMainDir(), "portal_stories") == 0)
 	{
 		return "models/player/chell/player.mdl";
 	}
 
-	GetEggBotModel_orig(thisptr, edx, bLowRes);
+	return GetEggBotModel_orig(thisptr, edx, bLowRes);
 }
 
 //---------------------------------------------------------------------------------
@@ -349,49 +348,61 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		}
 	}
 	
-	// Byte patches
-	P2MMLog(0, true, "Patching Portal 2...");
+	// big ol' try catch because game has a TerminateProcess handler for exceptions...
+	// why this wasn't here is mystyfying, - 10/2024 NULLderef
+	try {
+		// Byte patches
+		P2MMLog(0, true, "Patching Portal 2...");
 
-	// Linked portal doors event crash patch
-	Memory::ReplacePattern("server", "0F B6 87 04 05 00 00 8B 16", "EB 14 87 04 05 00 00 8B 16");
+		// Linked portal doors event crash patch
+		Memory::ReplacePattern("server", "0F B6 87 04 05 00 00 8B 16", "EB 14 87 04 05 00 00 8B 16");
 
-	// Partner disconnects
-	Memory::ReplacePattern("server", "51 50 FF D2 83 C4 10 E8", "51 50 90 90 83 C4 10 E8");
-	Memory::ReplacePattern("server", "74 28 3B 75 FC", "EB 28 3B 75 FC");
+		// Partner disconnects
+		Memory::ReplacePattern("server", "51 50 FF D2 83 C4 10 E8", "51 50 90 90 83 C4 10 E8");
+		Memory::ReplacePattern("server", "74 28 3B 75 FC", "EB 28 3B 75 FC");
 
-	// Max players -> 33
-	Memory::ReplacePattern("server", "83 C0 02 89 01", "83 C0 20 89 01");
-	Memory::ReplacePattern("engine", "85 C0 78 13 8B 17", "31 C0 04 21 8B 17");
-	static uintptr_t sv = *reinterpret_cast<uintptr_t*>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "74 0A B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B E5", 3));
-	*reinterpret_cast<int*>(sv + 0x228) = 33;
+		// Max players -> 33
+		Memory::ReplacePattern("server", "83 C0 02 89 01", "83 C0 20 89 01");
+		Memory::ReplacePattern("engine", "85 C0 78 13 8B 17", "31 C0 04 21 8B 17");
+		static uintptr_t sv = *reinterpret_cast<uintptr_t*>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "74 0A B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B E5", 3));
+		*reinterpret_cast<int*>(sv + 0x228) = 33;
 
-	// Prevent disconnect by "STEAM validation rejected"
-	Memory::ReplacePattern("engine", "01 74 7D 8B", "01 EB 7D 8B");
+		// Prevent disconnect by "STEAM validation rejected"
+		Memory::ReplacePattern("engine", "01 74 7D 8B", "01 EB 7D 8B");
 
-	// Fix sv_password
-	Memory::ReplacePattern("engine", "0F 95 C1 51 8D 4D E8", "03 C9 90 51 8D 4D E8");
+		// Fix sv_password
+		Memory::ReplacePattern("engine", "0F 95 C1 51 8D 4D E8", "03 C9 90 51 8D 4D E8");
 
-	// runtime max 0.03 -> 0.05
-	Memory::ReplacePattern("vscript", "00 00 00 E0 51 B8 9E 3F", "9a 99 99 99 99 99 a9 3f");
+		// runtime max 0.03 -> 0.05
+		Memory::ReplacePattern("vscript", "00 00 00 E0 51 B8 9E 3F", "9a 99 99 99 99 99 a9 3f");
 
-	// Make sure -allowspectators is there so we get our 33 max players
-	if (!CommandLine()->FindParm("-allowspectators"))
-	{
-		CommandLine()->AppendParm("-allowspectators", "");
+		// Make sure -allowspectators is there so we get our 33 max players
+		if (!CommandLine()->FindParm("-allowspectators"))
+		{
+			CommandLine()->AppendParm("-allowspectators", "");
+		}
+
+		// MinHook initallization and hooking
+		P2MMLog(0, true, "Initalizing MinHook and hooking functions...");
+		MH_Initialize();
+		// NoSteamLogon disconnect hook patch.
+		//MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "55 8B EC 83 EC 08 53 56 57 8B F1 E8 ?? ?? ?? ?? 8B"), &disconnect_hook, (LPVOID*)&disconnect_orig);
+	
+		// Hook onto the function which defines what Atlas's and PBody's models are.
+		MH_CreateHook(
+			Memory::Rel32(Memory::Scanner::Scan(Memory::Modules::Get("server"), "E8 ?? ?? ?? ?? 83 C4 40 50", 1)),
+			&GetBallBotModel_hook, (void**)&GetBallBotModel_orig);
+		MH_CreateHook(
+			Memory::Rel32(Memory::Scanner::Scan(Memory::Modules::Get("server"), "E8 ?? ?? ?? ?? 83 C4 04 50 8B 45 10 8B 10", 1)),
+			&GetEggBotModel_hook, (void**)&GetEggBotModel_orig);
+	
+		P2MMLog(0, false, "Loaded plugin!");
+		m_bPluginLoaded = true;
+	} catch(std::exception& ex) {
+		Warning("Failed to load plugin! (%s)\n", ex.what());
+		return false;
 	}
 
-	// MinHook initallization and hooking
-	P2MMLog(0, true, "Initalizing MinHook and hooking functions...");
-	MH_Initialize();
-	// NoSteamLogon disconnect hook patch.
-	//MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "55 8B EC 83 EC 08 53 56 57 8B F1 E8 ?? ?? ?? ?? 8B"), &disconnect_hook, (LPVOID*)&disconnect_orig);
-	
-	// Hook onto the function which defines what Atlas's and PBody's models are.
-	//MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 80 7D 08 00 B8 7C"), &GetBallBotModel_hook, (LPVOID*)&GetBallBotModel_orig);
-	//MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 80 7D 08 00 B8 34"), &GetEggBotModel_hook, (LPVOID*)&GetEggBotModel_orig);
-	
-	P2MMLog(0, false, "Loaded plugin!");
-	m_bPluginLoaded = true;
 	return true;
 }
 

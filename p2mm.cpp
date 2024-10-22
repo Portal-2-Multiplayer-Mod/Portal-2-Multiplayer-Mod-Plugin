@@ -399,7 +399,8 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		P2MMLog(0, false, "Loaded plugin!");
 		m_bPluginLoaded = true;
 	} catch(std::exception& ex) {
-		Warning("Failed to load plugin! (%s)\n", ex.what());
+		P2MMLog(0, false, "Failed to load plugin! Exception: (%s)", ex.what());
+		this->m_bNoUnload = true;
 		return false;
 	}
 
@@ -420,13 +421,16 @@ void CP2MMServerPlugin::Unload(void)
 
 	P2MMLog(0, false, "Unloading Plugin...");
 
+	P2MMLog(0, true, "Removing listeners for game events...");
 	gameeventmanager->RemoveListener(this);
 
 	ConVar_Unregister();
+	P2MMLog(0, true, "Disconnecting tier libraries...");
 	DisconnectTier2Libraries();
 	DisconnectTier1Libraries();
 
 	// Undo byte patches
+	P2MMLog(0, true, "Unpatching Portal 2...");
 
 	// Linked portal doors event crash patch
 	Memory::ReplacePattern("server", "EB 14 87 04 05 00 00 8B 16", "0F B6 87 04 05 00 00 8B 16");
@@ -450,6 +454,7 @@ void CP2MMServerPlugin::Unload(void)
 	// runtime max 0.05 -> 0.03
 	Memory::ReplacePattern("vscript", "00 00 00 00 00 00 E0 3F", "00 00 00 E0 51 B8 9E 3F");
 
+	P2MMLog(0, true, "Disconnecting hooked functions and uinitalizing MinHook...");
 	MH_DisableHook(MH_ALL_HOOKS);
 	MH_Uninitialize();
 

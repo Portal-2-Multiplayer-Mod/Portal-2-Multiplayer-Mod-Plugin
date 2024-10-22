@@ -228,6 +228,28 @@ const char* CP2MMServerPlugin::GetPluginDescription(void)
 //	disconnect_orig(thisptr, edx, cl, eDenyReason, pchOptionalText);
 //}
 
+const char* (__fastcall* GetBallBotModel_orig)(void* thisptr, void* edx, bool bLowRes);
+const char* __fastcall GetBallBotModel_hook(void* thisptr, void* edx, bool bLowRes)
+{
+	if (GFunc::GetGameMainDir() == "portal_stories")
+	{
+		return "models/portal_stories/player/mel.mdl";
+	}
+
+	GetBallBotModel_orig(thisptr, edx, bLowRes);
+}
+
+const char* (__fastcall* GetEggBotModel_orig)(void* thisptr, void* edx, bool bLowRes);
+const char* __fastcall GetEggBotModel_hook(void* thisptr, void* edx, bool bLowRes)
+{
+	if (GFunc::GetGameMainDir() == "portal_stories")
+	{
+		return "models/player/chell/player.mdl";
+	}
+
+	GetEggBotModel_orig(thisptr, edx, bLowRes);
+}
+
 //---------------------------------------------------------------------------------
 // Purpose: Called when the plugin is loaded, initialization process.
 //			Loads the interfaces we need from the engine and applies our patches.
@@ -243,11 +265,12 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 
 	P2MMLog(0, false, "Loading plugin...");
 
+	P2MMLog(0, true, "Connecting tier libraries...");
 	ConnectTier1Libraries(&interfaceFactory, 1);
 	ConnectTier2Libraries(&interfaceFactory, 1);
 
 	// Make sure that all the interfaces needed are loaded and useable
-
+	P2MMLog(0, true, "Loading interfaces...");
 	engineServer = (IVEngineServer*)interfaceFactory(INTERFACEVERSION_VENGINESERVER, 0);
 	if (!engineServer)
 	{
@@ -309,12 +332,14 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	ConVar_Register(0);
 
 	// Add listener for all used game events
+	P2MMLog(0, true, "Adding listeners for game events...");
 	for (const char* gameevent : gameevents)
 	{
 		gameeventmanager->AddListener(this, gameevent, true);
 		P2MMLog(0, true, "Listener for gamevent '%s' has been added!", gameevent);
 	}
 
+	P2MMLog(0, true, "Blocking console commands...");
 	for (const char* concommand : forbiddenconcommands)
 	{
 		ConCommandBase* commandbase = g_pCVar->FindCommandBase(concommand);
@@ -325,6 +350,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	}
 	
 	// Byte patches
+	P2MMLog(0, true, "Patching Portal 2...");
 
 	// Linked portal doors event crash patch
 	Memory::ReplacePattern("server", "0F B6 87 04 05 00 00 8B 16", "EB 14 87 04 05 00 00 8B 16");
@@ -354,10 +380,16 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		CommandLine()->AppendParm("-allowspectators", "");
 	}
 
-	//MH_Initialize();
+	// MinHook initallization and hooking
+	P2MMLog(0, true, "Initalizing MinHook and hooking functions...");
+	MH_Initialize();
 	// NoSteamLogon disconnect hook patch.
 	//MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "55 8B EC 83 EC 08 53 56 57 8B F1 E8 ?? ?? ?? ?? 8B"), &disconnect_hook, (LPVOID*)&disconnect_orig);
-
+	
+	// Hook onto the function which defines what Atlas's and PBody's models are.
+	//MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 80 7D 08 00 B8 7C"), &GetBallBotModel_hook, (LPVOID*)&GetBallBotModel_orig);
+	//MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 80 7D 08 00 B8 34"), &GetEggBotModel_hook, (LPVOID*)&GetEggBotModel_orig);
+	
 	P2MMLog(0, false, "Loaded plugin!");
 	m_bPluginLoaded = true;
 	return true;
@@ -407,8 +439,8 @@ void CP2MMServerPlugin::Unload(void)
 	// runtime max 0.05 -> 0.03
 	Memory::ReplacePattern("vscript", "00 00 00 00 00 00 E0 3F", "00 00 00 E0 51 B8 9E 3F");
 
-	//MH_DisableHook(MH_ALL_HOOKS);
-	//MH_Uninitialize();
+	MH_DisableHook(MH_ALL_HOOKS);
+	MH_Uninitialize();
 
 	m_bPluginLoaded = false;
 }

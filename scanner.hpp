@@ -24,7 +24,7 @@ namespace Memory {
 
 	class Scanner {
 	public:
-		template<typename T = uintptr_t> static T Scan(std::span<uint8_t> region, std::string pattern, int offset = 0) {
+		template<typename T = void*> static T Scan(std::span<uint8_t> region, std::string pattern, int offset = 0) {
 			return reinterpret_cast<T>(Scanner::Implementation().get()->Scan(region, pattern, offset));
 		}
 
@@ -45,6 +45,12 @@ namespace Memory {
 	};
 
 	void ReplacePattern(std::string target_module, std::string patternBytes, std::string replace_with);
+
+	
+	template<typename T> T Rel32(void* relPtr) {
+		auto rel = reinterpret_cast<uintptr_t>(relPtr);
+		return rel + *reinterpret_cast<int32_t*>(rel) + sizeof(int32_t);
+	}
 };
 
 #endif // SCANNER_HPP

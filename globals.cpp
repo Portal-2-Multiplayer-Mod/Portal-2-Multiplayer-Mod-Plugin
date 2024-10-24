@@ -47,31 +47,6 @@ void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 	}
 }
 
-void ReplacePattern(std::string target_module, std::string patternBytes, std::string replace_with)
-{
-	void* addr = Memory::Scanner::Scan<void*>(Memory::Modules::Get(target_module), patternBytes);
-	if (!addr)
-	{
-		P2MMLog(1, false, "Failed to replace pattern!");
-		return;
-	}
-
-	std::vector<uint8_t> replace;
-
-	std::istringstream patternStream(replace_with);
-	std::string patternByte;
-	while (patternStream >> patternByte)
-	{
-		replace.push_back((uint8_t)std::stoul(patternByte, nullptr, 16));
-	}
-
-	DWORD oldprotect = 0;
-	DWORD newprotect = PAGE_EXECUTE_READWRITE;
-	VirtualProtect(addr, replace.size(), newprotect, &oldprotect);
-	memcpy_s(addr, replace.size(), replace.data(), replace.size());
-	VirtualProtect(addr, replace.size(), oldprotect, &newprotect);
-}
-
 //---------------------------------------------------------------------------------
 // Purpose: Gets player entity index by userid.
 //---------------------------------------------------------------------------------
@@ -91,40 +66,6 @@ int GFunc::UserIDToPlayerIndex(int userid)
 		}
 	}
 	return NULL; // Return NULL if the index can't be found
-}
-
-// Get the script scope of a entity, thanks to Nullderef/Vista for this.
-HSCRIPT GFunc::GetScriptScope(CBaseEntity* entity)
-{
-	if (entity == NULL)
-	{
-
-		return NULL;
-	}
-	return *reinterpret_cast<HSCRIPT*>(reinterpret_cast<uintptr_t>(entity) + 0x33c);
-}
-
-HSCRIPT GFunc::GetScriptInstance(CBaseEntity* entity) {
-	static auto _GetScriptInstance = reinterpret_cast<HSCRIPT(__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 51 56 8B F1 83 BE 50"));
-	if (!_GetScriptInstance) {
-		Error("GetScriptEntity not found");
-		return nullptr;
-	}
-
-	return _GetScriptInstance(entity);
-}
-
-//---------------------------------------------------------------------------------
-// Purpose: Gets player base class by player entity index. Thanks to Nanoman2525 for this.
-//---------------------------------------------------------------------------------
-CBasePlayer* GFunc::PlayerIndexToPlayer(int playerIndex)
-{
-#ifdef _WIN32
-	static auto _PlayerIndexToPlayer = reinterpret_cast<CBasePlayer* (__cdecl*)(int)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 8B 4D 08 33 C0 85 C9 7E 30"));
-	return _PlayerIndexToPlayer(playerIndex);
-#else // Linux support TODO
-	return NULL;
-#endif
 }
 
 //---------------------------------------------------------------------------------
@@ -176,12 +117,6 @@ int GFunc::GetSteamID(int index)
 	return pSteamID->GetAccountID();
 }
 
-void GFunc::RemoveEntity(CBaseEntity* pEntity)
-{
-	reinterpret_cast<void (*)(void*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 57 8B 7D 08 85 FF 74 72"))(reinterpret_cast<IServerEntity*>(pEntity)->GetNetworkable());
-}
-
-
 //---------------------------------------------------------------------------------
 // Purpose: Self-explanatory.
 //---------------------------------------------------------------------------------
@@ -210,4 +145,106 @@ const char* GFunc::GetConVarString(const char* cvname)
 	}
 
 	return pVar->GetString();
+}
+
+
+///			 UTIL Functions				\\\
+
+//---------------------------------------------------------------------------------
+// Purpose: Gets the player's base class with it's entity index. Thanks to Nanoman2525 for this.
+//---------------------------------------------------------------------------------
+CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
+{
+#ifdef _WIN32
+	static auto _PlayerByIndex = reinterpret_cast<CBasePlayer * (__cdecl*)(int)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 8B 4D 08 33 C0 85 C9 7E 30"));
+	return _PlayerByIndex(playerIndex);
+#else // Linux support TODO
+	return NULL;
+#endif
+}
+
+///			 CBaseEntity Class Functions				\\\
+
+//---------------------------------------------------------------------------------
+// Purpose: Self-explanatory. Thanks to Nanoman2525 for this.
+//---------------------------------------------------------------------------------
+void CBaseEntity__RemoveEntity(CBaseEntity* pEntity)
+{
+	//reinterpret_cast<IServerEntity*>(pEntity) trust me bro aka, we know its CBaseEntity*, but we want the IServerEntity* so cast to that to get its methods 
+	reinterpret_cast<void (*)(void*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 57 8B 7D 08 85 FF 74 72"))(reinterpret_cast<IServerEntity*>(pEntity)->GetNetworkable());
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Get the script scope of a entity. Thanks to Nullderef/Vista for this.
+//---------------------------------------------------------------------------------
+HSCRIPT CBaseEntity__GetScriptScope(CBaseEntity* entity)
+{
+	if (entity == NULL)
+	{
+		return NULL;
+	}
+	// Returing class variable of the script scope, offset being 0x33c
+	// Because we have the pointer to the scope, dereference it to get the member variable/function of the class, but in turn the type is now a pointer and the whole thing needs to be derefernenced
+	// offset the reinterpret_case and the return type
+	// 
+	return *reinterpret_cast<HSCRIPT*>(reinterpret_cast<uintptr_t>(entity) + 0x33c);
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Get the script instance of a entity. Thanks to Nullderef/Vista for this.
+//---------------------------------------------------------------------------------
+HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity)
+{
+	static auto _GetScriptInstance = reinterpret_cast<HSCRIPT(__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 51 56 8B F1 83 BE 50"));
+	if (!_GetScriptInstance) {
+		P2MMLog(1, false , "Could not get script instance for entity!");
+		return nullptr;
+	}
+
+	return _GetScriptInstance(entity);
+}
+
+
+
+///			 CPortal_Player/CBasePlayer Class Functions				\\\
+
+//---------------------------------------------------------------------------------
+// Purpose: Respawn the a player by their entity index.
+//---------------------------------------------------------------------------------
+void CPortal_Player__RespawnPlayer(int playerIndex)
+{
+	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
+	if (!pPlayer)
+	{
+		P2MMLog(1, true, "Couldn't get player to respawn! playerIndex: %i", playerIndex);
+		return;
+	}
+
+	static auto _RespawnPlayer = reinterpret_cast<void(__thiscall*)(CPortal_Player*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "0F 57 C0 56 8B F1 57 8D 8E"));
+	_RespawnPlayer((CPortal_Player*)pPlayer);
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Set the flashlight for a player on or off. Thanks to Nanoman2525 for this.
+//			Not a function in the CPortal_Player class, just more grouping it with the
+//			class. This does the same thing as the FlashlightTurnOn and FlashlightTurnOff
+//			functions in CPortal_Player but done in one function.
+//---------------------------------------------------------------------------------
+void CPortal_Player__SetFlashlightState(int playerIndex, bool enable)
+{
+	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
+	if (!pPlayer)
+	{
+		P2MMLog(1, true, "Couldn't get player to set flashlight state! playerIndex: %i enable: %i", playerIndex, !!enable);
+		return;
+	}
+	
+	if (enable)
+	{
+		reinterpret_cast<void(__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 53 8B D9 8B 83 A8"))((CBaseEntity*)pPlayer, EF_DIMLIGHT);
+	}
+	else
+	{
+		reinterpret_cast<void(__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 53 56 8B 75 08 8B D9 8B 83"))((CBaseEntity*)pPlayer, EF_DIMLIGHT);
+	}
 }

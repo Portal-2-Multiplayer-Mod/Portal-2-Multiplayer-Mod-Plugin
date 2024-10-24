@@ -110,7 +110,6 @@ ConVar p2mm_developer("p2mm_developer", "0", FCVAR_NONE, "Enable for P2:MM devel
 ConVar p2mm_spewgameeventinfo("p2mm_spewgameevents", "0", FCVAR_NONE, "Log information from called game events in the console, p2mm_developer must also be on. Can cause lots of console spam.");
 
 // ConCommands
-
 CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map.")
 {
 	// Make sure the CON_COMMAND was executed correctly
@@ -186,6 +185,13 @@ CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map."
 	}
 }
 
+CON_COMMAND(p2mm_respawnall, "Respawns all players.")
+{
+	for (int i = 1; i < gpGlobals->maxClients; i++)
+	{
+		CPortal_Player__RespawnPlayer(i);
+	}
+}
 
 //---------------------------------------------------------------------------------
 // Purpose: constructor
@@ -221,17 +227,34 @@ const char* CP2MMServerPlugin::GetPluginDescription(void)
 	return "Portal 2: Multiplayer Mod Server Plugin | Plugin Version: " P2MM_PLUGIN_VERSION " | For P2:MM Version: " P2MM_VERSION;
 }
 
-// MinHook hook to catch the notorius "No Steam logon" issue and stop it disconnecting the host killing the server 
-void(__fastcall* disconnect_orig)(void*, const char*, ...);
-void __fastcall disconnect_hook(void* thisptr, const char* fmt, ...)
-{
-	if (FStrEq(fmt, "No Steam logon\n"))
-		return;
+// NoSteamLogon stop hook. Supposedly Valve fixed this, again, but this will be here just in case.
+// void(__fastcall* disconnect_orig)(void*, const char*, ...);
+// void __fastcall disconnect_hook(void* thisptr, const char* fmt, ...)
+// {
+// 	if (FStrEq(fmt, "No Steam logon\n"))
+// 		return;
+// }
 
-	va_list	vargs;
-	char string[1024];
-	V_snprintf(string, sizeof(string), fmt, vargs);
-	disconnect_orig(thisptr, fmt);
+const char* (__fastcall* GetBallBotModel_orig)(void* thisptr, void* edx, bool bLowRes);
+const char* __fastcall GetBallBotModel_hook(void* thisptr, void* edx, bool bLowRes)
+{
+	if (strcmp(GFunc::GetGameMainDir(), "portal_stories") == 0)
+	{
+		return "models/portal_stories/player/mel.mdl";
+	}
+
+	return GetBallBotModel_orig(thisptr, edx, bLowRes);
+}
+
+const char* (__fastcall* GetEggBotModel_orig)(void* thisptr, void* edx, bool bLowRes);
+const char* __fastcall GetEggBotModel_hook(void* thisptr, void* edx, bool bLowRes)
+{
+	if (strcmp(GFunc::GetGameMainDir(), "portal_stories") == 0)
+	{
+		return "models/player/chell/player.mdl";
+	}
+
+	return GetEggBotModel_orig(thisptr, edx, bLowRes);
 }
 
 //---------------------------------------------------------------------------------
@@ -249,11 +272,12 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 
 	P2MMLog(0, false, "Loading plugin...");
 
+	P2MMLog(0, true, "Connecting tier libraries...");
 	ConnectTier1Libraries(&interfaceFactory, 1);
 	ConnectTier2Libraries(&interfaceFactory, 1);
 
 	// Make sure that all the interfaces needed are loaded and useable
-
+	P2MMLog(0, true, "Loading interfaces...");
 	engineServer = (IVEngineServer*)interfaceFactory(INTERFACEVERSION_VENGINESERVER, 0);
 	if (!engineServer)
 	{
@@ -315,12 +339,14 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	ConVar_Register(0);
 
 	// Add listener for all used game events
+	P2MMLog(0, true, "Adding listeners for game events...");
 	for (const char* gameevent : gameevents)
 	{
 		gameeventmanager->AddListener(this, gameevent, true);
 		P2MMLog(0, true, "Listener for gamevent '%s' has been added!", gameevent);
 	}
 
+	P2MMLog(0, true, "Blocking console commands...");
 	for (const char* concommand : forbiddenconcommands)
 	{
 		ConCommandBase* commandbase = g_pCVar->FindCommandBase(concommand);
@@ -329,38 +355,63 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 			commandbase->RemoveFlags(FCVAR_GAMEDLL);
 		}
 	}
+	
+	// big ol' try catch because game has a TerminateProcess handler for exceptions...
+	// why this wasn't here is mystyfying, - 10/2024 NULLderef
+	try {
+		// Byte patches
+		P2MMLog(0, true, "Patching Portal 2...");
 
-	// Byte patches
+		// Linked portal doors event crash patch
+		Memory::ReplacePattern("server", "0F B6 87 04 05 00 00 8B 16", "EB 14 87 04 05 00 00 8B 16");
 
-	// Linked portal doors event crash patch
-	ReplacePattern("server", "0F B6 87 04 05 00 00 8B 16", "EB 14 87 04 05 00 00 8B 16");
+		// Partner disconnects
+		Memory::ReplacePattern("server", "51 50 FF D2 83 C4 10 E8", "51 50 90 90 83 C4 10 E8");
+		Memory::ReplacePattern("server", "74 28 3B 75 FC", "EB 28 3B 75 FC");
 
-	// Partner disconnects
-	ReplacePattern("server", "51 50 FF D2 83 C4 10 E8", "51 50 90 90 83 C4 10 E8");
-	ReplacePattern("server", "74 28 3B 75 FC", "EB 28 3B 75 FC");
+		// Max players -> 33
+		Memory::ReplacePattern("server", "83 C0 02 89 01", "83 C0 20 89 01");
+		Memory::ReplacePattern("engine", "85 C0 78 13 8B 17", "31 C0 04 21 8B 17");
+		static uintptr_t sv = *reinterpret_cast<uintptr_t*>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "74 0A B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B E5", 3));
+		*reinterpret_cast<int*>(sv + 0x228) = 33;
 
-	// Max players -> 33
-	ReplacePattern("server", "83 C0 02 89 01", "83 C0 20 89 01");
-	ReplacePattern("engine", "85 C0 78 13 8B 17", "31 C0 04 21 8B 17");
-	static uintptr_t sv = *reinterpret_cast<uintptr_t*>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "74 0A B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B E5", 3));
-	*reinterpret_cast<int*>(sv + 0x228) = 33;
+		// Prevent disconnect by "STEAM validation rejected"
+		Memory::ReplacePattern("engine", "01 74 7D 8B", "01 EB 7D 8B");
 
-	// Prevent disconnect by "STEAM validation rejected"
-	ReplacePattern("engine", "01 74 7D 8B", "01 EB 7D 8B");
+		// Fix sv_password
+		Memory::ReplacePattern("engine", "0F 95 C1 51 8D 4D E8", "03 C9 90 51 8D 4D E8");
 
-	// Fix sv_password
-	ReplacePattern("engine", "0F 95 C1 51 8D 4D E8", "03 C9 90 51 8D 4D E8");
+		// runtime max 0.03 -> 0.05
+		Memory::ReplacePattern("vscript", "00 00 00 E0 51 B8 9E 3F", "9a 99 99 99 99 99 a9 3f");
 
-	// runtime max 0.03 -> 0.05
-	ReplacePattern("vscript", "00 00 00 E0 51 B8 9E 3F", "9a 99 99 99 99 99 a9 3f");
+		// Make sure -allowspectators is there so we get our 33 max players
+		if (!CommandLine()->FindParm("-allowspectators"))
+		{
+			CommandLine()->AppendParm("-allowspectators", "");
+		}
 
-	// Make sure -allowspectators is there so we get our 33 max players
-	if (!CommandLine()->FindParm("-allowspectators"))
-	{
-		CommandLine()->AppendParm("-allowspectators", "");
+		// MinHook initallization and hooking
+		P2MMLog(0, true, "Initalizing MinHook and hooking functions...");
+		MH_Initialize();
+		// NoSteamLogon disconnect hook patch.
+		// MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "55 8B EC 81 EC 14 08"), &disconnect_hook, (LPVOID*)&disconnect_orig);
+	
+		// Hook onto the function which defines what Atlas's and PBody's models are.
+		MH_CreateHook(
+			Memory::Rel32(Memory::Scanner::Scan(Memory::Modules::Get("server"), "E8 ?? ?? ?? ?? 83 C4 40 50", 1)),
+			&GetBallBotModel_hook, (void**)&GetBallBotModel_orig);
+		MH_CreateHook(
+			Memory::Rel32(Memory::Scanner::Scan(Memory::Modules::Get("server"), "E8 ?? ?? ?? ?? 83 C4 04 50 8B 45 10 8B 10", 1)),
+			&GetEggBotModel_hook, (void**)&GetEggBotModel_orig);
+	
+		P2MMLog(0, false, "Loaded plugin!");
+		m_bPluginLoaded = true;
+	} catch(std::exception& ex) {
+		P2MMLog(0, false, "Failed to load plugin! Exception: (%s)", ex.what());
+		this->m_bNoUnload = true;
+		return false;
 	}
 
-	MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "55 8B EC 81 EC 14 08"), &disconnect_hook, (LPVOID*)&disconnect_orig);
 
 	discordIntegration.StartDiscordRPC();
 
@@ -383,36 +434,40 @@ void CP2MMServerPlugin::Unload(void)
 
 	P2MMLog(0, false, "Unloading Plugin...");
 
+	P2MMLog(0, true, "Removing listeners for game events...");
 	gameeventmanager->RemoveListener(this);
 
 	ConVar_Unregister();
+	P2MMLog(0, true, "Disconnecting tier libraries...");
 	DisconnectTier2Libraries();
 	DisconnectTier1Libraries();
 
 	// Undo byte patches
+	P2MMLog(0, true, "Unpatching Portal 2...");
 
 	// Linked portal doors event crash patch
-	ReplacePattern("server", "EB 14 87 04 05 00 00 8B 16", "0F B6 87 04 05 00 00 8B 16");
+	Memory::ReplacePattern("server", "EB 14 87 04 05 00 00 8B 16", "0F B6 87 04 05 00 00 8B 16");
 
 	// Partner disconnects
-	ReplacePattern("server", "51 50 90 90 83 C4 10 E8", "51 50 FF D2 83 C4 10 E8");
-	ReplacePattern("server", "EB 28 3B 75 FC", "74 28 3B 75 FC");
+	Memory::ReplacePattern("server", "51 50 90 90 83 C4 10 E8", "51 50 FF D2 83 C4 10 E8");
+	Memory::ReplacePattern("server", "EB 28 3B 75 FC", "74 28 3B 75 FC");
 
 	// Max players -> 3
-	ReplacePattern("server", "83 C0 20 89 01", "83 C0 02 89 01");
-	ReplacePattern("engine", "31 C0 04 21 8B 17", "85 C0 78 13 8B 17");
+	Memory::ReplacePattern("server", "83 C0 20 89 01", "83 C0 02 89 01");
+	Memory::ReplacePattern("engine", "31 C0 04 21 8B 17", "85 C0 78 13 8B 17");
 	static uintptr_t sv = *reinterpret_cast<uintptr_t*>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "74 0A B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B E5", 3));
 	*reinterpret_cast<int*>(sv + 0x228) = 2;
 
 	// Disconnect by "STEAM validation rejected"
-	ReplacePattern("engine", "01 EB 7D 8B", "01 74 7D 8B");
+	Memory::ReplacePattern("engine", "01 EB 7D 8B", "01 74 7D 8B");
 
 	// sv_password
-	ReplacePattern("engine", "03 C9 90 51 8D 4D E8", "0F 95 C1 51 8D 4D E8");
+	Memory::ReplacePattern("engine", "03 C9 90 51 8D 4D E8", "0F 95 C1 51 8D 4D E8");
 
 	// runtime max 0.05 -> 0.03
-	ReplacePattern("vscript", "00 00 00 00 00 00 E0 3F", "00 00 00 E0 51 B8 9E 3F");
+	Memory::ReplacePattern("vscript", "00 00 00 00 00 00 E0 3F", "00 00 00 E0 51 B8 9E 3F");
 
+	P2MMLog(0, true, "Disconnecting hooked functions and uinitalizing MinHook...");
 	MH_DisableHook(MH_ALL_HOOKS);
 	MH_Uninitialize();
 
@@ -695,12 +750,11 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			HSCRIPT od_func = g_pScriptVM->LookupFunction("OnDeath");
 			if (od_func)
 			{
-				edict_t* pEntity = INDEXENT(entindex);
-				CBaseEntity* baseEntity = pEntity->GetUnknown()->GetBaseEntity();
-				if (baseEntity)
+				HSCRIPT playerHandle = INDEXHANDLE(entindex);
+				if (playerHandle)
 				{
-					g_pScriptVM->Call<HSCRIPT>(od_func, NULL, true, NULL, GFunc::GetScriptInstance(baseEntity));
-
+					// player does not have a script scope yet, fire OnPlayerJoin
+					g_pScriptVM->Call<HSCRIPT>(od_func, NULL, true, NULL, playerHandle);
 					std::string playerdied = std::string(GFunc::GetPlayerName(entindex));
 					std::string deathtitlestr = playerdied + std::string(" Died!");
 					discordIntegration.SendWebHookEmbed(deathtitlestr, "", EMBEDCOLOR_PLAYERDEATH);
@@ -900,11 +954,11 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 		HSCRIPT opj_func = g_pScriptVM->LookupFunction("OnPlayerJoin");
 		if (opj_func)
 		{
-			CBaseEntity* baseEntity = pEntity->GetUnknown()->GetBaseEntity();
-			if (baseEntity)
+			HSCRIPT playerHandle = INDEXHANDLE(entindex);
+			if (playerHandle)
 			{
 				// player does not have a script scope yet, fire OnPlayerJoin
-				g_pScriptVM->Call<HSCRIPT>(opj_func, NULL, true, NULL, GFunc::GetScriptInstance(baseEntity));
+				g_pScriptVM->Call<HSCRIPT>(opj_func, NULL, true, NULL, playerHandle);
 			}
 		}
 
@@ -958,7 +1012,7 @@ void CP2MMServerPlugin::GameFrame(bool simulating)
 //---------------------------------------------------------------------------------
 void CP2MMServerPlugin::LevelShutdown(void)
 {
-	p2mm_loop.SetValue("0");
+	p2mm_loop.SetValue("0"); // REMOVE THIS
 }
 
 //---------------------------------------------------------------------------------

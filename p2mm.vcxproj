@@ -108,10 +108,12 @@
       <LinkStatus>
       </LinkStatus>
     </Link>
-    <ProjectReference>
-      <UseLibraryDependencyInputs>
-      </UseLibraryDependencyInputs>
-    </ProjectReference>
+    <PostBuildEvent>
+      <Command>copy $(TargetPath) "$(ProjectDir)..\Portal-2-Multiplayer-Mod\src\ModFiles\Portal 2\install_dlc\addons"
+</Command>
+      <Message>
+      </Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -151,15 +153,16 @@
       <LinkStatus>
       </LinkStatus>
     </Link>
-    <ProjectReference>
-      <UseLibraryDependencyInputs>
-      </UseLibraryDependencyInputs>
-    </ProjectReference>
+    <PostBuildEvent>
+      <Command>copy $(TargetPath) "$(ProjectDir)..\Portal-2-Multiplayer-Mod\src\ModFiles\Portal 2\install_dlc\addons"
+</Command>
+      <Message>
+      </Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="discordrpc.cpp" />
     <ClCompile Include="globals.cpp" />
-    <ClCompile Include="modules.cpp" />
     <ClCompile Include="p2mm.cpp" />
     <ClCompile Include="scanner.cpp" />
     <ClCompile Include="vscript.cpp" />
@@ -169,7 +172,6 @@
     <ClInclude Include="discord-rpc\include\discord_rpc.h" />
     <ClInclude Include="discordrpc.hpp" />
     <ClInclude Include="globals.hpp" />
-    <ClInclude Include="modules.hpp" />
     <ClInclude Include="p2mm.hpp" />
     <ClInclude Include="scanner.hpp" />
   </ItemGroup>

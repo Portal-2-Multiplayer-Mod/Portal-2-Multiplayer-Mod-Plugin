@@ -1,20 +1,27 @@
 //===========================================================================//
 //
 // Author: NULLderef
-// Purpose: Portal 2: Multiplayer Mod server plugin
+// Purpose: Portal 2: Multiplayer Mod server plugin memory scanner
 // 
 //===========================================================================//
 
 #include "scanner.hpp"
 
+#ifdef _WIN32
 #include <Windows.h>
+#include <Psapi.h>
+#else
+#endif
+
 #include <immintrin.h>
 #include <stdexcept>
 #include <sstream>
+#include <filesystem>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+extern void P2MMLog(int level, bool dev, const char* pMsgFormat, ...);
 namespace Memory {
 #ifndef _WIN32
 	inline void __cpuidex(int cpuid[4], int function, int subleaf) {
@@ -349,5 +356,75 @@ namespace Memory {
 		}
 
 		return implementation;
+	}
+
+	std::unordered_map<std::string, std::span<uint8_t>> Modules::loadedModules;
+
+	void Modules::PopulateModules() {
+#ifdef _WIN32
+		HMODULE modules[1024];
+		auto processHandle = GetCurrentProcess();
+		DWORD modulesNeeded;
+		if (EnumProcessModules(processHandle, modules, sizeof(modules), &modulesNeeded)) {
+			for (DWORD i = 0; i < (modulesNeeded / sizeof(HMODULE)); i++) {
+				char pathBuffer[MAX_PATH];
+				if (!GetModuleFileNameA(modules[i], pathBuffer, sizeof(pathBuffer))) continue;
+				MODULEINFO moduleInfo = {};
+				if (!GetModuleInformation(processHandle, modules[i], &moduleInfo, sizeof(MODULEINFO))) continue;
+				std::filesystem::path modulePath(pathBuffer);
+				loadedModules.insert(
+					std::make_pair(
+						modulePath.stem().string(),
+						std::span<uint8_t>(
+							reinterpret_cast<uint8_t*>(moduleInfo.lpBaseOfDll),
+							static_cast<size_t>(moduleInfo.SizeOfImage)
+						)
+					)
+				);
+			}
+		}
+#else
+#endif
+	}
+
+	std::span<uint8_t> Modules::Get(std::string name) {
+		if (loadedModules.empty()) {
+			PopulateModules();
+		}
+
+		if (loadedModules.contains(name)) {
+			return loadedModules[name];
+		}
+		else {
+			throw std::runtime_error("Failed to Get a required module");
+		}
+	}
+
+	void ReplacePattern(std::string target_module, std::string patternBytes, std::string replace_with)
+	{
+		void* addr = Memory::Scanner::Scan<void*>(Memory::Modules::Get(target_module), patternBytes);
+		if (!addr)
+		{
+			P2MMLog(1, false, "Failed to replace pattern! Turn on p2mm_developer for more info...");
+			P2MMLog(1, true, "Target Module: %s", target_module.c_str());
+			P2MMLog(1, true, "Pattern Bytes To Find: %s", patternBytes.c_str());
+			P2MMLog(1, true, "Bytes To Replace Pattern Bytes With: %s", replace_with.c_str());
+			return;
+		}
+
+		std::vector<uint8_t> replace;
+
+		std::istringstream patternStream(replace_with);
+		std::string patternByte;
+		while (patternStream >> patternByte)
+		{
+			replace.push_back((uint8_t)std::stoul(patternByte, nullptr, 16));
+		}
+
+		DWORD oldprotect = 0;
+		DWORD newprotect = PAGE_EXECUTE_READWRITE;
+		VirtualProtect(addr, replace.size(), newprotect, &oldprotect);
+		memcpy_s(addr, replace.size(), replace.data(), replace.size());
+		VirtualProtect(addr, replace.size(), oldprotect, &newprotect);
 	}
 };

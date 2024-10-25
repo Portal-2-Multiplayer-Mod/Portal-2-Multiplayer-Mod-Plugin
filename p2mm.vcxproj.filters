@@ -3,7 +3,6 @@
   <ItemGroup>
     <ClCompile Include="discordrpc.cpp" />
     <ClCompile Include="globals.cpp" />
-    <ClCompile Include="modules.cpp" />
     <ClCompile Include="p2mm.cpp" />
     <ClCompile Include="scanner.cpp" />
     <ClCompile Include="vscript.cpp" />
@@ -11,7 +10,6 @@
   <ItemGroup>
     <ClInclude Include="discordrpc.hpp" />
     <ClInclude Include="globals.hpp" />
-    <ClInclude Include="modules.hpp" />
     <ClInclude Include="p2mm.hpp" />
     <ClInclude Include="scanner.hpp" />
     <ClInclude Include="discord-rpc\include\discord_register.h">

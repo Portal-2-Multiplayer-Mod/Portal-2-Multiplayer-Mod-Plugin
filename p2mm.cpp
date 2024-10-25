@@ -397,10 +397,10 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	
 		MH_EnableHook(MH_ALL_HOOKS);
 
-		P2MMLog(0, false, "Loaded plugin!");
+		P2MMLog(0, false, "Loaded plugin! Horray!");
 		m_bPluginLoaded = true;
 	} catch(std::exception& ex) {
-		P2MMLog(0, false, "Failed to load plugin! Exception: (%s)", ex.what());
+		P2MMLog(0, false, "Failed to load plugin! :( Exception: (%s)", ex.what());
 		this->m_bNoUnload = true;
 		return false;
 	}
@@ -460,6 +460,7 @@ void CP2MMServerPlugin::Unload(void)
 	MH_Uninitialize();
 
 	m_bPluginLoaded = false;
+	P2MMLog(0, false, "Plugin unloaded! Goodbye!");
 }
 
 void CP2MMServerPlugin::SetCommandClient(int index)

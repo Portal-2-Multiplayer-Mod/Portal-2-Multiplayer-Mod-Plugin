@@ -226,26 +226,26 @@ const char* CP2MMServerPlugin::GetPluginDescription(void)
 //	disconnect_orig(thisptr, edx, cl, eDenyReason, pchOptionalText);
 //}
 
-const char* (__fastcall* GetBallBotModel_orig)(void* thisptr, void* edx, bool bLowRes);
-const char* __fastcall GetBallBotModel_hook(void* thisptr, void* edx, bool bLowRes)
+const char* (__cdecl* GetBallBotModel_orig)(bool bLowRes);
+const char* __cdecl GetBallBotModel_hook(bool bLowRes)
 {
 	if (strcmp(GFunc::GetGameMainDir(), "portal_stories") == 0)
 	{
 		return "models/portal_stories/player/mel.mdl";
 	}
 
-	return GetBallBotModel_orig(thisptr, edx, bLowRes);
+	return GetBallBotModel_orig(bLowRes);
 }
 
-const char* (__fastcall* GetEggBotModel_orig)(void* thisptr, void* edx, bool bLowRes);
-const char* __fastcall GetEggBotModel_hook(void* thisptr, void* edx, bool bLowRes)
+const char* (__cdecl* GetEggBotModel_orig)(bool bLowRes);
+const char* __cdecl GetEggBotModel_hook(bool bLowRes)
 {
 	if (strcmp(GFunc::GetGameMainDir(), "portal_stories") == 0)
 	{
 		return "models/player/chell/player.mdl";
 	}
 
-	return GetEggBotModel_orig(thisptr, edx, bLowRes);
+	return GetEggBotModel_orig(bLowRes);
 }
 
 //---------------------------------------------------------------------------------
@@ -395,6 +395,8 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 			Memory::Rel32(Memory::Scanner::Scan(Memory::Modules::Get("server"), "E8 ?? ?? ?? ?? 83 C4 04 50 8B 45 10 8B 10", 1)),
 			&GetEggBotModel_hook, (void**)&GetEggBotModel_orig);
 	
+		MH_EnableHook(MH_ALL_HOOKS);
+
 		P2MMLog(0, false, "Loaded plugin!");
 		m_bPluginLoaded = true;
 	} catch(std::exception& ex) {

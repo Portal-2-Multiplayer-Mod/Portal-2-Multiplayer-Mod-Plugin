@@ -76,8 +76,7 @@
       <IgnoreSpecificDefaultLibraries>libc;libcd;libcmt;libcpmt;libcpmt1</IgnoreSpecificDefaultLibraries>
     </Link>
     <PostBuildEvent>
-      <Command>
-      </Command>
+      <Command>IF EXIST ./copy.bat copy.bat</Command>
       <Message>
       </Message>
     </PostBuildEvent>

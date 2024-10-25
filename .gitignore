@@ -1,6 +1,8 @@
 # Improved C/C++ .gitignore file by Yousha
 # https://gist.github.com/Yousha/3830712334ac30a90eb6041b932b68d7
 
+copy.bat
+
 ##### Windows
 # Windows thumbnail cache files
 Thumbs.db

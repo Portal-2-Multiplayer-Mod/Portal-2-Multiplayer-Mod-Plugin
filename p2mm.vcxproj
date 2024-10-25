@@ -103,11 +103,9 @@
       <AdditionalDependencies>legacy_stdio_definitions.lib;vstdlib.lib;tier0.lib;tier1.lib;tier2.lib;mathlib.lib;interfaces.lib;libMinHook-x86-v141-mtd.lib</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>libc;libcd;libcmt;libcpmt;libcpmt1</IgnoreSpecificDefaultLibraries>
     </Link>
-    <PostBuildEvent>
-      <Command>copy $(TargetPath) "$(ProjectDir)..\Portal-2-Multiplayer-Mod\src\ModFiles\Portal 2\install_dlc\addons"
-</Command>
-      <Message>
-      </Message>
+    <PostBuildEvent Condition="'$(BuildingInsideVisualStudio)' == '' Or '$(BuildingInsideVisualStudio)' == true">
+      <Command>copy $(TargetPath) "$(ProjectDir)..\Portal-2-Multiplayer-Mod\src\ModFiles\Portal 2\install_dlc\addons"</Command>
+      <Message></Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -145,11 +143,9 @@
       <AdditionalDependencies>legacy_stdio_definitions.lib;vstdlib.lib;tier0.lib;tier1.lib;tier2.lib;mathlib.lib;interfaces.lib;libMinHook-x86-v141-mtd.lib</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>libc;libcd;libcmt;libcpmt;libcpmt1</IgnoreSpecificDefaultLibraries>
     </Link>
-    <PostBuildEvent>
-      <Command>copy $(TargetPath) "$(ProjectDir)..\Portal-2-Multiplayer-Mod\src\ModFiles\Portal 2\install_dlc\addons"
-</Command>
-      <Message>
-      </Message>
+    <PostBuildEvent Condition="'$(BuildingInsideVisualStudio)' == '' Or '$(BuildingInsideVisualStudio)' == true">
+      <Command>copy $(TargetPath) "$(ProjectDir)..\Portal-2-Multiplayer-Mod\src\ModFiles\Portal 2\install_dlc\addons"</Command>
+      <Message></Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

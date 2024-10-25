@@ -108,11 +108,9 @@
       <LinkStatus>
       </LinkStatus>
     </Link>
-    <PostBuildEvent>
-      <Command>copy $(TargetPath) "$(ProjectDir)..\Portal-2-Multiplayer-Mod\src\ModFiles\Portal 2\install_dlc\addons"
-</Command>
-      <Message>
-      </Message>
+    <PostBuildEvent Condition="'$(BuildingInsideVisualStudio)' == '' Or '$(BuildingInsideVisualStudio)' == true">
+      <Command>copy $(TargetPath) "$(ProjectDir)..\Portal-2-Multiplayer-Mod\src\ModFiles\Portal 2\install_dlc\addons"</Command>
+      <Message></Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -153,11 +151,9 @@
       <LinkStatus>
       </LinkStatus>
     </Link>
-    <PostBuildEvent>
-      <Command>copy $(TargetPath) "$(ProjectDir)..\Portal-2-Multiplayer-Mod\src\ModFiles\Portal 2\install_dlc\addons"
-</Command>
-      <Message>
-      </Message>
+    <PostBuildEvent Condition="'$(BuildingInsideVisualStudio)' == '' Or '$(BuildingInsideVisualStudio)' == true">
+      <Command>copy $(TargetPath) "$(ProjectDir)..\Portal-2-Multiplayer-Mod\src\ModFiles\Portal 2\install_dlc\addons"</Command>
+      <Message></Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

@@ -111,7 +111,6 @@ std::vector<std::string> m_Maps; // List of maps for the p2mm_command auto compl
 
 void updateMapsList() {
 	m_Maps.clear();
-	char relativePath[MAX_PATH];
 	CUtlVector<CUtlString> outList;
 	AddFilesToList(outList, "maps", "GAME", "bsp");
 
@@ -120,11 +119,12 @@ void updateMapsList() {
 		// Get each map and get their relative path to each SearchPath and make slashes forward slashes.
 		// Then turn relativePath into a std::string to easily manipulate.
 		const char* curmap = outList[i];
+		char relativePath[MAX_PATH];
 		g_pFileSystem->FullPathToRelativePathEx(curmap, "GAME", relativePath, sizeof(relativePath));
 		V_FixSlashes(relativePath, '/');
 		std::string fixedRelativePath(relativePath);
 
-		// Remove the "maps/" out of the string.
+		// Remove "maps/" out of the string.
 		fixedRelativePath.erase(0, strlen("maps/"));
 
 		// Remove the .bsp extension at the end.
@@ -158,10 +158,12 @@ static int p2mm_startsession_CompletionFunc(const char* partial, char commands[C
 
 	// Go through the map list searching for matches with the assembled inputted command.
 	int numMatchedMaps = 0;
-	for (const std::string map : m_Maps) {
+	for (const std::string map : m_Maps)
+	{
 		if (numMatchedMaps >= COMMAND_COMPLETION_MAXITEMS) break;
 
-		if (V_strstr(map.c_str(), match)) {
+		if (V_strstr(map.c_str(), match))
+		{
 			V_snprintf(commands[numMatchedMaps++], COMMAND_COMPLETION_ITEM_LENGTH, "%s%s", concommand, map.c_str());
 			P2MMLog(0, true, map.c_str());
 		}
@@ -170,12 +172,29 @@ static int p2mm_startsession_CompletionFunc(const char* partial, char commands[C
 	return numMatchedMaps;
 }
 
+CON_COMMAND(p2mm_updatemaplist, "Manually updates the list of avaliable maps that can be loaded with \"p2mm_startsession\"")
+{
+	updateMapsList();
+}
+
+CON_COMMAND(p2mm_maplist, "Lists avaliable maps that can be loaded with \"p2mm_startsession\"")
+{
+	P2MMLog(0, false, "AVALIABLE MAPS:");
+	P2MMLog(0, false, "----------------------------------------");
+	for (const std::string map : m_Maps)
+	{
+		P2MMLog(0, false, map.c_str());
+	}
+	P2MMLog(0, false, "----------------------------------------");
+}
+
 CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a requested map.", 0, p2mm_startsession_CompletionFunc)
 {
 	// Make sure the CON_COMMAND was executed correctly.
 	if (args.ArgC() < 2 || FStrEq(args.Arg(1), ""))
 	{
 		P2MMLog(1, false, "p2mm_startsession called incorrectly! Usage: 'p2mm_startsession (map to start) '");
+		updateMapsList();
 		return;
 	}
 
@@ -201,6 +220,7 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 			P2MMLog(1, false, "p2mm_session was called with P2MM_LASTMAP, but p2mm_lastmap is empty or invalid!");
 			engineClient->ExecuteClientCmd("disconnect \"There is no last map recorded or the map doesn't exist! Please start a play session with the other options first.\"");
 			engineClient->ExecuteClientCmd(completePVCmd);
+			updateMapsList();
 			return;
 		}
 		requestedMap = p2mm_lastmap.GetString();
@@ -212,6 +232,7 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 	if (!engineServer->IsMapValid(requestedMap))
 	{
 		P2MMLog(1, false, "p2mm_startsession was given a non-valid map or one that doesn't exist! \"%s\"", requestedMap);
+		updateMapsList();
 		return;
 	}
 

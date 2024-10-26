@@ -153,7 +153,7 @@ static void SendToChat(const char* msg, int index)
 	// Send to all players
 	if (index == 0)
 	{
-		for (int i = 1; i < gpGlobals->maxClients; i++)
+		for (int i = 1; i < g_pGlobals->maxClients; i++)
 		{
 			player_info_t playerinfo;
 			if (engineServer->GetPlayerInfo(i, &playerinfo))

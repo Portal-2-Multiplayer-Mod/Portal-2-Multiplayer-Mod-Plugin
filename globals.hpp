@@ -31,7 +31,7 @@ class CPortal_Player;
 #define P2MM_PLUGIN_CONSOLE_COLOR Color(100, 192, 252, 255)
 #define P2MM_VSCRIPT_CONSOLE_COLOR Color(110, 247, 76, 255)
 
-#define CURRENTMAPNAME STRING(gpGlobals->mapname)
+#define CURRENTMAPNAME STRING(g_pGlobals->mapname)
 
 // Used for autocomplete console commands.
 #define COMMAND_COMPLETION_MAXITEMS		64
@@ -47,7 +47,7 @@ extern ConVar p2mm_developer;
 //---------------------------------------------------------------------------------
 extern IVEngineServer* engineServer;
 extern IVEngineClient* engineClient;
-extern CGlobalVars* gpGlobals;
+extern CGlobalVars* g_pGlobals;
 extern IPlayerInfoManager* playerinfomanager;
 extern IScriptVM* g_pScriptVM;
 extern IServerTools* g_pServerTools;
@@ -95,7 +95,7 @@ inline int ENTINDEX(edict_t* pEdict)
 {
 	if (!pEdict)
 		return 0;
-	int edictIndex = pEdict - gpGlobals->pEdicts;
+	int edictIndex = pEdict - g_pGlobals->pEdicts;
 	Assert(edictIndex < MAX_EDICTS && edictIndex >= 0);
 	return edictIndex;
 }
@@ -106,9 +106,9 @@ inline int ENTINDEX(edict_t* pEdict)
 inline edict_t* INDEXENT(int iEdictNum)
 {
 	Assert(iEdictNum >= 0 && iEdictNum < MAX_EDICTS);
-	if (gpGlobals->pEdicts)
+	if (g_pGlobals->pEdicts)
 	{
-		edict_t* pEdict = gpGlobals->pEdicts + iEdictNum;
+		edict_t* pEdict = g_pGlobals->pEdicts + iEdictNum;
 		if (pEdict->IsFree())
 			return NULL;
 		return pEdict;

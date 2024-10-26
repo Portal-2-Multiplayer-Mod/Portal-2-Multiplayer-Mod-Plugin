@@ -324,6 +324,11 @@ const char* __cdecl GetEggBotModel_hook(bool bLowRes)
 	return GetEggBotModel_orig(bLowRes);
 }
 
+const char* (__fastcall* CPortal_Player__GetPlayerModelName_orig)(CPortal_Player* thisptr);
+const char* __fastcall CPortal_Player__GetPlayerModelName_hook(CPortal_Player* thisptr) {
+	return "models/player/chell/player.mdl";
+}
+
 //---------------------------------------------------------------------------------
 // Purpose: Called when the plugin is loaded, initialization process.
 //			Loads the interfaces we need from the engine and applies our patches.
@@ -472,12 +477,20 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		// MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "55 8B EC 81 EC 14 08"), &disconnect_hook, (LPVOID*)&disconnect_orig);
 	
 		// Hook onto the function which defines what Atlas's and PBody's models are.
+		auto serverModule = Memory::Modules::Get("server");
+
 		MH_CreateHook(
-			Memory::Rel32(Memory::Scanner::Scan(Memory::Modules::Get("server"), "E8 ?? ?? ?? ?? 83 C4 40 50", 1)),
+			Memory::Rel32(Memory::Scanner::Scan(serverModule, "E8 ?? ?? ?? ?? 83 C4 40 50", 1)),
 			&GetBallBotModel_hook, (void**)&GetBallBotModel_orig);
 		MH_CreateHook(
-			Memory::Rel32(Memory::Scanner::Scan(Memory::Modules::Get("server"), "E8 ?? ?? ?? ?? 83 C4 04 50 8B 45 10 8B 10", 1)),
+			Memory::Rel32(Memory::Scanner::Scan(serverModule, "E8 ?? ?? ?? ?? 83 C4 04 50 8B 45 10 8B 10", 1)),
 			&GetEggBotModel_hook, (void**)&GetEggBotModel_orig);
+
+		MH_CreateHook(
+			Memory::Scanner::Scan(serverModule, "55 8B EC 81 EC 10 01 00 00 53 8B 1D"),
+			&CPortal_Player__GetPlayerModelName_hook,
+			(void**)&CPortal_Player__GetPlayerModelName_orig
+		);
 	
 		MH_EnableHook(MH_ALL_HOOKS);
 

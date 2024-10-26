@@ -51,6 +51,10 @@ class CBasePlayer;
 #define COMMAND_COMPLETION_MAXITEMS		64
 #define COMMAND_COMPLETION_ITEM_LENGTH	64
 
+// Used for autocomplete console commands.
+#define COMMAND_COMPLETION_MAXITEMS		64
+#define COMMAND_COMPLETION_ITEM_LENGTH	64
+
 //---------------------------------------------------------------------------------
 // Any ConVars or CON_COMMANDS that need to be globally available
 //---------------------------------------------------------------------------------

@@ -13,6 +13,8 @@
 #include "engine/iserverplugin.h"
 #include "public/localize/ilocalize.h"
 #include "public/steam/steamclientpublic.h"
+#include "public/filesystem.h"
+#include "tier2/fileutils.h"
 
 #include "scanner.hpp"
 
@@ -31,6 +33,10 @@ class CPortal_Player;
 
 #define CURRENTMAPNAME STRING(gpGlobals->mapname)
 
+// Used for autocomplete console commands.
+#define COMMAND_COMPLETION_MAXITEMS		64
+#define COMMAND_COMPLETION_ITEM_LENGTH	64
+
 //---------------------------------------------------------------------------------
 // Any ConVars or CON_COMMANDS that need to be globally available
 //---------------------------------------------------------------------------------
@@ -47,6 +53,7 @@ extern IScriptVM* g_pScriptVM;
 extern IServerTools* g_pServerTools;
 extern IGameEventManager2* gameeventmanager_;
 extern IServerPluginHelpers* pluginHelpers;
+extern IFileSystem* g_pFileSystem;
 
 void P2MMLog(int level, bool dev, const char* pMsgFormat, ...);
 

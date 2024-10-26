@@ -24,6 +24,7 @@ IScriptVM* g_pScriptVM = NULL; // Access VScript interface
 IServerTools* g_pServerTools = NULL; // Access to interface from engine to tools for manipulating entities
 IGameEventManager2* gameeventmanager_ = NULL; // Access game events interface
 IServerPluginHelpers* pluginHelpers = NULL; // Access interface for plugin helper functions
+IFileSystem* g_pFileSystem = NULL; // Access interface for Valve's file system interface
 #ifndef GAME_DLL
 #define gameeventmanager gameeventmanager_
 #endif
@@ -105,30 +106,95 @@ ConVar p2mm_developer("p2mm_developer", "0", FCVAR_NONE, "Enable for P2:MM devel
 ConVar p2mm_spewgameeventinfo("p2mm_spewgameevents", "0", FCVAR_NONE, "Log information from called game events in the console, p2mm_developer must also be on. Can cause lots of console spam.");
 
 // ConCommands
-CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map.")
+
+std::vector<std::string> m_Maps; // List of maps for the p2mm_command auto complete.
+
+void updateMapsList() {
+	m_Maps.clear();
+	char relativePath[MAX_PATH];
+	CUtlVector<CUtlString> outList;
+	AddFilesToList(outList, "maps", "GAME", "bsp");
+
+	FOR_EACH_VEC(outList, i)
+	{
+		// Get each map and get their relative path to each SearchPath and make slashes forward slashes.
+		// Then turn relativePath into a std::string to easily manipulate.
+		const char* curmap = outList[i];
+		g_pFileSystem->FullPathToRelativePathEx(curmap, "GAME", relativePath, sizeof(relativePath));
+		V_FixSlashes(relativePath, '/');
+		std::string fixedRelativePath(relativePath);
+
+		// Remove the "maps/" out of the string.
+		fixedRelativePath.erase(0, strlen("maps/"));
+
+		// Remove the .bsp extension at the end.
+		size_t bspPos = fixedRelativePath.rfind(".bsp");
+		if (bspPos != std::string::npos) {
+			fixedRelativePath.erase(bspPos);
+		}
+		// Remove "workshop/" from the front of the string.
+		//size_t workshopPos = fixedRelativePath.rfind("workshop/");
+		//size_t lastSlashPos = fixedRelativePath.find_last_of("/");
+		//if (workshopPos != std::string::npos && lastSlashPos != std::string::npos) {
+		//	fixedRelativePath.erase(workshopPos, lastSlashPos + 1 - strlen("workshop/"));
+		//}
+
+		// Push the map string on to the list to display avaliable options for the command.
+		m_Maps.push_back(std::move(fixedRelativePath));
+		P2MMLog(0, true, m_Maps.back().c_str());
+	}
+}
+
+static int p2mm_startsession_CompletionFunc(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH])
 {
-	// Make sure the CON_COMMAND was executed correctly
+	// If the map list is empty, generate it.
+	if (m_Maps.empty()) {
+		updateMapsList();
+	}
+
+	// Assemble together the current state of the inputted command.
+	const char* concommand = "p2mm_startsession ";
+	const char* match = (V_strstr(partial, concommand) == partial) ? partial + V_strlen(concommand) : partial;
+
+	// Go through the map list searching for matches with the assembled inputted command.
+	int numMatchedMaps = 0;
+	for (const std::string map : m_Maps) {
+		if (numMatchedMaps >= COMMAND_COMPLETION_MAXITEMS) break;
+
+		if (V_strstr(map.c_str(), match)) {
+			V_snprintf(commands[numMatchedMaps++], COMMAND_COMPLETION_ITEM_LENGTH, "%s%s", concommand, map.c_str());
+			P2MMLog(0, true, map.c_str());
+		}
+	}
+
+	return numMatchedMaps;
+}
+
+CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a requested map.", 0, p2mm_startsession_CompletionFunc)
+{
+	// Make sure the CON_COMMAND was executed correctly.
 	if (args.ArgC() < 2 || FStrEq(args.Arg(1), ""))
 	{
 		P2MMLog(1, false, "p2mm_startsession called incorrectly! Usage: 'p2mm_startsession (map to start) '");
 		return;
 	}
 
-	// A check done by the menu to request to use the last recorded map in the p2mm_lastmap ConVar
-	std::string requestedMap = args.Arg(1);
-	P2MMLog(0, true, "Requested Map: %s", requestedMap.c_str());
+	// A check done by the menu to request to use the last recorded map in the p2mm_lastmap ConVar.
+	const char* requestedMap = args.Arg(1);
+	P2MMLog(0, true, "Requested Map: %s", requestedMap);
 	P2MMLog(0, true, "p2mm_lastmap: %s", p2mm_lastmap.GetString());
-	if (FSubStr(requestedMap.c_str(), "P2MM_LASTMAP"))
+	if (FSubStr(requestedMap, "P2MM_LASTMAP"))
 	{
 		if (!engineServer->IsMapValid(p2mm_lastmap.GetString()))
 		{
-			// Running disconnect causes the music to stop, we don't want that to happen, so here we start it again.
+			// Running disconnect to make the error screen appear causes the music to stop, don't let that to happen, so here it is start it again.
 
 			// Get the current act so we can start the right main menu music
 			int iAct = ConVarRef("ui_lastact_played").GetInt();
-			if (iAct > 5) { iAct = 5; } else if (iAct < 1) { iAct = 1; }
-			
-			// Put the command to start the music and the act number together
+			if (iAct > 5) iAct = 5;
+			else if (iAct < 1) iAct = 1;
+
+			// Put the command to start the music and the act number together.
 			char completePVCmd[sizeof("playvol \"#music/mainmenu/portal2_background0%d\" 0.35") + sizeof(iAct)];
 			V_snprintf(completePVCmd, sizeof(completePVCmd), "playvol \"#music/mainmenu/portal2_background0%i\" 0.35", iAct);
 
@@ -138,38 +204,37 @@ CON_COMMAND(p2mm_startsession, "Starts up a P2:MM session with a requested map."
 			return;
 		}
 		requestedMap = p2mm_lastmap.GetString();
-		P2MMLog(0, true, "P2MM_LASTMAP called! Running Last Map: %s", requestedMap.c_str());
+		P2MMLog(0, true, "P2MM_LASTMAP called! Running Last Map: \"%s\"", requestedMap);
 	}
-	p2mm_lastmap.SetValue(""); // Set last map ConVar to blank so it doesn't trigger in situations where we don't want it to trigger
+	p2mm_lastmap.SetValue(""); // Set last map ConVar to blank so it doesn't trigger in situations where we don't want it to trigger.
 
-	// Check if the supplied map is a valid map
-	if (!engineServer->IsMapValid(requestedMap.c_str()))
+	// Check if the supplied map is a valid map.
+	if (!engineServer->IsMapValid(requestedMap))
 	{
-		P2MMLog(1, false, "p2mm_startsession was given a non-valid map or one that doesn't exist! %s", requestedMap.c_str());
+		P2MMLog(1, false, "p2mm_startsession was given a non-valid map or one that doesn't exist! \"%s\"", requestedMap);
 		return;
 	}
 
-	// Check if the user requested it to start in splitscreen or not
-	std::string mapString = "";
-	if (p2mm_splitscreen.GetBool()) { mapString = "ss_map "; } else { mapString = "map "; }
+	// Check if the user requested it to start in splitscreen or not.
+	std::string mapString = p2mm_splitscreen.GetBool() ? "ss_map " : "map ";
 	P2MMLog(0, true, "Map String: %s", mapString.c_str());
 
-	// Set first run flag on and set the last map ConVar value so the system
+	// Set first run flag on and set the last map ConVar value so the system.
 	// can change from mp_coop_community_hub to the requested map.
 	// Also set m_bSeenFirstRunPrompt back to false so the prompt can be triggered again.
 	g_P2MMServerPlugin.m_bFirstMapRan = true;
 	g_P2MMServerPlugin.m_bSeenFirstRunPrompt = false;
-	if (!FSubStr(requestedMap.c_str(), "mp_coop"))
+	if (!FSubStr(requestedMap, "mp_coop"))
 	{
 		P2MMLog(0, true, "'mp_coop' not found, singleplayer map being run. Full ExecuteClientCmd: \"%s\"", std::string(mapString + "mp_coop_community_hub").c_str());
-		P2MMLog(0, true, "requestedMap: \"%s\"", requestedMap.c_str());
-		p2mm_lastmap.SetValue(requestedMap.c_str());
+		P2MMLog(0, true, "requestedMap: \"%s\"", requestedMap);
+		p2mm_lastmap.SetValue(requestedMap);
 		engineClient->ExecuteClientCmd(std::string(mapString + "mp_coop_community_hub").c_str());
 	}
 	else
 	{
 		P2MMLog(0, true, "'mp_coop' found, multiplayer map being run. Full ExecuteClientCmd: \"%s\"", std::string(mapString + requestedMap).c_str());
-		P2MMLog(0, true, "requestedMap: \"%s\"", requestedMap.c_str());
+		P2MMLog(0, true, "requestedMap: \"%s\"", requestedMap);
 		engineClient->ExecuteClientCmd(std::string(mapString + requestedMap).c_str());
 	}
 }
@@ -229,8 +294,9 @@ const char* CP2MMServerPlugin::GetPluginDescription(void)
 const char* (__cdecl* GetBallBotModel_orig)(bool bLowRes);
 const char* __cdecl GetBallBotModel_hook(bool bLowRes)
 {
-	if (strcmp(GFunc::GetGameMainDir(), "portal_stories") == 0)
+	if (FStrEq(GFunc::GetGameMainDir(), "portal_stories"))
 	{
+		P2MMLog(0, false, "BLUE");
 		return "models/portal_stories/player/mel.mdl";
 	}
 
@@ -240,8 +306,9 @@ const char* __cdecl GetBallBotModel_hook(bool bLowRes)
 const char* (__cdecl* GetEggBotModel_orig)(bool bLowRes);
 const char* __cdecl GetEggBotModel_hook(bool bLowRes)
 {
-	if (strcmp(GFunc::GetGameMainDir(), "portal_stories") == 0)
+	if (FStrEq(GFunc::GetGameMainDir(), "portal_stories"))
 	{
+		P2MMLog(0, false, "ORANGE");
 		return "models/player/chell/player.mdl";
 	}
 
@@ -321,6 +388,14 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	if (!pluginHelpers)
 	{
 		P2MMLog(1, false, "Unable to load pluginHelpers!");
+		this->m_bNoUnload = true;
+		return false;
+	}
+	 
+	g_pFileSystem = (IFileSystem*)interfaceFactory(FILESYSTEM_INTERFACE_VERSION, 0);
+	if (!g_pFileSystem)
+	{
+		P2MMLog(1, false, "Unable to load g_pFileSystem!");
 		this->m_bNoUnload = true;
 		return false;
 	}

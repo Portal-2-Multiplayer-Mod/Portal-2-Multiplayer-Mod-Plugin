@@ -112,10 +112,11 @@ ConVar p2mm_spewgameeventinfo("p2mm_spewgameevents", "0", FCVAR_NONE, "Log infor
 
 // ConCommands
 
-std::vector<std::string> m_Maps; // List of maps for the p2mm_command auto complete.
+std::vector<std::string> mapList; // List of maps for the p2mm_command auto complete.
+std::vector<std::string> workshopMapList; // List of all workshop map for the p2mm_command auto complete.
 
 void updateMapsList() {
-	m_Maps.clear();
+	mapList.clear();
 	CUtlVector<CUtlString> outList;
 	AddFilesToList(outList, "maps", "GAME", "bsp");
 
@@ -127,33 +128,40 @@ void updateMapsList() {
 		char relativePath[MAX_PATH];
 		g_pFileSystem->FullPathToRelativePathEx(curmap, "GAME", relativePath, sizeof(relativePath));
 		V_FixSlashes(relativePath, '/');
+		V_StripExtension(relativePath, relativePath, sizeof(relativePath));
 		std::string fixedRelativePath(relativePath);
 
 		// Remove "maps/" out of the string.
 		fixedRelativePath.erase(0, strlen("maps/"));
 
-		// Remove the .bsp extension at the end.
-		size_t bspPos = fixedRelativePath.rfind(".bsp");
-		if (bspPos != std::string::npos) {
-			fixedRelativePath.erase(bspPos);
+		// Remove the whole "workshop/(workshop id)" part if there isn't multiple workshop maps of the same file name.
+		size_t lastSlashPos = fixedRelativePath.find_last_of("/");
+		if (lastSlashPos != std::string::npos && fixedRelativePath.rfind("workshop/") != std::string::npos)
+		{
+			fixedRelativePath.erase(0, strlen("workshop/"));
+			workshopMapList.push_back(fixedRelativePath);
+			
+			////std::string lastPart = fixedRelativePath.substr(lastSlashPos + 1);
+			//if (!outList.Find(CUtlString(std::string(fixedRelativePath.substr(lastSlashPos + 1)).c_str())))
+			//{
+			//	fixedRelativePath.erase(0, strlen("workshop/"));
+			//}
+			//else
+			//{
+			//	fixedRelativePath.erase(0, lastSlashPos + 1);
+			//}
 		}
-		// Remove "workshop/" from the front of the string.
-		//size_t workshopPos = fixedRelativePath.rfind("workshop/");
-		//size_t lastSlashPos = fixedRelativePath.find_last_of("/");
-		//if (workshopPos != std::string::npos && lastSlashPos != std::string::npos) {
-		//	fixedRelativePath.erase(workshopPos, lastSlashPos + 1 - strlen("workshop/"));
-		//}
 
 		// Push the map string on to the list to display avaliable options for the command.
-		m_Maps.push_back(std::move(fixedRelativePath));
-		P2MMLog(0, true, m_Maps.back().c_str());
+		mapList.push_back(std::move(fixedRelativePath));
+		P2MMLog(0, true, mapList.back().c_str());
 	}
 }
 
 static int p2mm_startsession_CompletionFunc(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH])
 {
 	// If the map list is empty, generate it.
-	if (m_Maps.empty()) {
+	if (mapList.empty()) {
 		updateMapsList();
 	}
 
@@ -163,7 +171,7 @@ static int p2mm_startsession_CompletionFunc(const char* partial, char commands[C
 
 	// Go through the map list searching for matches with the assembled inputted command.
 	int numMatchedMaps = 0;
-	for (const std::string map : m_Maps)
+	for (const std::string map : mapList)
 	{
 		if (numMatchedMaps >= COMMAND_COMPLETION_MAXITEMS) break;
 
@@ -186,7 +194,7 @@ CON_COMMAND(p2mm_maplist, "Lists avaliable maps that can be loaded with \"p2mm_s
 {
 	P2MMLog(0, false, "AVALIABLE MAPS:");
 	P2MMLog(0, false, "----------------------------------------");
-	for (const std::string map : m_Maps)
+	for (const std::string map : mapList)
 	{
 		P2MMLog(0, false, map.c_str());
 	}
@@ -231,7 +239,18 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 		requestedMap = p2mm_lastmap.GetString();
 		P2MMLog(0, true, "P2MM_LASTMAP called! Running Last Map: \"%s\"", requestedMap);
 	}
-	p2mm_lastmap.SetValue(""); // Set last map ConVar to blank so it doesn't trigger in situations where we don't want it to trigger.
+	p2mm_lastmap.SetValue(""); // Set last map ConVar to blank so it doesn't trigger level changes where we don't want it to trigger.
+
+	// Check if the requested map is a workshop map.
+	std::string tempMapStr = requestedMap;
+	for (const std::string map : workshopMapList)
+	{
+		if (tempMapStr == map)
+		{
+			tempMapStr = std::string("workshop/" + tempMapStr);
+			requestedMap = tempMapStr.c_str();
+		}
+	}
 
 	// Check if the supplied map is a valid map.
 	if (!engineServer->IsMapValid(requestedMap))

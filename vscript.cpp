@@ -233,7 +233,7 @@ static void CallFirstRunPrompt()
 
 void RegisterFuncsAndRun()
 {
-	g_pScriptVM = **Memory::Scanner::Scan<IScriptVM***>(Memory::Modules::Get("server"), "8B 1D ?? ?? ?? ?? 57 85 DB", 2);
+	g_pScriptVM = **Memory::Scanner::Scan<IScriptVM***>(Memory::Modules::Get("server"), "8B 1D ?? ?? ?? ?? 57 85 DB", 2); // crashes infra, bytes incorrect
 	if (!g_pScriptVM)
 	{
 		P2MMLog(1, false, "Could not run or register our VScript functions!");

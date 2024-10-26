@@ -18,7 +18,7 @@
 //---------------------------------------------------------------------------------
 IVEngineServer* engineServer = NULL; // Access engine server functions (messaging clients, loading content, making entities, running commands, etc)
 IVEngineClient* engineClient = NULL; // Access engine client functions
-CGlobalVars* gpGlobals = NULL; // Access global variables shared between the engine and games dlls
+CGlobalVars* g_pGlobals = NULL; // Access global variables shared between the engine and games dlls
 IPlayerInfoManager* playerinfomanager = NULL; // Access interface functions for players
 IScriptVM* g_pScriptVM = NULL; // Access VScript interface
 IServerTools* g_pServerTools = NULL; // Access to interface from engine to tools for manipulating entities
@@ -241,7 +241,7 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 
 CON_COMMAND(p2mm_respawnall, "Respawns all players.")
 {
-	for (int i = 1; i < gpGlobals->maxClients; i++)
+	for (int i = 1; i < g_pGlobals->maxClients; i++)
 	{
 		CPortal_Player__RespawnPlayer(i);
 	}
@@ -400,7 +400,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 
-	gpGlobals = playerinfomanager->GetGlobalVars();
+	g_pGlobals = playerinfomanager->GetGlobalVars();
 	MathLib_Init(2.2f, 2.2f, 0.0f, 2.0f);
 	ConVar_Register(0);
 

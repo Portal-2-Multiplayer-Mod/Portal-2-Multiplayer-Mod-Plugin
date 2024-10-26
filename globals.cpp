@@ -52,12 +52,12 @@ void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 //---------------------------------------------------------------------------------
 int GFunc::UserIDToPlayerIndex(int userid)
 {
-	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	for (int i = 1; i <= g_pGlobals->maxClients; i++)
 	{
 		edict_t* pEdict = NULL;
-		if (i >= 0 && i < gpGlobals->maxEntities)
+		if (i >= 0 && i < g_pGlobals->maxEntities)
 		{
-			pEdict = (edict_t*)(gpGlobals->pEdicts + i);
+			pEdict = (edict_t*)(g_pGlobals->pEdicts + i);
 		}
 
 		if (engineServer->GetPlayerUserId(pEdict) == userid)
@@ -93,9 +93,9 @@ const char* GFunc::GetPlayerName(int index)
 int GFunc::GetSteamID(int index)
 {
 	edict_t* pEdict = NULL;
-	if (index >= 0 && index < gpGlobals->maxEntities)
+	if (index >= 0 && index < g_pGlobals->maxEntities)
 	{
-		pEdict = (edict_t*)(gpGlobals->pEdicts + index);
+		pEdict = (edict_t*)(g_pGlobals->pEdicts + index);
 	}
 	if (!pEdict)
 	{

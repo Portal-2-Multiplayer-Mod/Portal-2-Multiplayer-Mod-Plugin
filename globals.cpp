@@ -157,7 +157,7 @@ const char* GFunc::GetConVarString(const char* cvname)
 CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
 {
 #ifdef _WIN32
-	static auto _PlayerByIndex = reinterpret_cast<CBasePlayer * (__cdecl*)(int)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 8B 4D 08 33 C0 85 C9 7E 30"));
+	static auto _PlayerByIndex = reinterpret_cast<CBasePlayer* (__cdecl*)(int)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 8B 4D 08 33 C0 85 C9 7E 30"));
 	return _PlayerByIndex(playerIndex);
 #else // Linux support TODO
 	return NULL;
@@ -173,6 +173,15 @@ void CBaseEntity__RemoveEntity(CBaseEntity* pEntity)
 {
 	//reinterpret_cast<IServerEntity*>(pEntity) trust me bro aka, we know its CBaseEntity*, but we want the IServerEntity* so cast to that to get its methods 
 	reinterpret_cast<void (*)(void*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 57 8B 7D 08 85 FF 74 72"))(reinterpret_cast<IServerEntity*>(pEntity)->GetNetworkable());
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Get's team number for the supplied CBasePlayer.
+//---------------------------------------------------------------------------------
+int CBaseEntity__GetTeamNumber(CBasePlayer* pPlayer)
+{
+	static auto _GetTeamNumber = reinterpret_cast<int (__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "8B 81 F4 02 00 00 C3"));
+	return _GetTeamNumber((CBaseEntity*)pPlayer);
 }
 
 //---------------------------------------------------------------------------------

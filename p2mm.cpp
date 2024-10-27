@@ -135,16 +135,6 @@ void updateMapsList() {
 		{
 			fixedRelativePath.erase(0, strlen("workshop/"));
 			workshopMapList.push_back(fixedRelativePath);
-			
-			////std::string lastPart = fixedRelativePath.substr(lastSlashPos + 1);
-			//if (!outList.Find(CUtlString(std::string(fixedRelativePath.substr(lastSlashPos + 1)).c_str())))
-			//{
-			//	fixedRelativePath.erase(0, strlen("workshop/"));
-			//}
-			//else
-			//{
-			//	fixedRelativePath.erase(0, lastSlashPos + 1);
-			//}
 		}
 
 		// Push the map string on to the list to display avaliable options for the command.
@@ -331,12 +321,16 @@ const char* CP2MMServerPlugin::GetPluginDescription(void)
 //	disconnect_orig(thisptr, edx, cl, eDenyReason, pchOptionalText);
 //}
 
+
+// Bottom three hooks are for being able to change the starting models to something different.
+// First two are for changing what model is returned when precaching however...
+// Last one is for actually specifying the right model as the MSVC compiler inlined the returns
+// of the original functions of these first two hooks. Thanks MSVC for making this hard. :D
 const char* (__cdecl* GetBallBotModel_orig)(bool bLowRes);
 const char* __cdecl GetBallBotModel_hook(bool bLowRes)
 {
 	if (FStrEq(GFunc::GetGameMainDir(), "portal_stories"))
 	{
-		P2MMLog(0, false, "BLUE");
 		return "models/portal_stories/player/mel.mdl";
 	}
 
@@ -348,7 +342,6 @@ const char* __cdecl GetEggBotModel_hook(bool bLowRes)
 {
 	if (FStrEq(GFunc::GetGameMainDir(), "portal_stories"))
 	{
-		P2MMLog(0, false, "ORANGE");
 		return "models/player/chell/player.mdl";
 	}
 
@@ -357,7 +350,14 @@ const char* __cdecl GetEggBotModel_hook(bool bLowRes)
 
 const char* (__fastcall* CPortal_Player__GetPlayerModelName_orig)(CPortal_Player* thisptr);
 const char* __fastcall CPortal_Player__GetPlayerModelName_hook(CPortal_Player* thisptr) {
-	return "models/player/chell/player.mdl";
+	if (FStrEq(GFunc::GetGameMainDir(), "portal_stories"))
+	{
+		if (CBaseEntity__GetTeamNumber((CBasePlayer*)thisptr) == TEAM_BLUE)
+			return "models/portal_stories/player/mel.mdl";
+		else
+			return "models/player/chell/player.mdl";		
+	}
+	return CPortal_Player__GetPlayerModelName_orig(thisptr);
 }
 
 //---------------------------------------------------------------------------------

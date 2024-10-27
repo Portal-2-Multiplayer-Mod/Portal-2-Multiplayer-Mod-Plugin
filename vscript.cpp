@@ -99,7 +99,7 @@ static bool IsDedicatedServer()
 //---------------------------------------------------------------------------------
 static void InitializeEntity(HSCRIPT ent)
 {
-	static uintptr_t func = (uintptr_t)Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "E8 ?? ?? ?? ?? 8B 4D 18 8B 57 5C", 1);
+	static uintptr_t func = (uintptr_t)Memory::Scanner::Scan<void*>(SERVERDLL, "E8 ?? ?? ?? ?? 8B 4D 18 8B 57 5C", 1);
 	static auto GetCBaseEntityScriptDesc = reinterpret_cast<ScriptClassDesc_t * (*)()>(*reinterpret_cast<uintptr_t*>(func) + func + sizeof(func));
 	void* pEntity = reinterpret_cast<void*>(g_pScriptVM->GetInstanceValue(ent, GetCBaseEntityScriptDesc()));;
 	if (pEntity)
@@ -233,7 +233,7 @@ static void CallFirstRunPrompt()
 
 void RegisterFuncsAndRun()
 {
-	g_pScriptVM = **Memory::Scanner::Scan<IScriptVM***>(Memory::Modules::Get("server"), "8B 1D ?? ?? ?? ?? 57 85 DB", 2); // crashes infra, bytes incorrect
+	g_pScriptVM = **Memory::Scanner::Scan<IScriptVM***>(SERVERDLL, "8B 1D ?? ?? ?? ?? 57 85 DB", 2); // crashes infra, bytes incorrect
 	if (!g_pScriptVM)
 	{
 		P2MMLog(1, false, "Could not run or register our VScript functions!");

@@ -8,6 +8,9 @@
 #ifndef SCANNER_HPP
 #define SCANNER_HPP
 
+#define SERVERDLL Memory::Modules::Get("server")
+#define ENGINEDLL Memory::Modules::Get("engine")
+
 #include <span>
 #include <string>
 #include <vector>

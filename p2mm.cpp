@@ -483,7 +483,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		// Max players -> 33
 		Memory::ReplacePattern("server", "83 C0 02 89 01", "83 C0 20 89 01");
 		Memory::ReplacePattern("engine", "85 C0 78 13 8B 17", "31 C0 04 21 8B 17");
-		static uintptr_t sv = *reinterpret_cast<uintptr_t*>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "74 0A B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B E5", 3));
+		static uintptr_t sv = *reinterpret_cast<uintptr_t*>(Memory::Scanner::Scan<void*>(ENGINEDLL, "74 0A B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B E5", 3));
 		*reinterpret_cast<int*>(sv + 0x228) = 33;
 
 		// Prevent disconnect by "STEAM validation rejected"
@@ -505,20 +505,17 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		P2MMLog(0, true, "Initalizing MinHook and hooking functions...");
 		MH_Initialize();
 		// NoSteamLogon disconnect hook patch.
-		//MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "55 8B EC 83 EC 08 53 56 57 8B F1 E8 ?? ?? ?? ?? 8B"), &disconnect_hook, (LPVOID*)&disconnect_orig);
+		//MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(ENGINEDLL, "55 8B EC 83 EC 08 53 56 57 8B F1 E8 ?? ?? ?? ?? 8B"), &disconnect_hook, (LPVOID*)&disconnect_orig);
 	
 		// Hook onto the function which defines what Atlas's and PBody's models are.
-		auto serverModule = Memory::Modules::Get("server");
-
 		MH_CreateHook(
-			Memory::Rel32(Memory::Scanner::Scan(serverModule, "E8 ?? ?? ?? ?? 83 C4 40 50", 1)),
+			Memory::Rel32(Memory::Scanner::Scan(SERVERDLL, "E8 ?? ?? ?? ?? 83 C4 40 50", 1)),
 			&GetBallBotModel_hook, (void**)&GetBallBotModel_orig);
 		MH_CreateHook(
-			Memory::Rel32(Memory::Scanner::Scan(serverModule, "E8 ?? ?? ?? ?? 83 C4 04 50 8B 45 10 8B 10", 1)),
+			Memory::Rel32(Memory::Scanner::Scan(SERVERDLL, "E8 ?? ?? ?? ?? 83 C4 04 50 8B 45 10 8B 10", 1)),
 			&GetEggBotModel_hook, (void**)&GetEggBotModel_orig);
-
 		MH_CreateHook(
-			Memory::Scanner::Scan(serverModule, "55 8B EC 81 EC 10 01 00 00 53 8B 1D"),
+			Memory::Scanner::Scan(SERVERDLL, "55 8B EC 81 EC 10 01 00 00 53 8B 1D"),
 			&CPortal_Player__GetPlayerModelName_hook,
 			(void**)&CPortal_Player__GetPlayerModelName_orig
 		);
@@ -571,7 +568,7 @@ void CP2MMServerPlugin::Unload(void)
 	// Max players -> 3
 	Memory::ReplacePattern("server", "83 C0 20 89 01", "83 C0 02 89 01");
 	Memory::ReplacePattern("engine", "31 C0 04 21 8B 17", "85 C0 78 13 8B 17");
-	static uintptr_t sv = *reinterpret_cast<uintptr_t*>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "74 0A B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B E5", 3));
+	static uintptr_t sv = *reinterpret_cast<uintptr_t*>(Memory::Scanner::Scan<void*>(ENGINEDLL, "74 0A B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B E5", 3));
 	*reinterpret_cast<int*>(sv + 0x228) = 2;
 
 	// Disconnect by "STEAM validation rejected"
@@ -619,7 +616,7 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 		// Hook R_LoadWorldGeometry (gl_rmisc.cpp)
 		static auto R_LoadWorldGeometry =
 #ifdef _WIN32
-			reinterpret_cast<void(__cdecl*)(bool bDXChange)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("engine"), "55 8B EC 83 EC 14 53 33 DB 89"));
+			reinterpret_cast<void(__cdecl*)(bool bDXChange)>(Memory::Scanner::Scan<void*>(ENGINEDLL, "55 8B EC 83 EC 14 53 33 DB 89"));
 #else
 			NULL; // TODO: Linux & MacOS
 #endif //  _WIN32

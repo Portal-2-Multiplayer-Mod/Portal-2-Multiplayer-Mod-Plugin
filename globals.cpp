@@ -157,7 +157,7 @@ const char* GFunc::GetConVarString(const char* cvname)
 CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
 {
 #ifdef _WIN32
-	static auto _PlayerByIndex = reinterpret_cast<CBasePlayer* (__cdecl*)(int)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 8B 4D 08 33 C0 85 C9 7E 30"));
+	static auto _PlayerByIndex = reinterpret_cast<CBasePlayer* (__cdecl*)(int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 8B 4D 08 33 C0 85 C9 7E 30"));
 	return _PlayerByIndex(playerIndex);
 #else // Linux support TODO
 	return NULL;
@@ -172,7 +172,7 @@ CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
 void CBaseEntity__RemoveEntity(CBaseEntity* pEntity)
 {
 	//reinterpret_cast<IServerEntity*>(pEntity) trust me bro aka, we know its CBaseEntity*, but we want the IServerEntity* so cast to that to get its methods 
-	reinterpret_cast<void (*)(void*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 57 8B 7D 08 85 FF 74 72"))(reinterpret_cast<IServerEntity*>(pEntity)->GetNetworkable());
+	reinterpret_cast<void (*)(void*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 57 8B 7D 08 85 FF 74 72"))(reinterpret_cast<IServerEntity*>(pEntity)->GetNetworkable());
 }
 
 //---------------------------------------------------------------------------------
@@ -180,7 +180,7 @@ void CBaseEntity__RemoveEntity(CBaseEntity* pEntity)
 //---------------------------------------------------------------------------------
 int CBaseEntity__GetTeamNumber(CBasePlayer* pPlayer)
 {
-	static auto _GetTeamNumber = reinterpret_cast<int (__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "8B 81 F4 02 00 00 C3"));
+	static auto _GetTeamNumber = reinterpret_cast<int (__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "8B 81 F4 02 00 00 C3"));
 	return _GetTeamNumber((CBaseEntity*)pPlayer);
 }
 
@@ -205,7 +205,7 @@ HSCRIPT CBaseEntity__GetScriptScope(CBaseEntity* entity)
 //---------------------------------------------------------------------------------
 HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity)
 {
-	static auto _GetScriptInstance = reinterpret_cast<HSCRIPT(__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 51 56 8B F1 83 BE 50"));
+	static auto _GetScriptInstance = reinterpret_cast<HSCRIPT(__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 51 56 8B F1 83 BE 50"));
 	if (!_GetScriptInstance) {
 		P2MMLog(1, false , "Could not get script instance for entity!");
 		return nullptr;
@@ -230,7 +230,7 @@ void CPortal_Player__RespawnPlayer(int playerIndex)
 		return;
 	}
 
-	static auto _RespawnPlayer = reinterpret_cast<void(__thiscall*)(CPortal_Player*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "0F 57 C0 56 8B F1 57 8D 8E"));
+	static auto _RespawnPlayer = reinterpret_cast<void(__thiscall*)(CPortal_Player*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "0F 57 C0 56 8B F1 57 8D 8E"));
 	_RespawnPlayer((CPortal_Player*)pPlayer);
 }
 
@@ -251,10 +251,10 @@ void CPortal_Player__SetFlashlightState(int playerIndex, bool enable)
 	
 	if (enable)
 	{
-		reinterpret_cast<void(__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 53 8B D9 8B 83 A8"))((CBaseEntity*)pPlayer, EF_DIMLIGHT);
+		reinterpret_cast<void(__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 53 8B D9 8B 83 A8"))((CBaseEntity*)pPlayer, EF_DIMLIGHT);
 	}
 	else
 	{
-		reinterpret_cast<void(__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 53 56 8B 75 08 8B D9 8B 83"))((CBaseEntity*)pPlayer, EF_DIMLIGHT);
+		reinterpret_cast<void(__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 53 56 8B 75 08 8B D9 8B 83"))((CBaseEntity*)pPlayer, EF_DIMLIGHT);
 	}
 }

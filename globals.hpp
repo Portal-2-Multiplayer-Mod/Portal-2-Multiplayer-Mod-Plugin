@@ -25,13 +25,14 @@
 
 #include <sstream>
 
+// Stand in class definitions.
 class CBasePlayer;
 class CPortal_Player;
 
 #define P2MM_PLUGIN_CONSOLE_COLOR Color(100, 192, 252, 255)
 #define P2MM_VSCRIPT_CONSOLE_COLOR Color(110, 247, 76, 255)
 
-#define CURRENTMAPNAME STRING(g_pGlobals->mapname)
+#define CURMAPNAME STRING(g_pGlobals->mapname)
 
 // Used for autocomplete console commands.
 #define COMMAND_COMPLETION_MAXITEMS		64

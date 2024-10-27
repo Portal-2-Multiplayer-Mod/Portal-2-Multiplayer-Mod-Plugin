@@ -53,6 +53,11 @@ class CPortal_Player;
 #define COMMAND_COMPLETION_MAXITEMS		64
 #define COMMAND_COMPLETION_ITEM_LENGTH	64
 
+#define TEAM_SINGLEPLAYER 0
+#define TEAM_SPECTATOR	  1
+#define TEAM_RED		  2
+#define TEAM_BLUE         3
+
 //---------------------------------------------------------------------------------
 // Any ConVars or CON_COMMANDS that need to be globally available
 //---------------------------------------------------------------------------------
@@ -84,6 +89,7 @@ namespace GFunc {
 }
 
 void CBaseEntity__RemoveEntity(CBaseEntity* pEntity);
+int CBaseEntity__GetTeamNumber(CBasePlayer* pPlayer);
 HSCRIPT CBaseEntity__GetScriptScope(CBaseEntity* entity);
 HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity);
 

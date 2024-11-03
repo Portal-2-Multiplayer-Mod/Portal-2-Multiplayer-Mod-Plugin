@@ -533,19 +533,15 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		);
 	
 		MH_EnableHook(MH_ALL_HOOKS);
-
-		P2MMLog(0, false, "Loaded plugin! Horray!");
-		m_bPluginLoaded = true;
 	} catch (const std::exception& ex) {
 		P2MMLog(0, false, "Failed to load plugin! :( Exception: (%s)", ex.what());
 		this->m_bNoUnload = true;
 		return false;
 	}
 
-
 	discordIntegration.StartDiscordRPC();
 
-	P2MMLog(0, false, "Loaded plugin!");
+	P2MMLog(0, false, "Loaded plugin! Horray!");
 	m_bPluginLoaded = true;
 	return true;
 }

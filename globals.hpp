@@ -36,7 +36,7 @@ class CPortal_Player;
 #define P2MM_DISCORD_CONSOLE_COLOR_WARNING Color(255, 187, 28, 255)
 //#define P2MM_DISCORD_CONSOLE_COLOR_NORMAL Color(88, 101, 242)
 
-#define CURMAPNAME STRING(gpGlobals->mapname)
+#define CURMAPNAME STRING(g_pGlobals->mapname)
 
 // Even programs have to sleep sometimes
 #if _WIN32
@@ -141,7 +141,7 @@ inline edict_t* INDEXENT(int iEdictNum)
 // Get the current player count on the server
 inline int CURPLAYERCOUNT() {
 	int playerCount = 0;
-	for (int i = 1; i < gpGlobals->maxClients; i++)
+	for (int i = 1; i < g_pGlobals->maxClients; i++)
 	{
 		IPlayerInfo* playerinfo = playerinfomanager->GetPlayerInfo(INDEXENT(i));
 		if (playerinfo)

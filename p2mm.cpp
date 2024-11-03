@@ -266,7 +266,7 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 		p2mm_lastmap.SetValue(requestedMap);
 		engineClient->ExecuteClientCmd(std::string(mapString + "mp_coop_community_hub").c_str());
 		
-		std::string initmapstr = std::string("Server has started with map: `" + requestedMap + "`");
+		std::string initmapstr = std::string("Server has started with map: `" + std::string(requestedMap) + "`");
 		discordIntegration.SendWebHookEmbed(std::string("Server"), initmapstr, EMBEDCOLOR_SERVER, false);
 	}
 	else
@@ -275,7 +275,7 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 		P2MMLog(0, true, "requestedMap: \"%s\"", requestedMap);
 		engineClient->ExecuteClientCmd(std::string(mapString + requestedMap).c_str());
 
-		std::string initmapstr = std::string("Server has started with map: `" + requestedMap + "`");
+		std::string initmapstr = std::string("Server has started with map: `" + std::string(requestedMap) + "`");
 		discordIntegration.SendWebHookEmbed(std::string("Server"), initmapstr, EMBEDCOLOR_SERVER, false);
 	}
 }
@@ -660,7 +660,7 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 	memset(&discordPresence, 0, sizeof(discordPresence));
 
 	std::string curplayercount = std::to_string(CURPLAYERCOUNT());
-	std::string maxplayercount = std::to_string(gpGlobals->maxClients);
+	std::string maxplayercount = std::to_string(g_pGlobals->maxClients);
 	std::string activityState = std::string("Players: (") + curplayercount + "/" + maxplayercount + ")";
 
 	discordPresence.state = activityState.c_str();
@@ -1102,7 +1102,7 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 	}
 
 	std::string curplayercount = std::to_string(CURPLAYERCOUNT());
-	std::string maxplayercount = std::to_string(gpGlobals->maxClients);
+	std::string maxplayercount = std::to_string(g_pGlobals->maxClients);
 	std::string activityState = std::string("Players: (") + curplayercount + "/" + maxplayercount + ")";
 
 	//DiscordRichPresence discordPresence;

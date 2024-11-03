@@ -58,11 +58,11 @@ void DiscordLog(int level, bool dev, const char* pMsgFormat, ...)
 // Generates a footer with the player count with max allowed client count and also the current map name
 std::string DefaultFooter()
 {
-	// gpGlobals doesn't exist yet at certain situations, so return a blank string.
-	if (!gpGlobals) { return ""; }
+	// g_pGlobals doesn't exist yet at certain situations, so return a blank string.
+	if (!g_pGlobals) { return ""; }
 
 	std::string curplayercount = std::to_string(CURPLAYERCOUNT());
-	std::string maxplayercount = std::to_string(gpGlobals->maxClients);
+	std::string maxplayercount = std::to_string(g_pGlobals->maxClients);
 
 	std::string footer = std::string("Players: ") + curplayercount + "/" + maxplayercount + std::string(" || Current Map: ") + CURMAPNAME;
 

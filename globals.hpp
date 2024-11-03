@@ -53,6 +53,7 @@ class CPortal_Player;
 #define COMMAND_COMPLETION_MAXITEMS		64
 #define COMMAND_COMPLETION_ITEM_LENGTH	64
 
+// Team number macros.
 #define TEAM_SINGLEPLAYER 0
 #define TEAM_SPECTATOR	  1
 #define TEAM_RED		  2
@@ -88,23 +89,23 @@ namespace GFunc {
 	inline const char*	GetGameBaseDir();
 }
 
+CBasePlayer* UTIL_PlayerByIndex(int playerIndex);
+
 void CBaseEntity__RemoveEntity(CBaseEntity* pEntity);
 int CBaseEntity__GetTeamNumber(CBasePlayer* pPlayer);
 HSCRIPT CBaseEntity__GetScriptScope(CBaseEntity* entity);
 HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity);
 
-CBasePlayer* UTIL_PlayerByIndex(int playerIndex);
-
 void CPortal_Player__RespawnPlayer(int playerIndex);
 void CPortal_Player__SetFlashlightState(int playerIndex, bool enable);
 
-// If String Equals String helper function
+// If String Equals String helper function. Taken from utils.h.
 inline bool FStrEq(const char* sz1, const char* sz2)
 {
 	return (V_stricmp(sz1, sz2) == 0);
 }
 
-// If String Has Substring helper function
+// If String Has Substring helper function. Taken from utils.h.
 inline bool FSubStr(const char* sz1, const char* search)
 {
 	return (V_strstr(sz1, search));
@@ -113,13 +114,22 @@ inline bool FSubStr(const char* sz1, const char* search)
 //---------------------------------------------------------------------------------
 // Purpose: Entity edict to entity index. Taken from utils.h.
 //---------------------------------------------------------------------------------
-inline int ENTINDEX(edict_t* pEdict)
+inline int EDICTINDEX(edict_t* pEdict)
 {
 	if (!pEdict)
 		return 0;
 	int edictIndex = pEdict - g_pGlobals->pEdicts;
 	Assert(edictIndex < MAX_EDICTS && edictIndex >= 0);
 	return edictIndex;
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Entity to entity index.
+//---------------------------------------------------------------------------------
+inline int ENTINDEX(CBaseEntity* pEnt)
+{
+	static auto _ENTINDEX = reinterpret_cast<int (__cdecl*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 8B 45 ?? 85 C0 74 ?? 8B 40 ?? 85 C0 74 ?? 8B 0D"));
+	return _ENTINDEX(pEnt);
 }
 
 //---------------------------------------------------------------------------------
@@ -157,12 +167,12 @@ inline int CURPLAYERCOUNT() {
 //---------------------------------------------------------------------------------
 inline HSCRIPT INDEXHANDLE(int iEdictNum) {
 	edict_t* pEdict = INDEXENT(iEdictNum);
-	CBaseEntity* p_baseEntity = pEdict->GetUnknown()->GetBaseEntity();
-	if (!p_baseEntity)
+	CBaseEntity* pBaseEntity = pEdict->GetUnknown()->GetBaseEntity();
+	if (!pBaseEntity)
 	{
 		return nullptr;
 	}
-	HSCRIPT entityHandle = CBaseEntity__GetScriptInstance(p_baseEntity);
+	HSCRIPT entityHandle = CBaseEntity__GetScriptInstance(pBaseEntity);
 	return entityHandle;
 }
 

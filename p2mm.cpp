@@ -536,7 +536,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 
 		P2MMLog(0, false, "Loaded plugin! Horray!");
 		m_bPluginLoaded = true;
-	} catch(std::exception& ex) {
+	} catch (const std::exception& ex) {
 		P2MMLog(0, false, "Failed to load plugin! :( Exception: (%s)", ex.what());
 		this->m_bNoUnload = true;
 		return false;

@@ -73,14 +73,16 @@ int GFunc::UserIDToPlayerIndex(int userid)
 //---------------------------------------------------------------------------------
 const char* GFunc::GetPlayerName(int index)
 {
-	if (index <= 0)
+	if (index <= 0 || index > g_pGlobals->maxClients)
 	{
+		P2MMLog(0, true, "Invalid index passed to GetPlayerName: %i!", index);
 		return "";
 	}
 
 	player_info_t playerinfo;
 	if (!engineServer->GetPlayerInfo(index, &playerinfo))
 	{
+		P2MMLog(0, true, "Couldn't retrieve playerinfo of player index \"%i\" in GetPlayerName!", index);
 		return "";
 	}
 

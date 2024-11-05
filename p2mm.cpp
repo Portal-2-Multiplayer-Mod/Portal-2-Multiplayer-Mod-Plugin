@@ -102,6 +102,7 @@ ConVar p2mm_splitscreen("p2mm_splitscreen", "0", FCVAR_HIDDEN, "Flag for the mai
 ConVar p2mm_forbidclientcommands("p2mm_forbidclientcommands", "1", FCVAR_NONE, "Stop client commands clients shouldn't be executing.");
 ConVar p2mm_deathicons("p2mm_deathicons", "1", FCVAR_NONE, "Whether or not when players die the death icon should appear.");
 ConVar p2mm_ds_enable_paint("p2mm_ds_enable_paint", "0", FCVAR_NONE, "Re-enables gel functionality in dedicated servers on the next map load.");
+ConVar p2mm_instant_respawn("p2mm_instant_respawn", "0", FCVAR_NONE, "Whether respawning should be instant or not.");
 
 // Debug ConVars
 ConVar p2mm_developer("p2mm_developer", "0", FCVAR_NONE, "Enable for P2:MM developer messages.");
@@ -361,6 +362,18 @@ const char* __fastcall CPortal_Player__GetPlayerModelName_hook(CPortal_Player* t
 	return CPortal_Player__GetPlayerModelName_orig(thisptr);
 }
 
+//void (__fastcall* CBasePlayer__PlayerDeathThink_orig)(CBasePlayer* thisptr);
+void (__fastcall* CPortal_Player__PlayerDeathThink_orig)(CPortal_Player* thisptr);
+void __fastcall CPortal_Player__PlayerDeathThink_hook(CPortal_Player* thisptr)
+{
+	if (p2mm_instant_respawn.GetBool())
+	{
+		CPortal_Player__RespawnPlayer(ENTINDEX((CBaseEntity*)thisptr));
+		return;
+	}
+	CPortal_Player__PlayerDeathThink_orig(thisptr);
+}
+
 //---------------------------------------------------------------------------------
 // Purpose: Called when the plugin is loaded, initialization process.
 //			Loads the interfaces we need from the engine and applies our patches.
@@ -521,7 +534,13 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 			Memory::Scanner::Scan(SERVERDLL, "55 8B EC 81 EC 10 01 00 00 53 8B 1D"),
 			&CPortal_Player__GetPlayerModelName_hook, (void**)&CPortal_Player__GetPlayerModelName_orig
 		);
-	
+
+		// For p2mm_instant_respawn.
+		MH_CreateHook(
+			Memory::Scanner::Scan(SERVERDLL, "53 8B DC 83 EC 08 83 E4 F0 83 C4 04 55 8B 6B ?? 89 6C 24 ?? 8B EC A1 ?? ?? ?? ?? F3 0F 10 40 ?? F3 0F 58 05 ?? ?? ?? ?? 83 EC 28 56 57 6A 00 51 8B F1 F3 0F 11 04 24 E8 ?? ?? ?? ?? 6A 03"),
+			&CPortal_Player__PlayerDeathThink_hook, (void**)&CPortal_Player__PlayerDeathThink_orig
+		);
+
 		MH_EnableHook(MH_ALL_HOOKS);
 
 		P2MMLog(0, false, "Loaded plugin! Horray!");

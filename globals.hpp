@@ -15,6 +15,7 @@
 #include "public/steam/steamclientpublic.h"
 #include "public/filesystem.h"
 #include "tier2/fileutils.h"
+#include "irecipientfilter.h"
 
 #include "scanner.hpp"
 
@@ -79,7 +80,8 @@ extern IFileSystem* g_pFileSystem;
 
 void P2MMLog(int level, bool dev, const char* pMsgFormat, ...);
 
-namespace GFunc {
+namespace GFunc
+{
 	int					UserIDToPlayerIndex(int userid);
 	const char*			GetPlayerName(int index);
 	int					GetSteamID(int index);
@@ -98,6 +100,34 @@ HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity);
 
 void CPortal_Player__RespawnPlayer(int playerIndex);
 void CPortal_Player__SetFlashlightState(int playerIndex, bool enable);
+
+class CFilter : public IRecipientFilter
+{
+public:
+	CFilter() { recipient_count = 0; };
+	~CFilter() {};
+
+	virtual bool IsReliable() const { return false; }
+	virtual bool IsInitMessage() const { return false; }
+
+	virtual int GetRecipientCount() const { return recipient_count; }
+	virtual int GetRecipientIndex(int slot) const {
+		return (slot < 0 || slot >= recipient_count) ? -1 : recipients[slot];
+	}
+
+	void AddPlayer(int playerIndex)
+	{
+		if (recipient_count < 256)
+		{
+			recipients[recipient_count] = playerIndex;
+			recipient_count++;
+		}
+	}
+
+private:
+	int recipients[256];
+	int recipient_count;
+};
 
 // If String Equals String helper function. Taken from utils.h.
 inline bool FStrEq(const char* sz1, const char* sz2)

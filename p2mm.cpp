@@ -43,6 +43,8 @@ static const char* gameevents[] =
 	"turret_hit_turret",
 	"security_camera_detached",
 	"player_landed",
+	"player_spawn_blue",
+	"player_spawn_orange",
 	"player_death",
 	"player_connect",
 	"player_say",
@@ -170,22 +172,6 @@ static int p2mm_startsession_CompletionFunc(const char* partial, char commands[C
 	return numMatchedMaps;
 }
 
-CON_COMMAND(p2mm_updatemaplist, "Manually updates the list of avaliable maps that can be loaded with \"p2mm_startsession\"")
-{
-	updateMapsList();
-}
-
-CON_COMMAND(p2mm_maplist, "Lists avaliable maps that can be loaded with \"p2mm_startsession\"")
-{
-	P2MMLog(0, false, "AVALIABLE MAPS:");
-	P2MMLog(0, false, "----------------------------------------");
-	for (const std::string map : mapList)
-	{
-		P2MMLog(0, false, map.c_str());
-	}
-	P2MMLog(0, false, "----------------------------------------");
-}
-
 CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a requested map.", 0, p2mm_startsession_CompletionFunc)
 {
 	// Make sure the CON_COMMAND was executed correctly.
@@ -269,6 +255,22 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 	}
 }
 
+CON_COMMAND(p2mm_updatemaplist, "Manually updates the list of avaliable maps that can be loaded with \"p2mm_startsession\"")
+{
+	updateMapsList();
+}
+
+CON_COMMAND(p2mm_maplist, "Lists avaliable maps that can be loaded with \"p2mm_startsession\"")
+{
+	P2MMLog(0, false, "AVALIABLE MAPS:");
+	P2MMLog(0, false, "----------------------------------------");
+	for (const std::string map : mapList)
+	{
+		P2MMLog(0, false, map.c_str());
+	}
+	P2MMLog(0, false, "----------------------------------------");
+}
+
 CON_COMMAND(p2mm_respawnall, "Respawns all players.")
 {
 	for (int i = 1; i < g_pGlobals->maxClients; i++)
@@ -320,7 +322,6 @@ const char* CP2MMServerPlugin::GetPluginDescription(void)
 //
 //	disconnect_orig(thisptr, edx, cl, eDenyReason, pchOptionalText);
 //}
-
 
 // Bottom three hooks are for being able to change the starting models to something different.
 // First two are for changing what model is returned when precaching however...
@@ -510,14 +511,15 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		// Hook onto the function which defines what Atlas's and PBody's models are.
 		MH_CreateHook(
 			Memory::Rel32(Memory::Scanner::Scan(SERVERDLL, "E8 ?? ?? ?? ?? 83 C4 40 50", 1)),
-			&GetBallBotModel_hook, (void**)&GetBallBotModel_orig);
+			&GetBallBotModel_hook, (void**)&GetBallBotModel_orig
+		);
 		MH_CreateHook(
 			Memory::Rel32(Memory::Scanner::Scan(SERVERDLL, "E8 ?? ?? ?? ?? 83 C4 04 50 8B 45 10 8B 10", 1)),
-			&GetEggBotModel_hook, (void**)&GetEggBotModel_orig);
+			&GetEggBotModel_hook, (void**)&GetEggBotModel_orig
+		);
 		MH_CreateHook(
 			Memory::Scanner::Scan(SERVERDLL, "55 8B EC 81 EC 10 01 00 00 53 8B 1D"),
-			&CPortal_Player__GetPlayerModelName_hook,
-			(void**)&CPortal_Player__GetPlayerModelName_orig
+			&CPortal_Player__GetPlayerModelName_hook, (void**)&CPortal_Player__GetPlayerModelName_orig
 		);
 	
 		MH_EnableHook(MH_ALL_HOOKS);
@@ -778,7 +780,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		
 		return;
 	}
-	// Event called when a player goes through a portal, "turret_hit_turret" returns nothing.
+	// Event called when a turret hits another turret, "turret_hit_turret" returns nothing.
 	else if (FStrEq(event->GetName(), "turret_hit_turret"))
 	{
 		if (g_pScriptVM)
@@ -793,7 +795,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 
 		return;
 	}
-	// Event called when a player goes through a portal, "security_camera_detached" returns nothing.
+	// Event called when a camera is detached from a wall, "security_camera_detached" returns nothing.
 	else if (FStrEq(event->GetName(), "security_camera_detached"))
 	{
 		if (g_pScriptVM)
@@ -828,6 +830,36 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 
 		return;
 	}
+	// Event called when a Blue/Atlas spawns, "player_spawn_blue" returns nothing.
+	else if (FStrEq(event->GetName(), "player_spawn_blue"))
+	{
+		if (g_pScriptVM)
+		{
+			// Handle VScript game event function
+			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSpawnBlue");
+			if (ge_func)
+			{
+				g_pScriptVM->Call(ge_func, NULL, true, NULL);
+			}
+		}
+
+		return;
+	}
+	// Event called when a Red/Orange/PBody spawns, "player_spawn_orange" returns nothing.
+	else if (FStrEq(event->GetName(), "player_spawn_orange"))
+	{
+		if (g_pScriptVM)
+		{
+			// Handle VScript game event function
+			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSpawnOrange");
+			if (ge_func)
+			{
+				g_pScriptVM->Call(ge_func, NULL, true, NULL);
+			}
+		}
+
+		return;
+	}
 	// Event called when a player dies, "player_death" returns:	
 	/*
 		"userid"	"short"   	// user ID who died
@@ -848,7 +880,6 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				HSCRIPT playerHandle = INDEXHANDLE(entindex);
 				if (playerHandle)
 				{
-					// player does not have a script scope yet, fire OnPlayerJoin
 					g_pScriptVM->Call<HSCRIPT>(od_func, NULL, true, NULL, playerHandle);
 				}
 			}

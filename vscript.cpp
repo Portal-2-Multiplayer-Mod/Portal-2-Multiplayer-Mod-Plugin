@@ -7,8 +7,6 @@
 
 #include "p2mm.hpp"
 
-#include "irecipientfilter.h"
-
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -110,33 +108,6 @@ static void InitializeEntity(HSCRIPT ent)
 		Activate(pEntity);
 	}
 }
-
-class CFilter : public IRecipientFilter
-{
-public:
-	CFilter() { recipient_count = 0; };
-	~CFilter() {};
-
-	virtual bool IsReliable() const { return false; };
-	virtual bool IsInitMessage() const { return false; };
-
-	virtual int GetRecipientCount() const { return recipient_count; };
-	virtual int GetRecipientIndex(int slot) const { return ((slot < 0) || (slot >= recipient_count)) ? -1 : recipients[slot]; };
-	void AddPlayer(int player_index)
-	{
-		if (recipient_count > 255)
-		{
-			return;
-		}
-
-		recipients[recipient_count] = player_index;
-		recipient_count++;
-	}
-
-private:
-	int recipients[256];
-	int recipient_count;
-};
 
 //---------------------------------------------------------------------------------
 // Purpose: Sends a raw message to the chat HUD.

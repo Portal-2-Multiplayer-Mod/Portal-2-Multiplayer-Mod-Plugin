@@ -51,6 +51,8 @@ void GEPlayerPortaled(short userid, bool portal2, int entindex);                
 void GETurretHitTurret();                                                                   | "Called whenever a turret hits another turret. Game event: 'turret_hit_turret'"
 void GECamDetach();                                                                         | "Called whenever a camera is detached from a surface. Game event: 'security_camera_detached'"
 void GEPlayerLanded(short userid, int entindex);                                            | "Called whenever a player lands on the ground. Game event: 'player_landed'"
+void GEPlayerSpawnBlue();                                                                   | "Called whenever a Blue/Atlas player spawns. Game event: 'player_spawn_blue'"
+void GEPlayerSpawnOrange();                                                                 | "Called whenever a Red/Orange/PBody player spawns. Game event: 'player_spawn_orange'"
 void GEPlayerDeath(short userid, short attacker, int entindex);                             | "Called whenever a player dies. Game event: 'player_death'"
 void GEPlayerConnect(const char* name, int index, short userid, const char* xuid, 
                 const char* networkid, const char* address, bool bot, int entindex);        | "Called where a player connects to the server. 'index' is the entity index minus 1. Game event: 'player_connect'"

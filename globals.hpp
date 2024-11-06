@@ -30,8 +30,9 @@
 class CBasePlayer;
 class CPortal_Player;
 
-#define P2MM_PLUGIN_CONSOLE_COLOR Color(100, 192, 252, 255)
-#define P2MM_VSCRIPT_CONSOLE_COLOR Color(110, 247, 76, 255)
+// Color macros for game chat and console printing
+#define P2MM_PLUGIN_CONSOLE_COLOR  Color(100, 192, 252, 255) // Light Blue
+#define P2MM_VSCRIPT_CONSOLE_COLOR Color(110, 247, 76, 255)  // Light Green
 
 #define CURMAPNAME STRING(g_pGlobals->mapname)
 

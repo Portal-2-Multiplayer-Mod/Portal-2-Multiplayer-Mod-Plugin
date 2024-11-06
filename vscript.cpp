@@ -138,7 +138,7 @@ static void SendToChat(const char* msg, int playerIndex)
 		recipient_filter.AddPlayer(playerIndex);
 	}
 
-	netmsg = engineServer->UserMessageBegin(&recipient_filter, 4, "SayText2");
+	netmsg = engineServer->UserMessageBegin(&recipient_filter, 3, "SayText");
 	netmsg->WriteByte(0);
 	netmsg->WriteString(msg);
 	netmsg->WriteByte(1);

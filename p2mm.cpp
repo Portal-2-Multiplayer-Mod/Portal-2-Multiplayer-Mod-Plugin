@@ -175,6 +175,11 @@ static int p2mm_startsession_CompletionFunc(const char* partial, char commands[C
 
 CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a requested map.", 0, p2mm_startsession_CompletionFunc)
 {
+	// If the map list is empty, generate it.
+	if (mapList.empty()) {
+		updateMapsList();
+	}
+
 	// Make sure the CON_COMMAND was executed correctly.
 	if (args.ArgC() < 2 || FStrEq(args.Arg(1), ""))
 	{
@@ -357,7 +362,7 @@ const char* __fastcall CPortal_Player__GetPlayerModelName_hook(CPortal_Player* t
 		if (CBaseEntity__GetTeamNumber((CBasePlayer*)thisptr) == TEAM_BLUE)
 			return "models/portal_stories/player/mel.mdl";
 		else
-			return "models/player/chell/player.mdl";		
+			return "models/player/chell/player.mdl";
 	}
 	return CPortal_Player__GetPlayerModelName_orig(thisptr);
 }

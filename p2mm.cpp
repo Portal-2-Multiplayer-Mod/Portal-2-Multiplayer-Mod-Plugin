@@ -1067,9 +1067,12 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 	short userid = engineServer->GetPlayerUserId(pEntity);
 	int entindex = GFunc::UserIDToPlayerIndex(userid);
 
-	P2MMLog(0, true, "ClientActive Called!");
-	P2MMLog(0, true, "userid: %i", userid);
-	P2MMLog(0, true, "entindex: %i", entindex);
+	if (p2mm_spewgameeventinfo.GetBool())
+	{
+		P2MMLog(0, true, "ClientActive Called!");
+		P2MMLog(0, true, "userid: %i", userid);
+		P2MMLog(0, true, "entindex: %i", entindex);
+	}
 
 	if (g_pScriptVM)
 	{

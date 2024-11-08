@@ -49,7 +49,7 @@ void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Gets player entity index by userid.
+// Purpose: Get the player's entity index by their userid.
 //---------------------------------------------------------------------------------
 int GFunc::UserIDToPlayerIndex(int userid)
 {
@@ -70,20 +70,20 @@ int GFunc::UserIDToPlayerIndex(int userid)
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Gets player username by index.
+// Purpose: Gets player username by their entity index.
 //---------------------------------------------------------------------------------
-const char* GFunc::GetPlayerName(int index)
+const char* GFunc::GetPlayerName(int playerIndex)
 {
-	if (index <= 0 || index > g_pGlobals->maxClients)
+	if (playerIndex <= 0 || playerIndex > g_pGlobals->maxClients)
 	{
-		P2MMLog(0, true, "Invalid index passed to GetPlayerName: %i!", index);
+		P2MMLog(0, true, "Invalid index passed to GetPlayerName: %i!", playerIndex);
 		return "";
 	}
 
 	player_info_t playerinfo;
-	if (!engineServer->GetPlayerInfo(index, &playerinfo))
+	if (!engineServer->GetPlayerInfo(playerIndex, &playerinfo))
 	{
-		P2MMLog(0, true, "Couldn't retrieve playerinfo of player index \"%i\" in GetPlayerName!", index);
+		P2MMLog(0, true, "Couldn't retrieve playerinfo of player index \"%i\" in GetPlayerName!", playerIndex);
 		return "";
 	}
 
@@ -91,14 +91,14 @@ const char* GFunc::GetPlayerName(int index)
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Gets the account ID component of player SteamID by index.
+// Purpose: Gets the account ID component of player SteamID by the player's entity index.
 //---------------------------------------------------------------------------------
-int GFunc::GetSteamID(int index)
+int GFunc::GetSteamID(int playerIndex)
 {
 	edict_t* pEdict = NULL;
-	if (index >= 0 && index < g_pGlobals->maxEntities)
+	if (playerIndex >= 0 && playerIndex < g_pGlobals->maxClients)
 	{
-		pEdict = (edict_t*)(g_pGlobals->pEdicts + index);
+		pEdict = (edict_t*)(g_pGlobals->pEdicts + playerIndex);
 	}
 	if (!pEdict)
 	{
@@ -106,7 +106,7 @@ int GFunc::GetSteamID(int index)
 	}
 
 	player_info_t playerinfo;
-	if (!engineServer->GetPlayerInfo(index, &playerinfo))
+	if (!engineServer->GetPlayerInfo(playerIndex, &playerinfo))
 	{
 		return -1;
 	}
@@ -228,7 +228,7 @@ void CPortal_Player__RespawnPlayer(int playerIndex)
 	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
 	if (!pPlayer)
 	{
-		P2MMLog(1, true, "Couldn't get player to respawn! playerIndex: %i", playerIndex);
+		P2MMLog(1, false, "Couldn't get player to respawn! playerIndex: %i", playerIndex);
 		return;
 	}
 

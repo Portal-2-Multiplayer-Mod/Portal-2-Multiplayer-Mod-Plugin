@@ -16,9 +16,9 @@ Note: While represented in C++, below functions are for Squirrel. `const char*` 
 
 ```c++
 void        printlP2MM(int level, bool dev, const char* pMsgFormat); | "Logging for the P2MM VScript. The log message must be passed as a string or it will error."
-const char* GetPlayerName(int index);                                | "Gets player username by index."
-int         GetSteamID(int index);                                   | "Gets the account ID component of player SteamID by index."
-int         UserIDToPlayerIndex(int userid);                         | "Gets player entity index by userid."
+const char* GetPlayerName(int playerIndex);                          | "Gets player username by their entity index."
+int         GetSteamID(int playerIndex);                             | "Gets the account ID component of player SteamID by the player's entity index."
+int         UserIDToPlayerIndex(int userid);                         | "Get the player's entity index by their userid."
 bool        IsMapValid(const char* map);                             | "Returns true is the supplied string is a available map to load and run."
 int         GetDeveloperLevelP2MM();                                 | "Returns the value of ConVar p2mm_developer."
 void        SetPhysTypeConVar(int newval);                           | "Sets 'player_held_object_use_view_model' to the supplied integer value."
@@ -26,8 +26,8 @@ void        SetMaxPortalSeparationConvar(int newval);                | "Sets 'po
 bool        IsDedicatedServer();                                     | "Returns true if this is a dedicated server."
 void        InitializeEntity(HSCRIPT ent);                           | "Initializes an entity. Note: Not all entities will work even after being initialized with this function."
 void        SendToChat(const char* msg, int index);                  | "Sends a raw message to the chat HUD."
-const char* GetGameMainDir();                                        | "Returns the game directory. Ex. portal2/portal_stories"
-const char* GetGameBaseDir();                                        | "Get the main game directory being used. Ex. Portal 2/Portal Stories Mel"
+const char* GetGameMainDir();                                        | "Returns the game directory. Ex. portal2"
+const char* GetGameBaseDir();                                        | "Get the main game directory being used. Ex. Portal 2"
 const char* GetLastMap();                                            | "Returns the last map recorded by the launcher's Last Map system."
 bool        FirstRunState();                                         | "Get or set the state of whether the first map was run or not. Set false/true = 0/1 | -1 to get state."
 void        CallFirstRunPrompt();                                    | "Shows the first run prompt if enabled in config.nut."
@@ -35,7 +35,7 @@ int         GetConVarInt(const char* cvname);                        | "Get the 
 const char* GetConVarString(const char* cvname);                     | "Get the string value of a ConVar."
 HSCRIPT     PlayerIndexToPlayerHandle(int playerIndex)               | "Takes the player's entity index and returns the player's script handle."
 void        RespawnPlayer(int playerIndex)                           | "Respawn the a player by their entity index."
-void        SetFlashlightState(int iIndex, bool bTurnOn)             | "Set the flashlight for a player on or off."
+void        SetFlashlightState(int playerIndex, bool enable)         | "Set the flashlight for a player on or off."
 ```
 
 ## Game Events Interfaced To Squirrel VScript Functions:

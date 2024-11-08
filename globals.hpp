@@ -69,8 +69,8 @@ void P2MMLog(int level, bool dev, const char* pMsgFormat, ...);
 namespace GFunc
 {
 	int					UserIDToPlayerIndex(int userid);
-	const char*			GetPlayerName(int index);
-	int					GetSteamID(int index);
+	const char*			GetPlayerName(int playerIndex);
+	int					GetSteamID(int playerIndex);
 	int					GetConVarInt(const char* cvname);
 	const char*			GetConVarString(const char* cvname);
 	inline const char*	GetGameMainDir();
@@ -178,13 +178,13 @@ inline HSCRIPT INDEXHANDLE(int iEdictNum) {
 	return entityHandle;
 }
 
-// Get the main game directory being used. Ex. portal2/portal_stories
+// Get the main game directory being used. Ex. portal2
 inline const char* GFunc::GetGameMainDir()
 {
 	return CommandLine()->ParmValue("-game", CommandLine()->ParmValue("-defaultgamedir", "portal2"));
 }
 
-// Get base game directory. Ex. Portal 2/Portal Stories Mel
+// Get base game directory. Ex. Portal 2
 inline const char* GFunc::GetGameBaseDir()
 {
 	char baseDir[MAX_PATH];

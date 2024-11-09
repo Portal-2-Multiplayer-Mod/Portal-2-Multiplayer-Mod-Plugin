@@ -183,7 +183,7 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 	// Make sure the CON_COMMAND was executed correctly.
 	if (args.ArgC() < 2 || FStrEq(args.Arg(1), ""))
 	{
-		P2MMLog(1, false, "p2mm_startsession called incorrectly! Usage: 'p2mm_startsession (map to start) '");
+		P2MMLog(1, false, "p2mm_startsession called incorrectly! Usage: \"p2mm_startsession (map to start)\"");
 		updateMapsList();
 		return;
 	}
@@ -207,7 +207,7 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 			char completePVCmd[sizeof("playvol \"#music/mainmenu/portal2_background0%d\" 0.35") + sizeof(iAct)];
 			V_snprintf(completePVCmd, sizeof(completePVCmd), "playvol \"#music/mainmenu/portal2_background0%i\" 0.35", iAct);
 
-			P2MMLog(1, false, "p2mm_session was called with P2MM_LASTMAP, but p2mm_lastmap is empty or invalid!");
+			P2MMLog(1, false, "p2mm_startsession was called with P2MM_LASTMAP, but p2mm_lastmap is empty or invalid!");
 			engineClient->ExecuteClientCmd("disconnect \"There is no last map recorded or the map doesn't exist! Please start a play session with the other options first.\"");
 			engineClient->ExecuteClientCmd(completePVCmd);
 			updateMapsList();
@@ -248,14 +248,14 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 	g_P2MMServerPlugin.m_bSeenFirstRunPrompt = false;
 	if (!FSubStr(requestedMap, "mp_coop"))
 	{
-		P2MMLog(0, true, "'mp_coop' not found, singleplayer map being run. Full ExecuteClientCmd: \"%s\"", std::string(mapString + "mp_coop_community_hub").c_str());
+		P2MMLog(0, true, "\"mp_coop\" not found, singleplayer map being run. Full ExecuteClientCmd: \"%s\"", std::string(mapString + "mp_coop_community_hub").c_str());
 		P2MMLog(0, true, "requestedMap: \"%s\"", requestedMap);
 		p2mm_lastmap.SetValue(requestedMap);
 		engineClient->ExecuteClientCmd(std::string(mapString + "mp_coop_community_hub").c_str());
 	}
 	else
 	{
-		P2MMLog(0, true, "'mp_coop' found, multiplayer map being run. Full ExecuteClientCmd: \"%s\"", std::string(mapString + requestedMap).c_str());
+		P2MMLog(0, true, "\"mp_coop\" found, multiplayer map being run. Full ExecuteClientCmd: \"%s\"", std::string(mapString + requestedMap).c_str());
 		P2MMLog(0, true, "requestedMap: \"%s\"", requestedMap);
 		engineClient->ExecuteClientCmd(std::string(mapString + requestedMap).c_str());
 	}
@@ -367,7 +367,8 @@ const char* __fastcall CPortal_Player__GetPlayerModelName_hook(CPortal_Player* t
 	return CPortal_Player__GetPlayerModelName_orig(thisptr);
 }
 
-//void (__fastcall* CBasePlayer__PlayerDeathThink_orig)(CBasePlayer* thisptr);
+// For hooking onto the function that is called before a player respawns to skip the delay
+// that is usual there and instead force a instant respawn of the player.
 void (__fastcall* CPortal_Player__PlayerDeathThink_orig)(CPortal_Player* thisptr);
 void __fastcall CPortal_Player__PlayerDeathThink_hook(CPortal_Player* thisptr)
 {
@@ -1107,14 +1108,14 @@ void CP2MMServerPlugin::GameFrame(bool simulating)
 	HSCRIPT loop_func = g_pScriptVM->LookupFunction("P2MMLoop");
 	if (loop_func && p2mm_loop.GetBool())
 	{
-		g_pScriptVM->Call(loop_func, NULL, true, NULL);
+		g_pScriptVM->Call(loop_func, NULL, false, NULL);
 	}
 
 	// Handle VScript game event function
 	HSCRIPT gf_func = g_pScriptVM->LookupFunction("GEGameFrame");
 	if (gf_func)
 	{
-		g_pScriptVM->Call<bool>(gf_func, NULL, true, NULL, simulating);
+		g_pScriptVM->Call<bool>(gf_func, NULL, false, NULL, simulating);
 	}
 }
 

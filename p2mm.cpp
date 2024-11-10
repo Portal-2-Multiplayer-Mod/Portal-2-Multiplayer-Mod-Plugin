@@ -330,6 +330,41 @@ CON_COMMAND(p2mm_helloworld2, "Hello World 2: Electric Boogaloo!")
 	UTIL_HudMessage(UTIL_PlayerByIndex(1), helloWorldParams, msg);
 }
 
+bool m_ConVarConCommandsShown = false; // Bool to track if the hidden ConVars and ConCommands are showing.
+std::vector<ConCommandBase*> toggledCVCCs; // List of toggled ConVars and ConCommands with the FCVAR_DEVELOPMENTONLY and FCVAR_HIDDEN ConVar flags removed.
+CON_COMMAND(p2mm_toggle_dev_cc_cvars, "Toggle unhiding or hiding any ConVars and ConCommands that have the FCVAR_DEVELOPMENTONLY and FCVAR_HIDDEN ConVar flags. WARNING: Some of these ConVars and ConCommands are not intended to be manipulated directly, hence why they are hidden. ONLY USE THIS IF YOU KNOW WHAT YOU ARE DOING!")
+{
+	int iToggleCount = 0; // To tell the user how many ConVars and ConCommands where toggle to show or hide.
+
+	if (m_ConVarConCommandsShown)
+	{
+		// Hide the ConVars and ConCommands
+		for (ConCommandBase* pCommandVarName : toggledCVCCs)
+		{
+			pCommandVarName->AddFlags(FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN);
+			iToggleCount++;
+		}
+		toggledCVCCs.clear();
+		m_ConVarConCommandsShown = false;
+	}
+	else
+	{
+		// Unhide the ConVars and ConCommands
+		FOR_ALL_CONSOLE_COMMANDS(pCommandVarName)
+		{
+			if (pCommandVarName->IsFlagSet(FCVAR_DEVELOPMENTONLY) || pCommandVarName->IsFlagSet(FCVAR_HIDDEN))
+			{
+				pCommandVarName->RemoveFlags(FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN);
+				iToggleCount++;
+				toggledCVCCs.push_back(pCommandVarName);
+			}
+		}
+		m_ConVarConCommandsShown = true;
+	}
+
+	P2MMLog(0, false, "%s %i ConVars/ConCommands!", m_ConVarConCommandsShown ? "Unhid" : "Hid", iToggleCount);
+}
+
 //---------------------------------------------------------------------------------
 // Purpose: constructor
 //---------------------------------------------------------------------------------

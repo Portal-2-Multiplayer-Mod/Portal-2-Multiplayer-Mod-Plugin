@@ -285,6 +285,41 @@ CON_COMMAND(p2mm_respawnall, "Respawns all players.")
 	}
 }
 
+CON_COMMAND(p2mm_helloworld, "Hello World!")
+{
+	CBasePlayer* pPlayer = UTIL_PlayerByIndex(1);
+	UTIL_ClientPrint(pPlayer, HUD_PRINTCENTER, "HELLO WORLD! :D\n%s\n%s", "test1", "test2");
+}
+
+CON_COMMAND(p2mm_helloworld2, "Hello World 2: Electric Boogaloo!")
+{
+	hudtextparms_s helloWorldParams;
+	color32 RGB1 = { 0, 255, 100, 255 };
+	color32 RGB2 = { 0, 50, 255, 255 };
+	helloWorldParams.x = -1.f;
+	helloWorldParams.y = -1.f;
+	helloWorldParams.effect = 2;
+	helloWorldParams.r1 = RGB1.r;
+	helloWorldParams.g1 = RGB1.g;
+	helloWorldParams.b1 = RGB1.b;
+	helloWorldParams.a1 = RGB1.a;
+	helloWorldParams.r2 = RGB2.r;
+	helloWorldParams.g2 = RGB2.g;
+	helloWorldParams.b2 = RGB2.b;
+	helloWorldParams.a2 = RGB2.a;
+	helloWorldParams.fadeinTime = 0.5f;
+	helloWorldParams.fadeoutTime = 1.f;
+	helloWorldParams.holdTime = 1.f;
+	helloWorldParams.fxTime = 0.2f;
+	helloWorldParams.channel = V_atoi(args.Arg(2));
+
+	const char* msg = "Hello World 2: Electric Boogaloo!";
+	if (!FStrEq(args.Arg(1), ""))
+		msg = args.Arg(1);
+
+	UTIL_HudMessage(UTIL_PlayerByIndex(1), helloWorldParams, msg);
+}
+
 //---------------------------------------------------------------------------------
 // Purpose: constructor
 //---------------------------------------------------------------------------------

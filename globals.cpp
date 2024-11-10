@@ -166,6 +166,26 @@ CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
 #endif
 }
 
+//---------------------------------------------------------------------------------
+// Purpose: Show on screen message to players. msg_dest are defined macros in globals.hpp.
+//---------------------------------------------------------------------------------
+void UTIL_ClientPrint(CBasePlayer* player, int msg_dest, const char* msg_name, const char* param1, const char* param2, const char* param3, const char* param4)
+{
+	static auto _ClientPrint = reinterpret_cast<void (__cdecl*)(CBasePlayer*, int, const char*, const char*, const char*, const char*, const char*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 83 EC 20 56 8B 75 08 85 F6 74 4C"));
+	_ClientPrint(player, msg_dest, msg_name, param1, param2, param3, param4);
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Show on text on screen just like game_text does.
+//---------------------------------------------------------------------------------
+void UTIL_HudMessage(CBasePlayer* pPlayer, const hudtextparms_s &textparms, const char* pMessage)
+{
+	static auto _HudMessage = reinterpret_cast<void(__cdecl*)(CBasePlayer*, const hudtextparms_s&, const char*)>(Memory::Scanner::Scan(SERVERDLL, "55 8B EC 83 EC 20 8D 4D ?? E8 ?? ?? ?? ?? 8B 45 ?? 8D 4D ?? 85 C0 74 ?? 50 E8 ?? ?? ?? ?? EB ?? E8 ?? ?? ?? ?? 56"));
+	_HudMessage(pPlayer, textparms, pMessage);
+}
+
+
+
 ///			 CBaseEntity Class Functions				\\\
 
 //---------------------------------------------------------------------------------
@@ -173,8 +193,7 @@ CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
 //---------------------------------------------------------------------------------
 void CBaseEntity__RemoveEntity(CBaseEntity* pEntity)
 {
-	//reinterpret_cast<IServerEntity*>(pEntity) trust me bro aka, we know its CBaseEntity*, but we want the IServerEntity* so cast to that to get its methods 
-	reinterpret_cast<void (*)(void*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 57 8B 7D 08 85 FF 74 72"))(reinterpret_cast<IServerEntity*>(pEntity)->GetNetworkable());
+	reinterpret_cast<void (__cdecl*)(void*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 57 8B 7D 08 85 FF 74 72"))(reinterpret_cast<IServerEntity*>(pEntity)->GetNetworkable());
 }
 
 //---------------------------------------------------------------------------------

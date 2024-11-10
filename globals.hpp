@@ -41,11 +41,36 @@ class CPortal_Player;
 #define COMMAND_COMPLETION_MAXITEMS		64
 #define COMMAND_COMPLETION_ITEM_LENGTH	64
 
-// Team number macros.
-#define TEAM_SINGLEPLAYER 0
-#define TEAM_SPECTATOR	  1
-#define TEAM_RED		  2
-#define TEAM_BLUE         3
+// Player team enum.
+enum
+{
+	TEAM_SINGLEPLAYER = 0,
+	TEAM_SPECTATOR,
+	TEAM_RED,  
+	TEAM_BLUE
+};
+
+// ClientPrint msg_dest macros.
+#define HUD_PRINTNOTIFY		1 // Works same as HUD_PRINTCONSOLE
+#define HUD_PRINTCONSOLE	2
+#define HUD_PRINTTALK		3
+#define HUD_PRINTCENTER		4
+
+// UTIL_HudMessage message parameters struct. Taken from utils.h.
+typedef struct hudtextparms_s
+{
+	float		x;
+	float		y;
+	int			effect;
+	byte		r1, g1, b1, a1;
+	byte		r2, g2, b2, a2;
+	float		fadeinTime;
+	float		fadeoutTime;
+	float		holdTime;
+	float		fxTime;
+	int			channel;
+} hudtextparms_t;
+
 
 //---------------------------------------------------------------------------------
 // Any ConVars or CON_COMMANDS that need to be globally available.
@@ -79,6 +104,8 @@ namespace GFunc
 }
 
 CBasePlayer* UTIL_PlayerByIndex(int playerIndex);
+void UTIL_ClientPrint(CBasePlayer* player, int msg_dest, const char* msg_name, const char* param1 = NULL, const char* param2 = NULL, const char* param3 = NULL, const char* param4 = NULL);
+void UTIL_HudMessage(CBasePlayer* pPlayer, const hudtextparms_t &textparms, const char* pMessage);
 
 void CBaseEntity__RemoveEntity(CBaseEntity* pEntity);
 int CBaseEntity__GetTeamNumber(CBasePlayer* pPlayer);

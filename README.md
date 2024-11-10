@@ -8,7 +8,7 @@ The Portal 2 Source Engine server plugin used to run the 2.2+ versions of the Po
 
 This plugin has been put into a separate repository due to the nature of the development and compiling environment of Source Engine plugins. The plugin alone can not make the Portal 2: Multiplayer Mod work. If you are looking to play the Portal 2: Multiplayer Mod itself, please look at this repository instead: <https://github.com/Portal-2-Multiplayer-Mod/Portal-2-Multiplayer-Mod>
 
-The purpose of this plugin is to patch Portal 2 to make the mod work as well as fix some bugs that impact multiplayer sessions. The plugin also provides access to features of the Source Engine directly that can be interfaced with by VScript. The added VScript functions are used to access Source Engine interfaces and ConVars. The interfaced game event VScript functions are called by plugin and can be used to do certain things based on those game events. portal2allgameevents.res in the main repository (<https://github.com/Portal-2-Multiplayer-Mod/Portal-2-Multiplayer-Mod/blob/dev/mapmaking/portal2allgameevents.res>) also lists what game events Portal 2 has and which ones the plugin interfaces. When game events are called, the plugins operations take priority over the interfaced VScript calls.
+The purpose of this plugin is to patch Portal 2 to make the mod work as well as fix some bugs that impact multiplayer sessions. The plugin also provides access to features of the Source Engine directly that can be interfaced with by VScript. The added VScript functions are used to access Source Engine interfaces and ConVars. The interfaced game event VScript functions are called by plugin and can be used to do certain things based on those game events. `portal2allgameevents.res` in the main repository (<https://github.com/Portal-2-Multiplayer-Mod/Portal-2-Multiplayer-Mod/blob/dev/mapmaking/portal2allgameevents.res>) also lists what game events Portal 2 has and which ones the plugin interfaces. When game events are called, the plugins operations take priority over the interfaced VScript calls.
 
 ## VScript Functions Added By C++ Plugin To Interface With The Engine:
 
@@ -25,7 +25,7 @@ void        SetPhysTypeConVar(int newval);                           | "Sets 'pl
 void        SetMaxPortalSeparationConvar(int newval);                | "Sets 'portal_max_separation_force' to the supplied integer value."
 bool        IsDedicatedServer();                                     | "Returns true if this is a dedicated server."
 void        InitializeEntity(HSCRIPT ent);                           | "Initializes an entity. Note: Not all entities will work even after being initialized with this function."
-void        SendToChat(const char* msg, int index);                  | "Sends a raw message to the chat HUD."
+void        SendToChat(const char* msg, int playerIndex);            | "Sends a raw message to the chat HUD. Specifying no playerIndex or 0 sends to all players. Supports printing localization strings but those that require formatting can't be formatted."
 const char* GetGameMainDir();                                        | "Returns the game directory. Ex. portal2"
 const char* GetGameBaseDir();                                        | "Get the main game directory being used. Ex. Portal 2"
 const char* GetLastMap();                                            | "Returns the last map recorded by the launcher's Last Map system."
@@ -33,19 +33,28 @@ bool        FirstRunState();                                         | "Get or s
 void        CallFirstRunPrompt();                                    | "Shows the first run prompt if enabled in config.nut."
 int         GetConVarInt(const char* cvname);                        | "Get the integer value of a ConVar."
 const char* GetConVarString(const char* cvname);                     | "Get the string value of a ConVar."
-HSCRIPT     PlayerIndexToPlayerHandle(int playerIndex)               | "Takes the player's entity index and returns the player's script handle."
-void        RespawnPlayer(int playerIndex)                           | "Respawn the a player by their entity index."
-void        SetFlashlightState(int playerIndex, bool enable)         | "Set the flashlight for a player on or off."
+HSCRIPT     UTIL_PlayerByIndex(int playerIndex);                     | "Takes the player's entity index and returns the player's script handle."
+void        RespawnPlayer(int playerIndex);                          | "Respawn the a player by their entity index."
+void        SetFlashlightState(int playerIndex, bool enable);        | "Set the flashlight for a player on or off."
+void        ConsolePrint(int playerIndex, const char* msg);          | "Print a message to a player's console, unlike printl() which is just the host. Supports printing localization strings but those that require formatting can't be formatted."
+void        ClientPrint(int playerIndex, const char* msg);           | "Print a message to the top center position of a player's screen. Supports printing localization strings but those that require formatting can't be formatted."
+void        HudPrint(int playerIndex, const char* msg, float x, float y, int effect, Vector RGB1, float alpha1, Vector RGB2, float alpha2, float fadeinTime, float fadeoutTime, float holdTime, float fxTime, int channel);       | "Print a message to the screen based on what the game_text entity does, with many values to set. See Valve Developer Commentary for the game_text entity to see what each field does. Vectors are in place for sets of RGB values. Supports printing localization strings but those that require formatting can't be formatted."
+int         GetMaxPlayers();                                         | "Self-explanatory."
 ```
 
 ## Game Events Interfaced To Squirrel VScript Functions:
 
-`GEClientCommand` is the only exception of not being a game event, it's the plugin's ClientCommand callback being interfaced to VScript.
+The "game events" listed at the top of `portal2allgameevents.res` are not actually game events but are some plugin callbacks or other events interfaced to VScript so they can be utilized.
+`GEClientCommand` is the plugin's ClientCommand callback function.
+`GEClientActive` is the plugin's ClientActive callback function.
+`GEGameFrame` is the plugin's GameFrame callback function.
+`GEPlayerRespawn` is called by the hooked respawn function the game uses to respawn players.
 
 ```c++
 void GEClientCommand(short userid, int entindex, const char* pcmd, const char* fargs);      | "Called when a client inputs a console command."
-void GEClientActive(short userid, int entindex);                                            | "Called when a player is 'activated' in the server, meaning fully loaded, not fully connect which happens before that."
+void GEClientActive(short userid, int entindex);                                            | "Called when a player is 'activated' in the server, meaning fully loaded. This is not the same as fully connect which happens before ClientActive."
 void GEGameFrame(bool simulating);                                                          | "Called every server frame, used for the VScript loop. Warning: Don't do too intensive tasks with this!"
+void GEPlayerRespawn(HSCRIPT playerHandle);                                                 | "Called when a player respawns."
 void GEPlayerPing(short userid, float ping_x, float ping_y, float ping_z, int entindex);    | "Called whenever a player pings. Game event: 'portal_player_ping'"
 void GEPlayerPortaled(short userid, bool portal2, int entindex);                            | "Called whenever a player goes through a portal. `portal2` is false when portal1/blue portal is entered. Game event: 'portal_player_portaled'"
 void GETurretHitTurret();                                                                   | "Called whenever a turret hits another turret. Game event: 'turret_hit_turret'"
@@ -54,6 +63,7 @@ void GEPlayerLanded(short userid, int entindex);                                
 void GEPlayerSpawnBlue();                                                                   | "Called whenever a Blue/Atlas player spawns. Game event: 'player_spawn_blue'"
 void GEPlayerSpawnOrange();                                                                 | "Called whenever a Red/Orange/PBody player spawns. Game event: 'player_spawn_orange'"
 void GEPlayerDeath(short userid, short attacker, int entindex);                             | "Called whenever a player dies. Game event: 'player_death'"
+void GEPlayerSpawn(short userid, int entindex);                                             | "Called whenever a player spawns. Game event: 'player_spawn'"
 void GEPlayerConnect(const char* name, int index, short userid, const char* xuid, 
                 const char* networkid, const char* address, bool bot, int entindex);        | "Called where a player connects to the server. 'index' is the entity index minus 1. Game event: 'player_connect'"
 void GEPlayerInfo(const char* name, int index, short userid, const char* networkid,

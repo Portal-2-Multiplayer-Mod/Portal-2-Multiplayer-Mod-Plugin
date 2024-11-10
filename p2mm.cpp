@@ -46,6 +46,7 @@ static const char* gameevents[] =
 	"player_spawn_blue",
 	"player_spawn_orange",
 	"player_death",
+	"player_spawn",
 	"player_connect",
 	"player_say",
 	"player_activate",
@@ -960,6 +961,36 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 
 		return;
 	}
+	// Event called when a player spawns, "player_spawn" returns:	
+	/*
+		"userid"	"short"		// user ID on server
+	*/
+	else if (FStrEq(event->GetName(), "player_spawn"))
+	{
+		short userid = event->GetInt("userid");
+		int entindex = GFunc::UserIDToPlayerIndex(userid);
+
+		if (g_pScriptVM)
+		{
+			// Handle VScript game event function
+			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSpawn");
+			if (ge_func)
+			{
+				g_pScriptVM->Call<short, int>(ge_func, NULL, true, NULL, userid, entindex);
+			}
+		}
+
+		if (spewinfo)
+		{
+			P2MMLog(0, true, "userid: %i", userid);
+			P2MMLog(0, true, "entindex: %i", entindex);
+		}
+
+		return;
+	}
+	// The game event for player's connecting is used instead of the plugin's ClientFullyConnected
+	// callback because the game event gives more information than the callback without having to do
+	// any extra work to get information.
 	// Event called when a player connects to the server, "player_connect" returns:
 	/*
 		"name"		"string"	// player name

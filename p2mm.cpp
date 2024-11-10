@@ -16,15 +16,15 @@
 //---------------------------------------------------------------------------------
 // Interfaces from the engine
 //---------------------------------------------------------------------------------
-IVEngineServer* engineServer = NULL; // Access engine server functions (messaging clients, loading content, making entities, running commands, etc)
-IVEngineClient* engineClient = NULL; // Access engine client functions
-CGlobalVars* g_pGlobals = NULL; // Access global variables shared between the engine and games dlls
-IPlayerInfoManager* playerinfomanager = NULL; // Access interface functions for players
-IScriptVM* g_pScriptVM = NULL; // Access VScript interface
-IServerTools* g_pServerTools = NULL; // Access to interface from engine to tools for manipulating entities
-IGameEventManager2* gameeventmanager_ = NULL; // Access game events interface
-IServerPluginHelpers* pluginHelpers = NULL; // Access interface for plugin helper functions
-IFileSystem* g_pFileSystem = NULL; // Access interface for Valve's file system interface
+IVEngineServer* engineServer = NULL; // Access engine server functions (messaging clients, loading content, making entities, running commands, etc).
+IVEngineClient* engineClient = NULL; // Access engine client functions.
+CGlobalVars* g_pGlobals = NULL; // Access global variables shared between the engine and games dlls.
+IPlayerInfoManager* playerinfomanager = NULL; // Access interface functions for players.
+IScriptVM* g_pScriptVM = NULL; // Access VScript interface.
+IServerTools* g_pServerTools = NULL; // Access to interface from engine to tools for manipulating entities.
+IGameEventManager2* gameeventmanager_ = NULL; // Access game events interface.
+IServerPluginHelpers* pluginHelpers = NULL; // Access interface for plugin helper functions.
+IFileSystem* g_pFileSystem = NULL; // Access interface for Valve's file system interface.
 #ifndef GAME_DLL
 #define gameeventmanager gameeventmanager_
 #endif
@@ -35,7 +35,7 @@ IFileSystem* g_pFileSystem = NULL; // Access interface for Valve's file system i
 CP2MMServerPlugin g_P2MMServerPlugin;
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CP2MMServerPlugin, IServerPluginCallbacks, INTERFACEVERSION_ISERVERPLUGINCALLBACKS, g_P2MMServerPlugin);
 
-// List of game events the plugin interfaces used to load each one
+// List of game events the plugin interfaces used to load each one.
 static const char* gameevents[] =
 {
 	"portal_player_ping",
@@ -52,7 +52,7 @@ static const char* gameevents[] =
 	"player_activate",
 };
 
-// List of console commands that clients can't execute but the host can
+// List of console commands that clients can't execute but the host can.
 static const char* forbiddenconcommands[] =
 {
 	"mp_earn_taunt",
@@ -75,7 +75,7 @@ static const char* forbiddenconcommands[] =
 	"ent_remove_all"
 };
 
-// List of client commands that need to be blocked from client execution, but can be executed by the host
+// List of client commands that need to be blocked from client execution, but can be executed by the host.
 static const char* forbiddenclientcommands[] =
 {
 	"taunt_auto", // Apparently mp_earn_taunt calls this also to ClientCommand
@@ -94,7 +94,7 @@ static const char* forbiddenclientcommands[] =
 	"bugunpause"
 };
 
-// Core P2:MM ConVars | These shouldn't be modfied manually. Hidden to prevent accidentally breaking something
+// Core P2:MM ConVars | These shouldn't be modified manually. Hidden to prevent accidentally breaking something.
 ConVar p2mm_loop("p2mm_loop", "0", FCVAR_HIDDEN, "Flag if P2MMLoop should be looping.");
 ConVar p2mm_lastmap("p2mm_lastmap", "", FCVAR_HIDDEN, "Last map recorded for the Last Map system.");
 ConVar p2mm_splitscreen("p2mm_splitscreen", "0", FCVAR_HIDDEN, "Flag for the main menu buttons and launcher to start in splitscreen or not.");
@@ -107,7 +107,15 @@ ConVar p2mm_instant_respawn("p2mm_instant_respawn", "0", FCVAR_NONE, "Whether re
 
 // Debug ConVars
 ConVar p2mm_developer("p2mm_developer", "0", FCVAR_NONE, "Enable for P2:MM developer messages.");
-ConVar p2mm_spewgameeventinfo("p2mm_spewgameevents", "0", FCVAR_NONE, "Log information from called game events in the console, p2mm_developer must also be on. Can cause lots of console spam.");
+
+void UpdateDisplayGEsConVar(IConVar* var, const char* pOldValue, float flOldValue);
+ConVar p2mm_spewgameeventinfo("p2mm_spewgameeventinfo", "0", FCVAR_NONE, "Log information from called game events in the console, p2mm_developer must also be on. Can cause lots of console spam.", UpdateDisplayGEsConVar);
+void UpdateDisplayGEsConVar(IConVar* var, const char* pOldValue, float flOldValue)
+{
+	ConVar* pGEConVar = g_pCVar->FindVar("display_game_events");
+	if (pGEConVar)
+		pGEConVar->SetValue(p2mm_spewgameeventinfo.GetBool());
+}
 
 // ConCommands
 
@@ -278,6 +286,7 @@ CON_COMMAND(p2mm_maplist, "Lists available maps that can be loaded with \"p2mm_s
 	P2MMLog(0, false, "----------------------------------------");
 }
 
+// Utility/Debug ConCommands
 CON_COMMAND(p2mm_respawnall, "Respawns all players.")
 {
 	for (int i = 1; i < MAX_PLAYERS; i++)
@@ -355,7 +364,7 @@ const char* CP2MMServerPlugin::GetPluginDescription(void)
 }
 
 // NoSteamLogon stop hook. Supposedly Valve fixed this, again, but this will be here just in case.
-//void(__fastcall* disconnect_orig)(void *thisptr, void *edx, void *cl, void *eDenyReason, const char *pchOptionalText);
+//void (__fastcall* disconnect_orig)(void *thisptr, void *edx, void *cl, void *eDenyReason, const char *pchOptionalText);
 //void __fastcall disconnect_hook(void *thisptr, void *edx, void *cl, void *eDenyReason, const char *pchOptionalText)
 //{	
 //	if ((int)eDenyReason == 0xC)
@@ -413,6 +422,25 @@ void __fastcall CPortal_Player__PlayerDeathThink_hook(CPortal_Player* thisptr)
 		return;
 	}
 	CPortal_Player__PlayerDeathThink_orig(thisptr);
+}
+
+void (__cdecl* respawn_orig)(CBaseEntity* pEdict, bool fCopyCorpse);
+void __cdecl respawn_hook(CBaseEntity* pEdict, bool fCopyCorpse)
+{
+	respawn_orig(pEdict, fCopyCorpse);
+
+	if (g_pScriptVM)
+	{
+		// Handling OnRespawn VScript event
+		HSCRIPT or_func = g_pScriptVM->LookupFunction("OnRespawn");
+		if (or_func)
+			g_pScriptVM->Call<HSCRIPT>(or_func, NULL, true, NULL, INDEXHANDLE(ENTINDEX(pEdict)));
+
+		// Handle VScript game event function
+		HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerRespawn");
+		if (ge_func)
+			g_pScriptVM->Call<HSCRIPT>(ge_func, NULL, true, NULL, INDEXHANDLE(ENTINDEX(pEdict)));
+	}
 }
 
 //---------------------------------------------------------------------------------
@@ -509,7 +537,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	for (const char* gameevent : gameevents)
 	{
 		gameeventmanager->AddListener(this, gameevent, true);
-		P2MMLog(0, true, "Listener for gamevent '%s' has been added!", gameevent);
+		P2MMLog(0, true, "Listener for game event \"%s\" has been added!", gameevent);
 	}
 
 	P2MMLog(0, true, "Blocking console commands...");
@@ -523,7 +551,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	}
 	
 	// big ol' try catch because game has a TerminateProcess handler for exceptions...
-	// why this wasn't here is mystyfying, - 10/2024 NULLderef
+	// why this wasn't here is mystifying, - 10/2024 NULLderef
 	try {
 		// Byte patches
 		P2MMLog(0, true, "Patching Portal 2...");
@@ -556,8 +584,8 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 			CommandLine()->AppendParm("-allowspectators", "");
 		}
 
-		// MinHook initallization and hooking
-		P2MMLog(0, true, "Initalizing MinHook and hooking functions...");
+		// MinHook initialization and hooking
+		P2MMLog(0, true, "Initializing MinHook and hooking functions...");
 		MH_Initialize();
 		// NoSteamLogon disconnect hook patch.
 		//MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(ENGINEDLL, "55 8B EC 83 EC 08 53 56 57 8B F1 E8 ?? ?? ?? ?? 8B"), &disconnect_hook, (LPVOID*)&disconnect_orig);
@@ -582,12 +610,18 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 			&CPortal_Player__PlayerDeathThink_hook, (void**)&CPortal_Player__PlayerDeathThink_orig
 		);
 
+		// "respawn" function hook for getting a VScript "game event" call out of it.
+		MH_CreateHook(
+			Memory::Scanner::Scan(SERVERDLL,"55 8B EC A1 ?? ?? ?? ?? 80 78 ?? ?? 75 ?? 80 78"),
+			&respawn_hook, (void**)&respawn_orig
+		);
+
 		MH_EnableHook(MH_ALL_HOOKS);
 
 		P2MMLog(0, false, "Loaded plugin! Hooray! :D");
 		m_bPluginLoaded = true;
 	} catch (const std::exception& ex) {
-		P2MMLog(0, false, "Failed to load plugin! :( Exception: (%s)", ex.what());
+		P2MMLog(0, false, "Failed to load plugin! :( Exception: \"%s\"", ex.what());
 		this->m_bNoUnload = true;
 		return false;
 	}
@@ -642,7 +676,7 @@ void CP2MMServerPlugin::Unload(void)
 	// runtime max 0.05 -> 0.03
 	Memory::ReplacePattern("vscript", "00 00 00 00 00 00 E0 3F", "00 00 00 E0 51 B8 9E 3F");
 
-	P2MMLog(0, true, "Disconnecting hooked functions and uinitalizing MinHook...");
+	P2MMLog(0, true, "Disconnecting hooked functions and uninitializing MinHook...");
 	MH_DisableHook(MH_ALL_HOOKS);
 	MH_Uninitialize();
 
@@ -666,7 +700,7 @@ void CP2MMServerPlugin::ServerActivate(edict_t* pEdictList, int edictCount, int 
 //---------------------------------------------------------------------------------
 void CP2MMServerPlugin::LevelInit(char const* pMapName)
 {
-	// Dedicated server paintmap patch
+	// Dedicated server paint map patch
 	// Paint usage doesn't function naturally on dedicated servers, so this will help enable it again.
 	if (p2mm_ds_enable_paint.GetBool() && engineServer->IsDedicatedServer())
 	{

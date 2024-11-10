@@ -1,6 +1,6 @@
 //===========================================================================//
 //
-// Author: Nanoman2525
+// Author: Nanoman2525 & Orsell
 // Purpose: Portal 2: Multiplayer Mod server plugin
 // 
 //===========================================================================//
@@ -93,7 +93,7 @@ static bool IsDedicatedServer()
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Initializes an entity.
+// Purpose: Initializes, spawns, then activates an entity in the map.
 //---------------------------------------------------------------------------------
 static void InitializeEntity(HSCRIPT ent)
 {

@@ -110,8 +110,8 @@ ConVar p2mm_spewgameeventinfo("p2mm_spewgameevents", "0", FCVAR_NONE, "Log infor
 
 // ConCommands
 
-std::vector<std::string> mapList; // List of maps for the p2mm_command auto complete.
-std::vector<std::string> workshopMapList; // List of all workshop map for the p2mm_command auto complete.
+std::vector<std::string> mapList; // List of maps for the p2mm_startsession command auto complete.
+std::vector<std::string> workshopMapList; // List of all workshop map for the p2mm_startsession auto complete.
 
 void updateMapsList() {
 	mapList.clear();
@@ -261,12 +261,12 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 	}
 }
 
-CON_COMMAND(p2mm_updatemaplist, "Manually updates the list of avaliable maps that can be loaded with \"p2mm_startsession\"")
+CON_COMMAND(p2mm_updatemaplist, "Manually updates the list of available maps that can be loaded with \"p2mm_startsession\"")
 {
 	updateMapsList();
 }
 
-CON_COMMAND(p2mm_maplist, "Lists avaliable maps that can be loaded with \"p2mm_startsession\"")
+CON_COMMAND(p2mm_maplist, "Lists available maps that can be loaded with \"p2mm_startsession\"")
 {
 	P2MMLog(0, false, "AVALIABLE MAPS:");
 	P2MMLog(0, false, "----------------------------------------");
@@ -279,7 +279,7 @@ CON_COMMAND(p2mm_maplist, "Lists avaliable maps that can be loaded with \"p2mm_s
 
 CON_COMMAND(p2mm_respawnall, "Respawns all players.")
 {
-	for (int i = 1; i < g_pGlobals->maxClients; i++)
+	for (int i = 1; i < MAX_PLAYERS; i++)
 	{
 		CPortal_Player__RespawnPlayer(i);
 	}
@@ -290,17 +290,16 @@ CON_COMMAND(p2mm_respawnall, "Respawns all players.")
 //---------------------------------------------------------------------------------
 CP2MMServerPlugin::CP2MMServerPlugin()
 {
-	this->m_iClientCommandIndex = 0;
+	// Store game vars
+	this->m_bSeenFirstRunPrompt = false;	// Flag is set true after CallFirstRunPrompt() is called in VScript.
+	this->m_bFirstMapRan = true;			// Checks if the game ran for the first time.
 
 	// Store plugin Status
 	this->m_bPluginLoaded = false;
-	this->m_bNoUnload = false;				// If we fail to load, we don't want to run anything on Unload()
-
-	// Store game vars
-	this->m_bSeenFirstRunPrompt = false;	// Flag is set true after CallFirstRunPrompt() is called in VScript
-	this->m_bFirstMapRan = true;			// Checks if the game ran for the first time
+	this->m_bNoUnload = false;				// If we fail to load, we don't want to run anything on Unload().
 
 	m_nDebugID = EVENT_DEBUG_ID_INIT;
+	this->m_iClientCommandIndex = 0;
 }
 
 //---------------------------------------------------------------------------------
@@ -319,7 +318,7 @@ const char* CP2MMServerPlugin::GetPluginDescription(void)
 	return "Portal 2: Multiplayer Mod Server Plugin | Plugin Version: " P2MM_PLUGIN_VERSION " | For P2:MM Version: " P2MM_VERSION;
 }
 
-// NoSteamLogon stop hook. Suposively Valve fixed this, again, but this will be here just in case.
+// NoSteamLogon stop hook. Supposedly Valve fixed this, again, but this will be here just in case.
 //void(__fastcall* disconnect_orig)(void *thisptr, void *edx, void *cl, void *eDenyReason, const char *pchOptionalText);
 //void __fastcall disconnect_hook(void *thisptr, void *edx, void *cl, void *eDenyReason, const char *pchOptionalText)
 //{	
@@ -549,7 +548,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 
 		MH_EnableHook(MH_ALL_HOOKS);
 
-		P2MMLog(0, false, "Loaded plugin! Horray!");
+		P2MMLog(0, false, "Loaded plugin! Hooray! :D");
 		m_bPluginLoaded = true;
 	} catch (const std::exception& ex) {
 		P2MMLog(0, false, "Failed to load plugin! :( Exception: (%s)", ex.what());

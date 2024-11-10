@@ -53,7 +53,7 @@ void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 //---------------------------------------------------------------------------------
 int GFunc::UserIDToPlayerIndex(int userid)
 {
-	for (int i = 1; i <= g_pGlobals->maxClients; i++)
+	for (int i = 1; i <= MAX_PLAYERS; i++)
 	{
 		edict_t* pEdict = NULL;
 		if (i >= 0 && i < g_pGlobals->maxEntities)
@@ -74,7 +74,7 @@ int GFunc::UserIDToPlayerIndex(int userid)
 //---------------------------------------------------------------------------------
 const char* GFunc::GetPlayerName(int playerIndex)
 {
-	if (playerIndex <= 0 || playerIndex > g_pGlobals->maxClients)
+	if (playerIndex <= 0 || playerIndex > MAX_PLAYERS)
 	{
 		P2MMLog(0, true, "Invalid index passed to GetPlayerName: %i!", playerIndex);
 		return "";
@@ -96,7 +96,7 @@ const char* GFunc::GetPlayerName(int playerIndex)
 int GFunc::GetSteamID(int playerIndex)
 {
 	edict_t* pEdict = NULL;
-	if (playerIndex >= 0 && playerIndex < g_pGlobals->maxClients)
+	if (playerIndex >= 0 && playerIndex < MAX_PLAYERS)
 	{
 		pEdict = (edict_t*)(g_pGlobals->pEdicts + playerIndex);
 	}

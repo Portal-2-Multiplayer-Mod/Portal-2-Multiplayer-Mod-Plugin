@@ -30,11 +30,12 @@
 class CBasePlayer;
 class CPortal_Player;
 
-// Color macros for game chat and console printing
+// Color macros for game chat and console printing.
 #define P2MM_PLUGIN_CONSOLE_COLOR  Color(100, 192, 252, 255) // Light Blue
 #define P2MM_VSCRIPT_CONSOLE_COLOR Color(110, 247, 76, 255)  // Light Green
 
 #define CURMAPNAME STRING(g_pGlobals->mapname)
+#define MAX_PLAYERS g_pGlobals->maxClients
 
 // Used for autocomplete console commands.
 #define COMMAND_COMPLETION_MAXITEMS		64
@@ -47,12 +48,12 @@ class CPortal_Player;
 #define TEAM_BLUE         3
 
 //---------------------------------------------------------------------------------
-// Any ConVars or CON_COMMANDS that need to be globally available
+// Any ConVars or CON_COMMANDS that need to be globally available.
 //---------------------------------------------------------------------------------
 extern ConVar p2mm_developer;
 
 //---------------------------------------------------------------------------------
-// Interfaces from the engine
+// Interfaces from the engine.
 //---------------------------------------------------------------------------------
 extern IVEngineServer* engineServer;
 extern IVEngineClient* engineClient;

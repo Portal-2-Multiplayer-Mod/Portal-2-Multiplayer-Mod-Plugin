@@ -10,6 +10,7 @@
 
 #define SERVERDLL Memory::Modules::Get("server")
 #define ENGINEDLL Memory::Modules::Get("engine")
+#define CLIENTDLL Memory::Modules::Get("client")
 
 #include <span>
 #include <string>

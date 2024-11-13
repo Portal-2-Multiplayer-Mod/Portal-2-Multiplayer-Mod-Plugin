@@ -270,12 +270,12 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 	}
 }
 
-CON_COMMAND(p2mm_updatemaplist, "Manually updates the list of available maps that can be loaded with \"p2mm_startsession\"")
+CON_COMMAND(p2mm_updatemaplist, "Manually updates the list of available maps that can be loaded with p2mm_startsession")
 {
 	updateMapsList();
 }
 
-CON_COMMAND(p2mm_maplist, "Lists available maps that can be loaded with \"p2mm_startsession\"")
+CON_COMMAND(p2mm_maplist, "Lists available maps that can be loaded with p2mm_startsession")
 {
 	P2MMLog(0, false, "AVALIABLE MAPS:");
 	P2MMLog(0, false, "----------------------------------------");
@@ -289,7 +289,7 @@ CON_COMMAND(p2mm_maplist, "Lists available maps that can be loaded with \"p2mm_s
 // Utility/Debug ConCommands
 CON_COMMAND(p2mm_respawnall, "Respawns all players.")
 {
-	for (int i = 1; i < MAX_PLAYERS; i++)
+	FOR_ALL_PLAYERS(i)
 	{
 		CPortal_Player__RespawnPlayer(i);
 	}
@@ -332,7 +332,7 @@ CON_COMMAND(p2mm_helloworld2, "Hello World 2: Electric Boogaloo!")
 
 bool m_ConVarConCommandsShown = false; // Bool to track if the hidden ConVars and ConCommands are showing.
 std::vector<ConCommandBase*> toggledCVCCs; // List of toggled ConVars and ConCommands with the FCVAR_DEVELOPMENTONLY and FCVAR_HIDDEN ConVar flags removed.
-CON_COMMAND(p2mm_toggle_dev_cc_cvars, "Toggle unhiding or hiding any ConVars and ConCommands that have the FCVAR_DEVELOPMENTONLY and FCVAR_HIDDEN ConVar flags. WARNING: Some of these ConVars and ConCommands are not intended to be manipulated directly, hence why they are hidden. ONLY USE THIS IF YOU KNOW WHAT YOU ARE DOING!")
+CON_COMMAND(p2mm_toggle_dev_cc_cvars, "Toggle showing any ConVars and ConCommands that have the FCVAR_DEVELOPMENTONLY and FCVAR_HIDDEN ConVar flags.")
 {
 	int iToggleCount = 0; // To tell the user how many ConVars and ConCommands where toggle to show or hide.
 
@@ -364,6 +364,146 @@ CON_COMMAND(p2mm_toggle_dev_cc_cvars, "Toggle unhiding or hiding any ConVars and
 
 	P2MMLog(0, false, "%s %i ConVars/ConCommands!", m_ConVarConCommandsShown ? "Unhid" : "Hid", iToggleCount);
 }
+
+// Gelocity ConVars and ConCommands
+const char* gelocityMaps[3] = { "workshop/596984281130013835/mp_coop_gelocity_1_v02", "workshop/594730048530814099/mp_coop_gelocity_2_v01", "workshop/613885499245125173/mp_coop_gelocity_3_v02" };
+CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race.")
+{
+	// Check if host is in a gelocity map.
+	for (int i = 0; i < 3; i++)
+	{
+		if (FStrEq(CURMAPNAME, gelocityMaps[i])) break;
+		if (i == 2)
+		{
+			P2MMLog(1, false, "Not currently in a Gelocity map!");
+			return;
+		}
+	}
+
+	// Check if the gelocity race is already going. Make sure to not mess with the race's laps.
+	ScriptVariant_t raceStartedScript;
+	g_pScriptVM->GetValue("b_RaceStarted", &raceStartedScript);
+	if (raceStartedScript.m_bool)
+	{
+		P2MMLog(1, false, "Race is currently in progress!");
+		return;
+	}
+
+	if (V_atoi(args.Arg(1)) < 1 || V_atoi(args.Arg(1)) > 300)
+	{
+		P2MMLog(1, false, "Value out of bounds! Lap counter goes from 1-300!");
+		return;
+	}
+
+	g_pScriptVM->Run(std::string("i_GameLaps <- " + std::string(args.Arg(1))).c_str(), false);
+	hudtextparms_s lapMessage;
+	lapMessage.x = -1;
+	lapMessage.y = 0.2f;
+	lapMessage.effect = 0;
+	lapMessage.r1 = 255;
+	lapMessage.g1 = 255;
+	lapMessage.b1 = 255;
+	lapMessage.a1 = 255;
+	lapMessage.r2 = 0;
+	lapMessage.g2 = 0;
+	lapMessage.b2 = 0;
+	lapMessage.a1 = 0;
+	lapMessage.fadeinTime = 0.5f;
+	lapMessage.fadeoutTime = 0.5f;
+	lapMessage.holdTime = 1.f;
+	lapMessage.fxTime = 0.f;
+	lapMessage.channel = 3;
+
+	UTIL_HudMessage(NULL, lapMessage, std::string("Laps: " + std::string(args.Arg(1))).c_str());
+}
+
+CON_COMMAND(p2mm_gelocity_start, "Starts the Gelocity race.")
+{
+	// Check if host is in a gelocity map.
+	for (int i = 0; i < 3; i++)
+	{
+		if (FStrEq(CURMAPNAME, gelocityMaps[i])) break;
+		if (i == 2)
+		{
+			P2MMLog(1, false, "Not currently in a Gelocity map!");
+			return;
+		}
+	}
+
+	// Check if the gelocity race is already going. Make sure to not mess with the race's laps.
+	ScriptVariant_t raceStartedScript;
+	g_pScriptVM->GetValue("b_RaceStarted", &raceStartedScript);
+	if (raceStartedScript.m_bool)
+	{
+		P2MMLog(1, false, "Race is currently in progress!");
+		return;
+	}
+
+	g_pScriptVM->Run("StartGelocityRace();", false);
+}
+
+void GelocityTournament(IConVar* var, const char* pOldValue, float flOldValue);
+ConVar p2mm_gelocity_tournamentmode("p2mm_gelocity_tournamentmode", "0", FCVAR_NONE, "Turn on or off tournament mode.", true, 0, true, 1, GelocityTournament);
+void GelocityTournament(IConVar* var, const char* pOldValue, float flOldValue)
+{
+	// Check if host is in a gelocity map.
+	for (int i = 0; i < 3; i++)
+	{
+		if (FStrEq(CURMAPNAME, gelocityMaps[i])) break;
+		if (i == 2)
+		{
+			P2MMLog(1, false, "Not currently in a Gelocity map!");
+			p2mm_gelocity_tournamentmode.SetValue(flOldValue);
+			return;
+		}
+	}
+
+	// Check if the gelocity race is already going. Make sure to not mess with the race's laps.
+	ScriptVariant_t raceStartedScript;
+	g_pScriptVM->GetValue("b_RaceStarted", &raceStartedScript);
+	if (raceStartedScript.m_bool)
+	{
+		P2MMLog(1, false, "Race is currently in progress!");
+		return;
+	}
+
+	P2MMLog(1, false, "Restarting map based on tournament mode change!");
+
+	engineClient->ExecuteClientCmd(std::string("changelevel " + std::string(CURMAPNAME)).c_str());
+}
+
+void GelocityButtons(IConVar* var, const char* pOldValue, float flOldValue);
+ConVar p2mm_gelocity_lockbuttons("p2mm_gelocity_lockbuttons", "0", FCVAR_NONE, "Toggle the state of the music and lap buttons.", true, 0, true, 1, GelocityButtons);
+void GelocityButtons(IConVar* var, const char* pOldValue, float flOldValue)
+{
+	// Check if host is in a gelocity map.
+	for (int i = 0; i < 3; i++)
+	{
+		if (FStrEq(CURMAPNAME, gelocityMaps[i])) break;
+		if (i == 2)
+		{
+			P2MMLog(1, false, "Not currently in a Gelocity map!");
+			p2mm_gelocity_lockbuttons.Revert();
+			return;
+		}
+	}
+
+	if (!p2mm_gelocity_lockbuttons.GetBool())
+	{
+		g_pScriptVM->Run(
+			"EntFire(\"rounds_button_1\", \"unlock\");"
+			"EntFire(\"rounds_button_2\", \"unlock\");", false);
+		P2MMLog(1, false, "Unlocked buttons...");
+	}
+	else
+	{
+		g_pScriptVM->Run(
+			"EntFire(\"rounds_button_1\", \"lock\");"
+			"EntFire(\"rounds_button_2\", \"lock\");", false);
+		P2MMLog(1, false, "Locked buttons...");
+	}
+}
+
 
 //---------------------------------------------------------------------------------
 // Purpose: constructor

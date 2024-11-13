@@ -43,10 +43,14 @@ class CPortal_Player;
 
 // A macro to iterate through all ConVars and ConCommand in the game.
 // Thanks to Nanoman2525 for this.
-#define FOR_ALL_CONSOLE_COMMANDS( pCommandVarName ) \
+#define FOR_ALL_CONSOLE_COMMANDS(pCommandVarName) \
     ConCommandBase *m_pConCommandList = *reinterpret_cast<ConCommandBase **>((uintptr_t)g_pCVar + 0x30); /* CCvar::m_pConCommandList */ \
     for (ConCommandBase *pCommandVarName = m_pConCommandList; \
 	pCommandVarName; pCommandVarName = *reinterpret_cast<ConCommandBase **>(reinterpret_cast<uintptr_t>(pCommandVarName) + 0x04)) /* ConCommandBase::m_pNext (private variable) */
+
+// Macro to iterate through all players.
+#define FOR_ALL_PLAYERS(i) \
+	for (int i = 1; i < MAX_PLAYERS; i++)
 
 // Player team enum.
 enum
@@ -112,7 +116,7 @@ namespace GFunc
 
 CBasePlayer* UTIL_PlayerByIndex(int playerIndex);
 void UTIL_ClientPrint(CBasePlayer* player, int msg_dest, const char* msg_name, const char* param1 = NULL, const char* param2 = NULL, const char* param3 = NULL, const char* param4 = NULL);
-void UTIL_HudMessage(CBasePlayer* pPlayer, const hudtextparms_t &textparms, const char* pMessage);
+void UTIL_HudMessage(CBasePlayer* pPlayer, const hudtextparms_s& textparms, const char* pMessage);
 
 void CBaseEntity__RemoveEntity(CBaseEntity* pEntity);
 int CBaseEntity__GetTeamNumber(CBasePlayer* pPlayer);

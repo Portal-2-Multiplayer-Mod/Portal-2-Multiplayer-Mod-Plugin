@@ -122,7 +122,7 @@ static void SendToChat(int playerIndex, const char* msg)
 
 	if (!playerIndex)
 	{
-		for (int i = 1; i < MAX_PLAYERS; i++)
+		FOR_ALL_PLAYERS(i)
 		{
 			player_info_t playerinfo;
 			if (engineServer->GetPlayerInfo(i, &playerinfo))
@@ -136,7 +136,7 @@ static void SendToChat(int playerIndex, const char* msg)
 	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
 	if (!pPlayer)
 	{
-		P2MMLog(1, false, "Invalid player index specified for SendToChat!");
+		P2MMLog(1, false, "Invalid player index specified for SendToChat! playerIndex: \"%i\"", playerIndex);
 		return;
 	}
 	UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, msg);
@@ -201,14 +201,29 @@ static void CallFirstRunPrompt()
 
 //---------------------------------------------------------------------------------
 // Purpose: Print a message to a player's console, unlike printl() which is just the host.
+//			Specifying no playerIndex or 0 sends to all players.
 //			Supports printing localization strings but those that require formatting can't be formatted.
 //---------------------------------------------------------------------------------
 void ConsolePrint(int playerIndex, const char* msg)
 {
+	if (!msg)
+	{
+		return;
+	}
+
+	if (!playerIndex)
+	{
+		FOR_ALL_PLAYERS(i)
+		{
+			UTIL_ClientPrint(UTIL_PlayerByIndex(i), HUD_PRINTCONSOLE, msg);
+		}
+		return;
+	}
+
 	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
 	if (!pPlayer)
 	{
-		P2MMLog(1, false, "Invalid playerIndex passed into ConsolePrint! playerIndex: \"%i\"", playerIndex);
+		P2MMLog(1, false, "Invalid player index passed into ConsolePrint! playerIndex: \"%i\"", playerIndex);
 		return;
 	}
 
@@ -218,24 +233,40 @@ void ConsolePrint(int playerIndex, const char* msg)
 
 //---------------------------------------------------------------------------------
 // Purpose: Print a message to the top center position of a player's screen.
+//			Specifying no playerIndex or 0 sends to all players.
 //			Supports printing localization strings but those that require formatting can't be formatted.
 //---------------------------------------------------------------------------------
 void ClientPrint(int playerIndex, const char* msg)
 {
-	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
-	if (!pPlayer)
+	if (!msg)
 	{
-		P2MMLog(1, false, "Invalid playerIndex passed into ClientPrint! playerIndex: \"%i\"", playerIndex);
 		return;
 	}
 
-	UTIL_ClientPrint(pPlayer, HUD_PRINTCENTER, msg);
+	if (!playerIndex)
+	{
+		FOR_ALL_PLAYERS(i)
+		{
+			UTIL_ClientPrint(UTIL_PlayerByIndex(i), HUD_PRINTTALK, msg);
+		}
+		return;
+	}
+
+	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
+	if (!pPlayer)
+	{
+		P2MMLog(1, false, "Invalid player index specified for ClientPrint! playerIndex: \"%i\"", playerIndex);
+		return;
+	}
+
+	UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, msg);
 }
 
 //---------------------------------------------------------------------------------
 // Purpose: Print a message to the screen based on what the game_text entity does.
 //			See the Valve Developer Commentary page for the game_text entity to read
-//			what each field does. Vectors are in place for sets of RGB values.
+//			what each field does. Vectors are in place for sets of RGB values
+//			Specifying no playerIndex or 0 sends to all players.
 //			Supports printing localization strings but those that require formatting can't be formatted.
 //---------------------------------------------------------------------------------
 void HudPrint(int playerIndex, const char* msg, 
@@ -245,10 +276,8 @@ void HudPrint(int playerIndex, const char* msg,
 	float fadeinTime, float fadeoutTime, float holdTime, float fxTime, 
 	int channel)
 {
-	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
-	if (!pPlayer)
+	if (!msg)
 	{
-		P2MMLog(1, false, "Invalid playerIndex passed into HudPrint! playerIndex: \"%i\"", playerIndex);
 		return;
 	}
 
@@ -269,6 +298,19 @@ void HudPrint(int playerIndex, const char* msg,
 	hudTextParams.holdTime = holdTime;
 	hudTextParams.fxTime = fxTime;
 	hudTextParams.channel = channel;
+
+	if (!playerIndex)
+	{
+		UTIL_HudMessage(NULL, hudTextParams, msg);
+		return;
+	}
+
+	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
+	if (!pPlayer)
+	{
+		P2MMLog(1, false, "Invalid playerIndex passed into HudPrint! playerIndex: \"%i\"", playerIndex);
+		return;
+	}
 
 	UTIL_HudMessage(pPlayer, hudTextParams, msg);
 }
@@ -311,12 +353,17 @@ void RegisterFuncsAndRun()
 	ScriptRegisterFunctionNamed(g_pScriptVM, INDEXHANDLE, "UTIL_PlayerByIndex", "Takes the player's entity index and returns the player's script handle.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, CPortal_Player__RespawnPlayer, "RespawnPlayer", "Respawn the a player by their entity index.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, CPortal_Player__SetFlashlightState, "SetFlashlightState", "Set the flashlight for a player on or off.");
-	ScriptRegisterFunction     (g_pScriptVM, ConsolePrint, "Print a message to the top center position of a player's screen. Supports printing localization strings but those that require formatting can't be formatted.");
-	ScriptRegisterFunction     (g_pScriptVM, ClientPrint, "Print a message to the top center position of a player's screen. Supports printing localization strings but those that require formatting can't be formatted.");
-	ScriptRegisterFunction     (g_pScriptVM, HudPrint, "Print a message to the screen based on what the game_text entity does.\
-														See the Valve Developer Commentary page for the game_text entity to read\
-														what each field does. Vectors are in place for sets of RGB values.\
-														Supports printing localization strings but those that require formatting can't be formatted."
+	ScriptRegisterFunction     (g_pScriptVM, ConsolePrint, "Print a message to the top center position of a player's screen. Specifying no playerIndex or 0 sends to all players."
+														   "Supports printing localization strings but those that require formatting can't be formatted."
+	);
+	ScriptRegisterFunction     (g_pScriptVM, ClientPrint, "Print a message to the top center position of a player's screen. Specifying no playerIndex or 0 sends to all players."
+														   "Supports printing localization strings but those that require formatting can't be formatted."
+	);
+	ScriptRegisterFunction     (g_pScriptVM, HudPrint, "Print a message to the screen based on what the game_text entity does."
+													   "See the Valve Developer Commentary page for the game_text entity to read"
+													   "what each field does. Vectors are in place for sets of RGB values."
+													   "Specifying no playerIndex or 0 sends to all players."
+													   "Supports printing localization strings but those that require formatting can't be formatted."
 	);
 	ScriptRegisterFunction		(g_pScriptVM, GetMaxPlayers, "Self-explanatory.");
 

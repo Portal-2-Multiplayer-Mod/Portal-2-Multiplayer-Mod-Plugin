@@ -208,11 +208,11 @@ inline edict_t* INDEXENT(int iEdictNum)
 //---------------------------------------------------------------------------------
 inline HSCRIPT INDEXHANDLE(int iEdictNum) {
 	edict_t* pEdict = INDEXENT(iEdictNum);
+	if (!pEdict->GetUnknown())
+		return NULL;
 	CBaseEntity* pBaseEntity = pEdict->GetUnknown()->GetBaseEntity();
 	if (!pBaseEntity)
-	{
-		return nullptr;
-	}
+		return NULL;
 	HSCRIPT entityHandle = CBaseEntity__GetScriptInstance(pBaseEntity);
 	return entityHandle;
 }

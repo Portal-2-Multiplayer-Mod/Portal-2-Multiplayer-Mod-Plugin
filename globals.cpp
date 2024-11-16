@@ -205,15 +205,6 @@ int CBaseEntity__GetTeamNumber(CBasePlayer* pPlayer)
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Get's team number for the supplied CBasePlayer.
-//---------------------------------------------------------------------------------
-int CBaseEntity__GetTeamNumber(CBasePlayer* pPlayer)
-{
-	static auto _GetTeamNumber = reinterpret_cast<int (__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "8B 81 F4 02 00 00 C3"));
-	return _GetTeamNumber((CBaseEntity*)pPlayer);
-}
-
-//---------------------------------------------------------------------------------
 // Purpose: Get the script scope of a entity. Thanks to Nullderef/Vista for this.
 //---------------------------------------------------------------------------------
 HSCRIPT CBaseEntity__GetScriptScope(CBaseEntity* entity)

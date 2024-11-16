@@ -1,6 +1,6 @@
 //===========================================================================//
 //
-// Author: Nanoman2525
+// Author: Nanoman2525 & Orsell
 // Purpose: Portal 2: Multiplayer Mod server plugin
 // 
 //===========================================================================//
@@ -93,11 +93,11 @@ static bool IsDedicatedServer()
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Initializes an entity.
+// Purpose: Initializes, spawns, then activates an entity in the map.
 //---------------------------------------------------------------------------------
 static void InitializeEntity(HSCRIPT ent)
 {
-	static uintptr_t func = (uintptr_t)Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "E8 ?? ?? ?? ?? 8B 4D 18 8B 57 5C", 1);
+	static uintptr_t func = (uintptr_t)Memory::Scanner::Scan<void*>(SERVERDLL, "E8 ?? ?? ?? ?? 8B 4D 18 8B 57 5C", 1);
 	static auto GetCBaseEntityScriptDesc = reinterpret_cast<ScriptClassDesc_t * (*)()>(*reinterpret_cast<uintptr_t*>(func) + func + sizeof(func));
 	void* pEntity = reinterpret_cast<void*>(g_pScriptVM->GetInstanceValue(ent, GetCBaseEntityScriptDesc()));;
 	if (pEntity)
@@ -110,39 +110,36 @@ static void InitializeEntity(HSCRIPT ent)
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Sends a raw message to the chat HUD.
+// Purpose: Sends a raw message to the chat HUD. Specifying no playerIndex or 0 sends to all players.
+//			Supports printing localization strings but those that require formatting can't be formatted.
 //---------------------------------------------------------------------------------
-static void SendToChat(const char* msg, int playerIndex)
+static void SendToChat(int playerIndex, const char* msg)
 {
 	if (!msg)
 	{
 		return;
 	}
-	bf_write* netmsg;
-	CFilter recipient_filter;
 
-	// Send to all players
-	if (playerIndex == 0)
+	if (!playerIndex)
 	{
-		for (int i = 1; i < g_pGlobals->maxClients; i++)
+		FOR_ALL_PLAYERS(i)
 		{
 			player_info_t playerinfo;
 			if (engineServer->GetPlayerInfo(i, &playerinfo))
 			{
-				recipient_filter.AddPlayer(i);
+				UTIL_ClientPrint(UTIL_PlayerByIndex(i), HUD_PRINTTALK, msg);
 			}
 		}
-	}
-	else
-	{
-		recipient_filter.AddPlayer(playerIndex);
+		return;
 	}
 
-	netmsg = engineServer->UserMessageBegin(&recipient_filter, 4, "SayText2");
-	netmsg->WriteByte(0);
-	netmsg->WriteString(msg);
-	netmsg->WriteByte(1);
-	engineServer->MessageEnd();
+	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
+	if (!pPlayer)
+	{
+		P2MMLog(1, false, "Invalid player index specified for SendToChat! playerIndex: \"%i\"", playerIndex);
+		return;
+	}
+	UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, msg);
 }
 
 //---------------------------------------------------------------------------------
@@ -177,7 +174,7 @@ static void CallFirstRunPrompt()
 		return;
 	}
 
-	P2MMLog(0, false, "DISPLAYING FIRST RUN PROMPT!");
+	P2MMLog(0, true, "DISPLAYING FIRST RUN PROMPT!");
 
 	// Put together KeyValues to pass to CreateMessage.
 	KeyValues* kv = new KeyValues("firstrunprompt");
@@ -202,37 +199,174 @@ static void CallFirstRunPrompt()
 	g_P2MMServerPlugin.m_bSeenFirstRunPrompt = true;
 }
 
+//---------------------------------------------------------------------------------
+// Purpose: Print a message to a player's console, unlike printl() which is just the host.
+//			Specifying no playerIndex or 0 sends to all players.
+//			Supports printing localization strings but those that require formatting can't be formatted.
+//---------------------------------------------------------------------------------
+void ConsolePrint(int playerIndex, const char* msg)
+{
+	if (!msg)
+	{
+		return;
+	}
+
+	if (!playerIndex)
+	{
+		FOR_ALL_PLAYERS(i)
+		{
+			UTIL_ClientPrint(UTIL_PlayerByIndex(i), HUD_PRINTCONSOLE, msg);
+		}
+		return;
+	}
+
+	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
+	if (!pPlayer)
+	{
+		P2MMLog(1, false, "Invalid player index passed into ConsolePrint! playerIndex: \"%i\"", playerIndex);
+		return;
+	}
+
+	std::string fixedMsg = std::string(msg) + "\n";
+	UTIL_ClientPrint(pPlayer, HUD_PRINTCONSOLE, fixedMsg.c_str());
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Print a message to the top center position of a player's screen.
+//			Specifying no playerIndex or 0 sends to all players.
+//			Supports printing localization strings but those that require formatting can't be formatted.
+//---------------------------------------------------------------------------------
+void ClientPrint(int playerIndex, const char* msg)
+{
+	if (!msg)
+	{
+		return;
+	}
+
+	if (!playerIndex)
+	{
+		FOR_ALL_PLAYERS(i)
+		{
+			UTIL_ClientPrint(UTIL_PlayerByIndex(i), HUD_PRINTTALK, msg);
+		}
+		return;
+	}
+
+	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
+	if (!pPlayer)
+	{
+		P2MMLog(1, false, "Invalid player index specified for ClientPrint! playerIndex: \"%i\"", playerIndex);
+		return;
+	}
+
+	UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, msg);
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Print a message to the screen based on what the game_text entity does.
+//			See the Valve Developer Commentary page for the game_text entity to read
+//			what each field does. Vectors are in place for sets of RGB values
+//			Specifying no playerIndex or 0 sends to all players.
+//			Supports printing localization strings but those that require formatting can't be formatted.
+//---------------------------------------------------------------------------------
+void HudPrint(int playerIndex, const char* msg, 
+	float x, float y, 
+	int effect, 
+	Vector RGB1, float alpha1, Vector RGB2, float alpha2, 
+	float fadeinTime, float fadeoutTime, float holdTime, float fxTime, 
+	int channel)
+{
+	if (!msg)
+	{
+		return;
+	}
+
+	hudtextparms_t hudTextParams;
+	hudTextParams.x = x;
+	hudTextParams.y = y;
+	hudTextParams.effect = effect;
+	hudTextParams.r1 = RGB1.x;
+	hudTextParams.g1 = RGB1.y;
+	hudTextParams.b1 = RGB1.z;
+	hudTextParams.a1 = alpha1;
+	hudTextParams.r2 = RGB2.x;
+	hudTextParams.g2 = RGB2.y;
+	hudTextParams.b2 = RGB2.z;
+	hudTextParams.a2 = alpha2;
+	hudTextParams.fadeinTime = fadeinTime;
+	hudTextParams.fadeoutTime = fadeoutTime;
+	hudTextParams.holdTime = holdTime;
+	hudTextParams.fxTime = fxTime;
+	hudTextParams.channel = channel;
+
+	if (!playerIndex)
+	{
+		UTIL_HudMessage(NULL, hudTextParams, msg);
+		return;
+	}
+
+	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
+	if (!pPlayer)
+	{
+		P2MMLog(1, false, "Invalid playerIndex passed into HudPrint! playerIndex: \"%i\"", playerIndex);
+		return;
+	}
+
+	UTIL_HudMessage(pPlayer, hudTextParams, msg);
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Self-explanatory.
+//---------------------------------------------------------------------------------
+int GetMaxPlayers()
+{
+	return MAX_PLAYERS;
+}
+
 void RegisterFuncsAndRun()
 {
-	g_pScriptVM = **Memory::Scanner::Scan<IScriptVM***>(Memory::Modules::Get("server"), "8B 1D ?? ?? ?? ?? 57 85 DB", 2);
+	g_pScriptVM = **Memory::Scanner::Scan<IScriptVM***>(SERVERDLL, "8B 1D ?? ?? ?? ?? 57 85 DB", 2);
 	if (!g_pScriptVM)
 	{
-		P2MMLog(1, false, "Could not run or register our VScript functions!");
+		P2MMLog(1, false, "Could not register or run our VScript functions!");
 		return;
 	}
 
 	ScriptRegisterFunction	   (g_pScriptVM, printlP2MM, "Logging for the P2MM VScript. The log message must be passed as a string or it will error.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetPlayerName, "GetPlayerName", "Gets player username by index.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetSteamID, "GetSteamID", "Gets the account ID component of player SteamID by index.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::UserIDToPlayerIndex, "UserIDToPlayerIndex", "Gets player entity index by userid.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetPlayerName, "GetPlayerName", "Gets player username by their entity index.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetSteamID, "GetSteamID", "Gets the account ID component of player SteamID by the player's entity index.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::UserIDToPlayerIndex, "UserIDToPlayerIndex", "Get the player's entity index by their userid.");
 	ScriptRegisterFunction	   (g_pScriptVM, IsMapValid, "Returns true is the supplied string is a available map to load and run.");
 	ScriptRegisterFunction	   (g_pScriptVM, GetDeveloperLevelP2MM, "Returns the value of ConVar p2mm_developer.");
 	ScriptRegisterFunction	   (g_pScriptVM, SetPhysTypeConVar, "Sets 'player_held_object_use_view_model' to the supplied integer value.");
 	ScriptRegisterFunction	   (g_pScriptVM, SetMaxPortalSeparationConvar, "Sets 'portal_max_separation_force' to the supplied integer value.");
 	ScriptRegisterFunction	   (g_pScriptVM, IsDedicatedServer, "Returns true if this is a dedicated server.");
 	ScriptRegisterFunction	   (g_pScriptVM, InitializeEntity, "Initializes an entity. Note: Not all entities will work even after being initialized with this function.");
-	ScriptRegisterFunction	   (g_pScriptVM, SendToChat, "Sends a raw message to the chat HUD.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetGameMainDir, "GetGameMainDir", "Returns the game directory. Ex. portal2/portal_stories");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetGameBaseDir, "GetGameBaseDir", "Get the main game directory being used. Ex. Portal 2/Portal Stories Mel");
+	ScriptRegisterFunction	   (g_pScriptVM, SendToChat, "Sends a raw message to the chat HUD. Specifying no playerIndex or 0 sends to all players. Supports printing localization strings but those that require formatting can't be formatted.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetGameMainDir, "GetGameMainDir", "Returns the game directory. Ex. portal2");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetGameBaseDir, "GetGameBaseDir", "Get the main game directory being used. Ex. Portal 2");
 	ScriptRegisterFunction	   (g_pScriptVM, GetLastMap, "Returns the last map recorded by the launcher's Last Map system.");
 	ScriptRegisterFunction	   (g_pScriptVM, FirstRunState, "Get or set the state of whether the first map was run or not. Set false/true = 0/1 | -1 to get state.");
 	ScriptRegisterFunction	   (g_pScriptVM, CallFirstRunPrompt, "Shows the first run prompt if enabled in config.nut.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetConVarInt, "GetConVarInt", "Get the integer value of a ConVar.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetConVarString, "GetConVarString", "Get the string value of a ConVar.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, INDEXHANDLE, "PlayerIndexToPlayerHandle", "Takes the player's entity index and returns the player's script handle.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, INDEXHANDLE, "UTIL_PlayerByIndex", "Takes the player's entity index and returns the player's script handle.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, CPortal_Player__RespawnPlayer, "RespawnPlayer", "Respawn the a player by their entity index.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, CPortal_Player__SetFlashlightState, "SetFlashlightState", "Set the flashlight for a player on or off.");
+	ScriptRegisterFunction     (g_pScriptVM, ConsolePrint, "Print a message to the top center position of a player's screen. Specifying no playerIndex or 0 sends to all players."
+														   "Supports printing localization strings but those that require formatting can't be formatted."
+	);
+	ScriptRegisterFunction     (g_pScriptVM, ClientPrint, "Print a message to the top center position of a player's screen. Specifying no playerIndex or 0 sends to all players."
+														   "Supports printing localization strings but those that require formatting can't be formatted."
+	);
+	ScriptRegisterFunction     (g_pScriptVM, HudPrint, "Print a message to the screen based on what the game_text entity does."
+													   "See the Valve Developer Commentary page for the game_text entity to read"
+													   "what each field does. Vectors are in place for sets of RGB values."
+													   "Specifying no playerIndex or 0 sends to all players."
+													   "Supports printing localization strings but those that require formatting can't be formatted."
+	);
+	ScriptRegisterFunction		(g_pScriptVM, GetMaxPlayers, "Self-explanatory.");
 
-	// Set all the plugin function check bools to true and start the P2:MM VScript
+	// Load up the main P2:MM VScript and set
 	g_pScriptVM->Run("IncludeScript(\"multiplayermod/p2mm\");");
 }

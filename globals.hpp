@@ -30,43 +30,68 @@
 class CBasePlayer;
 class CPortal_Player;
 
-// Console logging colors
-#define P2MM_PLUGIN_CONSOLE_COLOR Color(100, 192, 252, 255)
-#define P2MM_VSCRIPT_CONSOLE_COLOR Color(110, 247, 76, 255)
+// Color macros for game chat and console printing.
+#define P2MM_PLUGIN_CONSOLE_COLOR  Color(100, 192, 252, 255) // Light Blue
+#define P2MM_VSCRIPT_CONSOLE_COLOR Color(110, 247, 76, 255)  // Light Green
 #define P2MM_DISCORD_CONSOLE_COLOR_NORMAL Color(88, 101, 242, 255)
 #define P2MM_DISCORD_CONSOLE_COLOR_WARNING Color(255, 187, 28, 255)
-//#define P2MM_DISCORD_CONSOLE_COLOR_NORMAL Color(88, 101, 242)
 
 #define CURMAPNAME STRING(g_pGlobals->mapname)
-
-// Even programs have to sleep sometimes
-#if _WIN32
-#define MIMIMIMI(ms) Sleep(ms); // MIMIMIMI *snore* MIMIMIMI
-#else
-#define MIMIMIMI(ms) usleep(ms); // MIMIMIMI *snores in Linux* MIMIMIMI
-#endif
+#define MAX_PLAYERS g_pGlobals->maxClients
 
 // Used for autocomplete console commands.
 #define COMMAND_COMPLETION_MAXITEMS		64
 #define COMMAND_COMPLETION_ITEM_LENGTH	64
 
-// Used for autocomplete console commands.
-#define COMMAND_COMPLETION_MAXITEMS		64
-#define COMMAND_COMPLETION_ITEM_LENGTH	64
+// A macro to iterate through all ConVars and ConCommand in the game.
+// Thanks to Nanoman2525 for this.
+#define FOR_ALL_CONSOLE_COMMANDS(pCommandVarName) \
+    ConCommandBase *m_pConCommandList = *reinterpret_cast<ConCommandBase **>((uintptr_t)g_pCVar + 0x30); /* CCvar::m_pConCommandList */ \
+    for (ConCommandBase *pCommandVarName = m_pConCommandList; \
+	pCommandVarName; pCommandVarName = *reinterpret_cast<ConCommandBase **>(reinterpret_cast<uintptr_t>(pCommandVarName) + 0x04)) /* ConCommandBase::m_pNext (private variable) */
 
-// Team number macros.
-#define TEAM_SINGLEPLAYER 0
-#define TEAM_SPECTATOR	  1
-#define TEAM_RED		  2
-#define TEAM_BLUE         3
+// Macro to iterate through all players.
+#define FOR_ALL_PLAYERS(i) \
+	for (int i = 1; i < MAX_PLAYERS; i++)
+
+// Player team enum.
+enum
+{
+	TEAM_SINGLEPLAYER = 0,
+	TEAM_SPECTATOR,
+	TEAM_RED,  
+	TEAM_BLUE
+};
+
+// ClientPrint msg_dest macros.
+#define HUD_PRINTNOTIFY		1 // Works same as HUD_PRINTCONSOLE
+#define HUD_PRINTCONSOLE	2
+#define HUD_PRINTTALK		3
+#define HUD_PRINTCENTER		4
+
+// UTIL_HudMessage message parameters struct. Taken from utils.h.
+typedef struct hudtextparms_s
+{
+	float		x;
+	float		y;
+	int			effect;
+	byte		r1, g1, b1, a1;
+	byte		r2, g2, b2, a2;
+	float		fadeinTime;
+	float		fadeoutTime;
+	float		holdTime;
+	float		fxTime;
+	int			channel;
+} hudtextparms_t;
+
 
 //---------------------------------------------------------------------------------
-// Any ConVars or CON_COMMANDS that need to be globally available
+// Any ConVars or CON_COMMANDS that need to be globally available.
 //---------------------------------------------------------------------------------
 extern ConVar p2mm_developer;
 
 //---------------------------------------------------------------------------------
-// Interfaces from the engine
+// Interfaces from the engine.
 //---------------------------------------------------------------------------------
 extern IVEngineServer* engineServer;
 extern IVEngineClient* engineClient;
@@ -83,8 +108,8 @@ void P2MMLog(int level, bool dev, const char* pMsgFormat, ...);
 namespace GFunc
 {
 	int					UserIDToPlayerIndex(int userid);
-	const char*			GetPlayerName(int index);
-	int					GetSteamID(int index);
+	const char*			GetPlayerName(int playerIndex);
+	int					GetSteamID(int playerIndex);
 	int					GetConVarInt(const char* cvname);
 	const char*			GetConVarString(const char* cvname);
 	inline const char*	GetGameMainDir();
@@ -92,6 +117,8 @@ namespace GFunc
 }
 
 CBasePlayer* UTIL_PlayerByIndex(int playerIndex);
+void UTIL_ClientPrint(CBasePlayer* player, int msg_dest, const char* msg_name, const char* param1 = NULL, const char* param2 = NULL, const char* param3 = NULL, const char* param4 = NULL);
+void UTIL_HudMessage(CBasePlayer* pPlayer, const hudtextparms_s& textparms, const char* pMessage);
 
 void CBaseEntity__RemoveEntity(CBaseEntity* pEntity);
 int CBaseEntity__GetTeamNumber(CBasePlayer* pPlayer);
@@ -197,22 +224,22 @@ inline int CURPLAYERCOUNT() {
 //---------------------------------------------------------------------------------
 inline HSCRIPT INDEXHANDLE(int iEdictNum) {
 	edict_t* pEdict = INDEXENT(iEdictNum);
+	if (!pEdict->GetUnknown())
+		return NULL;
 	CBaseEntity* pBaseEntity = pEdict->GetUnknown()->GetBaseEntity();
 	if (!pBaseEntity)
-	{
-		return nullptr;
-	}
+		return NULL;
 	HSCRIPT entityHandle = CBaseEntity__GetScriptInstance(pBaseEntity);
 	return entityHandle;
 }
 
-// Get the main game directory being used. Ex. portal2/portal_stories
+// Get the main game directory being used. Ex. portal2
 inline const char* GFunc::GetGameMainDir()
 {
 	return CommandLine()->ParmValue("-game", CommandLine()->ParmValue("-defaultgamedir", "portal2"));
 }
 
-// Get base game directory. Ex. Portal 2/Portal Stories Mel
+// Get base game directory. Ex. Portal 2
 inline const char* GFunc::GetGameBaseDir()
 {
 	char baseDir[MAX_PATH];

@@ -48,11 +48,11 @@ void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Gets player entity index by userid.
+// Purpose: Get the player's entity index by their userid.
 //---------------------------------------------------------------------------------
 int GFunc::UserIDToPlayerIndex(int userid)
 {
-	for (int i = 1; i <= g_pGlobals->maxClients; i++)
+	for (int i = 1; i <= MAX_PLAYERS; i++)
 	{
 		edict_t* pEdict = NULL;
 		if (i >= 0 && i < g_pGlobals->maxEntities)
@@ -69,20 +69,20 @@ int GFunc::UserIDToPlayerIndex(int userid)
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Gets player username by index.
+// Purpose: Gets player username by their entity index.
 //---------------------------------------------------------------------------------
-const char* GFunc::GetPlayerName(int index)
+const char* GFunc::GetPlayerName(int playerIndex)
 {
-	if (index <= 0 || index > g_pGlobals->maxClients)
+	if (playerIndex <= 0 || playerIndex > MAX_PLAYERS)
 	{
-		P2MMLog(0, true, "Invalid index passed to GetPlayerName: %i!", index);
+		P2MMLog(0, true, "Invalid index passed to GetPlayerName: %i!", playerIndex);
 		return "";
 	}
 
 	player_info_t playerinfo;
-	if (!engineServer->GetPlayerInfo(index, &playerinfo))
+	if (!engineServer->GetPlayerInfo(playerIndex, &playerinfo))
 	{
-		P2MMLog(0, true, "Couldn't retrieve playerinfo of player index \"%i\" in GetPlayerName!", index);
+		P2MMLog(0, true, "Couldn't retrieve playerinfo of player index \"%i\" in GetPlayerName!", playerIndex);
 		return "";
 	}
 
@@ -90,14 +90,14 @@ const char* GFunc::GetPlayerName(int index)
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Gets the account ID component of player SteamID by index.
+// Purpose: Gets the account ID component of player SteamID by the player's entity index.
 //---------------------------------------------------------------------------------
-int GFunc::GetSteamID(int index)
+int GFunc::GetSteamID(int playerIndex)
 {
 	edict_t* pEdict = NULL;
-	if (index >= 0 && index < g_pGlobals->maxEntities)
+	if (playerIndex >= 0 && playerIndex < MAX_PLAYERS)
 	{
-		pEdict = (edict_t*)(g_pGlobals->pEdicts + index);
+		pEdict = (edict_t*)(g_pGlobals->pEdicts + playerIndex);
 	}
 	if (!pEdict)
 	{
@@ -105,7 +105,7 @@ int GFunc::GetSteamID(int index)
 	}
 
 	player_info_t playerinfo;
-	if (!engineServer->GetPlayerInfo(index, &playerinfo))
+	if (!engineServer->GetPlayerInfo(playerIndex, &playerinfo))
 	{
 		return -1;
 	}
@@ -158,12 +158,32 @@ const char* GFunc::GetConVarString(const char* cvname)
 CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
 {
 #ifdef _WIN32
-	static auto _PlayerByIndex = reinterpret_cast<CBasePlayer* (__cdecl*)(int)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 8B 4D 08 33 C0 85 C9 7E 30"));
+	static auto _PlayerByIndex = reinterpret_cast<CBasePlayer* (__cdecl*)(int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 8B 4D 08 33 C0 85 C9 7E 30"));
 	return _PlayerByIndex(playerIndex);
 #else // Linux support TODO
 	return NULL;
 #endif
 }
+
+//---------------------------------------------------------------------------------
+// Purpose: Show on screen message to players. msg_dest are defined macros in globals.hpp.
+//---------------------------------------------------------------------------------
+void UTIL_ClientPrint(CBasePlayer* player, int msg_dest, const char* msg_name, const char* param1, const char* param2, const char* param3, const char* param4)
+{
+	static auto _ClientPrint = reinterpret_cast<void (__cdecl*)(CBasePlayer*, int, const char*, const char*, const char*, const char*, const char*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 83 EC 20 56 8B 75 08 85 F6 74 4C"));
+	_ClientPrint(player, msg_dest, msg_name, param1, param2, param3, param4);
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Show on text on screen just like game_text does.
+//---------------------------------------------------------------------------------
+void UTIL_HudMessage(CBasePlayer* pPlayer, const hudtextparms_s &textparms, const char* pMessage)
+{
+	static auto _HudMessage = reinterpret_cast<void(__cdecl*)(CBasePlayer*, const hudtextparms_s&, const char*)>(Memory::Scanner::Scan(SERVERDLL, "55 8B EC 83 EC 20 8D 4D ?? E8 ?? ?? ?? ?? 8B 45 ?? 8D 4D ?? 85 C0 74 ?? 50 E8 ?? ?? ?? ?? EB ?? E8 ?? ?? ?? ?? 56"));
+	_HudMessage(pPlayer, textparms, pMessage);
+}
+
+
 
 ///			 CBaseEntity Class Functions				\\\
 
@@ -172,8 +192,16 @@ CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
 //---------------------------------------------------------------------------------
 void CBaseEntity__RemoveEntity(CBaseEntity* pEntity)
 {
-	//reinterpret_cast<IServerEntity*>(pEntity) trust me bro aka, we know its CBaseEntity*, but we want the IServerEntity* so cast to that to get its methods 
-	reinterpret_cast<void (*)(void*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 57 8B 7D 08 85 FF 74 72"))(reinterpret_cast<IServerEntity*>(pEntity)->GetNetworkable());
+	reinterpret_cast<void (__cdecl*)(void*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 57 8B 7D 08 85 FF 74 72"))(reinterpret_cast<IServerEntity*>(pEntity)->GetNetworkable());
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Get's team number for the supplied CBasePlayer.
+//---------------------------------------------------------------------------------
+int CBaseEntity__GetTeamNumber(CBasePlayer* pPlayer)
+{
+	static auto _GetTeamNumber = reinterpret_cast<int (__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "8B 81 F4 02 00 00 C3"));
+	return _GetTeamNumber((CBaseEntity*)pPlayer);
 }
 
 //---------------------------------------------------------------------------------
@@ -206,7 +234,7 @@ HSCRIPT CBaseEntity__GetScriptScope(CBaseEntity* entity)
 //---------------------------------------------------------------------------------
 HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity)
 {
-	static auto _GetScriptInstance = reinterpret_cast<HSCRIPT(__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 51 56 8B F1 83 BE 50"));
+	static auto _GetScriptInstance = reinterpret_cast<HSCRIPT(__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 51 56 8B F1 83 BE 50"));
 	if (!_GetScriptInstance) {
 		P2MMLog(1, false , "Could not get script instance for entity!");
 		return nullptr;
@@ -227,11 +255,11 @@ void CPortal_Player__RespawnPlayer(int playerIndex)
 	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
 	if (!pPlayer)
 	{
-		P2MMLog(1, true, "Couldn't get player to respawn! playerIndex: %i", playerIndex);
+		P2MMLog(1, false, "Couldn't get player to respawn! playerIndex: %i", playerIndex);
 		return;
 	}
 
-	static auto _RespawnPlayer = reinterpret_cast<void(__thiscall*)(CPortal_Player*)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "0F 57 C0 56 8B F1 57 8D 8E"));
+	static auto _RespawnPlayer = reinterpret_cast<void(__thiscall*)(CPortal_Player*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "0F 57 C0 56 8B F1 57 8D 8E"));
 	_RespawnPlayer((CPortal_Player*)pPlayer);
 }
 
@@ -252,10 +280,10 @@ void CPortal_Player__SetFlashlightState(int playerIndex, bool enable)
 	
 	if (enable)
 	{
-		reinterpret_cast<void(__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 53 8B D9 8B 83 A8"))((CBaseEntity*)pPlayer, EF_DIMLIGHT);
+		reinterpret_cast<void(__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 53 8B D9 8B 83 A8"))((CBaseEntity*)pPlayer, EF_DIMLIGHT);
 	}
 	else
 	{
-		reinterpret_cast<void(__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(Memory::Modules::Get("server"), "55 8B EC 53 56 8B 75 08 8B D9 8B 83"))((CBaseEntity*)pPlayer, EF_DIMLIGHT);
+		reinterpret_cast<void(__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 53 56 8B 75 08 8B D9 8B 83"))((CBaseEntity*)pPlayer, EF_DIMLIGHT);
 	}
 }

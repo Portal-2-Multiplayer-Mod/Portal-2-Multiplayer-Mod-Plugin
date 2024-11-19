@@ -372,7 +372,7 @@ CON_COMMAND(p2mm_toggle_dev_cc_cvars, "Toggle showing any ConVars and ConCommand
 
 // Gelocity ConVars and ConCommands
 const char* gelocityMaps[3] = { "workshop/596984281130013835/mp_coop_gelocity_1_v02", "workshop/594730048530814099/mp_coop_gelocity_2_v01", "workshop/613885499245125173/mp_coop_gelocity_3_v02" };
-CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race.")
+CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race. Specify 0 or no argument to see current lap count.")
 {
 	// Check if host is in a gelocity map.
 	for (int i = 0; i < 3; i++)
@@ -394,7 +394,17 @@ CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race.")
 		return;
 	}
 
-	if (V_atoi(args.Arg(1)) < 1 || V_atoi(args.Arg(1)) > 300)
+	// Check if 0 or no arguments are specified so that the ConCommand
+	// returns how many laps are currently set.
+	// But if it's a value out of range, return error.
+	if (V_atoi(args.Arg(1)) == 0 || args.ArgC() == 1)
+	{
+		ScriptVariant_t raceLaps;
+		g_pScriptVM->GetValue("i_GameLaps", &raceLaps);
+		P2MMLog(0, false, "Current race laps: %i", raceLaps.m_int);
+		return;
+	}
+	else if (V_atoi(args.Arg(1)) < 1 || V_atoi(args.Arg(1)) > 300)
 	{
 		P2MMLog(1, false, "Value out of bounds! Lap counter goes from 1-300!");
 		return;

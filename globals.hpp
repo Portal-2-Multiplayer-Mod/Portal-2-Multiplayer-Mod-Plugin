@@ -68,6 +68,8 @@ enum
 #define HUD_PRINTCENTER		4
 
 // UTIL_HudMessage message parameters struct. Taken from utils.h.
+// See Valve Developer Community for game_text to see which field does what:
+// https://developer.valvesoftware.com/wiki/Game_text
 typedef struct hudtextparms_s
 {
 	float		x;
@@ -116,7 +118,7 @@ namespace GFunc
 
 CBasePlayer* UTIL_PlayerByIndex(int playerIndex);
 void UTIL_ClientPrint(CBasePlayer* player, int msg_dest, const char* msg_name, const char* param1 = NULL, const char* param2 = NULL, const char* param3 = NULL, const char* param4 = NULL);
-void UTIL_HudMessage(CBasePlayer* pPlayer, const hudtextparms_s& textparms, const char* pMessage);
+void UTIL_HudMessage(CBasePlayer* pPlayer, const hudtextparms_t& textparms, const char* pMessage);
 
 void CBaseEntity__RemoveEntity(CBaseEntity* pEntity);
 int CBaseEntity__GetTeamNumber(CBasePlayer* pPlayer);
@@ -226,7 +228,7 @@ inline const char* GFunc::GetGameMainDir()
 // Get base game directory. Ex. Portal 2
 inline const char* GFunc::GetGameBaseDir()
 {
-	char baseDir[MAX_PATH];
+	char baseDir[MAX_PATH] = { 0 };
 	std::string fullGameDirectoryPath = engineClient->GetGameDirectory();
 	size_t firstSlash = fullGameDirectoryPath.find_last_of("\\");
 	size_t secondSlash = fullGameDirectoryPath.find_last_of("\\", firstSlash - 1);

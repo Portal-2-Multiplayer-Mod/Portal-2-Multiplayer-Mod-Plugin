@@ -19,7 +19,7 @@ extern ConVar p2mm_lastmap;
 static void printlP2MM(int level, bool dev, const char* pMsgFormat)
 {
 	va_list argptr;
-	char szFormattedText[1024];
+	char szFormattedText[1024] = { 0 };
 	va_start(argptr, pMsgFormat);
 	V_vsnprintf(szFormattedText, sizeof(szFormattedText), pMsgFormat, argptr);
 	va_end(argptr);
@@ -27,23 +27,20 @@ static void printlP2MM(int level, bool dev, const char* pMsgFormat)
 	char completeMsg[1024];
 	V_snprintf(completeMsg, sizeof(completeMsg), "(P2:MM VSCRIPT): %s\n", szFormattedText);
 
-	if (dev && !p2mm_developer.GetBool())
-	{
-		return;
-	}
+	if (dev && !p2mm_developer.GetBool()) return;
 
 	switch (level)
 	{
-	case 0:
-		ConColorMsg(P2MM_VSCRIPT_CONSOLE_COLOR, completeMsg);
-		return;
-	case 1:
-		Warning(completeMsg);
-		return;
-	default:
-		Warning("(P2:MM VSCRIPT): printlP2MM level set outside of 0-1, \"%i\", defaulting to ConColorMsg().\n", level);
-		ConColorMsg(P2MM_VSCRIPT_CONSOLE_COLOR, completeMsg);
-		return;
+		case 0:
+			ConColorMsg(P2MM_VSCRIPT_CONSOLE_COLOR, completeMsg);
+			return;
+		case 1:
+			Warning(completeMsg);
+			return;
+		default:
+			Warning("(P2:MM VSCRIPT): printlP2MM level set outside of 0-1, \"%i\", defaulting to ConColorMsg().\n", level);
+			ConColorMsg(P2MM_VSCRIPT_CONSOLE_COLOR, completeMsg);
+			return;
 	}
 }
 
@@ -115,10 +112,7 @@ static void InitializeEntity(HSCRIPT ent)
 //---------------------------------------------------------------------------------
 static void SendToChat(int playerIndex, const char* msg)
 {
-	if (!msg)
-	{
-		return;
-	}
+	if (!msg) return;
 
 	if (!playerIndex)
 	{
@@ -126,9 +120,7 @@ static void SendToChat(int playerIndex, const char* msg)
 		{
 			player_info_t playerinfo;
 			if (engineServer->GetPlayerInfo(i, &playerinfo))
-			{
 				UTIL_ClientPrint(UTIL_PlayerByIndex(i), HUD_PRINTTALK, msg);
-			}
 		}
 		return;
 	}
@@ -156,9 +148,9 @@ static const char* GetLastMap()
 //---------------------------------------------------------------------------------
 static bool FirstRunState(int state)
 {
-	if (state == 0 || state == 1) {
+	if (state == 0 || state == 1)
 		return g_P2MMServerPlugin.m_bFirstMapRan = !!state;
-	}
+	
 	return g_P2MMServerPlugin.m_bFirstMapRan;
 }
 
@@ -206,16 +198,15 @@ static void CallFirstRunPrompt()
 //---------------------------------------------------------------------------------
 void ConsolePrint(int playerIndex, const char* msg)
 {
-	if (!msg)
-	{
-		return;
-	}
+	if (!msg) return;
 
 	if (!playerIndex)
 	{
 		FOR_ALL_PLAYERS(i)
 		{
-			UTIL_ClientPrint(UTIL_PlayerByIndex(i), HUD_PRINTCONSOLE, msg);
+			player_info_t playerinfo;
+			if (engineServer->GetPlayerInfo(i, &playerinfo))
+				UTIL_ClientPrint(UTIL_PlayerByIndex(i), HUD_PRINTCONSOLE, msg);
 		}
 		return;
 	}
@@ -238,16 +229,15 @@ void ConsolePrint(int playerIndex, const char* msg)
 //---------------------------------------------------------------------------------
 void ClientPrint(int playerIndex, const char* msg)
 {
-	if (!msg)
-	{
-		return;
-	}
+	if (!msg) return;
 
 	if (!playerIndex)
 	{
 		FOR_ALL_PLAYERS(i)
 		{
-			UTIL_ClientPrint(UTIL_PlayerByIndex(i), HUD_PRINTTALK, msg);
+			player_info_t playerinfo;
+			if (engineServer->GetPlayerInfo(i, &playerinfo))
+				UTIL_ClientPrint(UTIL_PlayerByIndex(i), HUD_PRINTTALK, msg);
 		}
 		return;
 	}
@@ -276,10 +266,7 @@ void HudPrint(int playerIndex, const char* msg,
 	float fadeinTime, float fadeoutTime, float holdTime, float fxTime, 
 	int channel)
 {
-	if (!msg)
-	{
-		return;
-	}
+	if (!msg) return;
 
 	hudtextparms_t hudTextParams;
 	hudTextParams.x = x;

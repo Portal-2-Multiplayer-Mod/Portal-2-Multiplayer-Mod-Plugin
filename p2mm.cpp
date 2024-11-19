@@ -132,7 +132,7 @@ void updateMapsList() {
 		// Get each map and get their relative path to each SearchPath and make slashes forward slashes.
 		// Then turn relativePath into a std::string to easily manipulate.
 		const char* curmap = outList[i];
-		char relativePath[MAX_PATH];
+		char relativePath[MAX_PATH] = { 0 };
 		g_pFileSystem->FullPathToRelativePathEx(curmap, "GAME", relativePath, sizeof(relativePath));
 		V_FixSlashes(relativePath, '/');
 		V_StripExtension(relativePath, relativePath, sizeof(relativePath));
@@ -213,7 +213,7 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 			else if (iAct < 1) iAct = 1;
 
 			// Put the command to start the music and the act number together.
-			char completePVCmd[sizeof("playvol \"#music/mainmenu/portal2_background0%d\" 0.35") + sizeof(iAct)];
+			char completePVCmd[sizeof("playvol \"#music/mainmenu/portal2_background0%d\" 0.35") + sizeof(iAct)] = { 0 };
 			V_snprintf(completePVCmd, sizeof(completePVCmd), "playvol \"#music/mainmenu/portal2_background0%i\" 0.35", iAct);
 
 			P2MMLog(1, false, "p2mm_startsession was called with P2MM_LASTMAP, but p2mm_lastmap is empty or invalid!");
@@ -291,7 +291,9 @@ CON_COMMAND(p2mm_respawnall, "Respawns all players.")
 {
 	FOR_ALL_PLAYERS(i)
 	{
-		CPortal_Player__RespawnPlayer(i);
+		player_info_t playerinfo;
+		if (engineServer->GetPlayerInfo(i, &playerinfo))
+			CPortal_Player__RespawnPlayer(i);
 	}
 }
 
@@ -303,12 +305,13 @@ CON_COMMAND(p2mm_helloworld, "Hello World!")
 
 CON_COMMAND(p2mm_helloworld2, "Hello World 2: Electric Boogaloo!")
 {
-	hudtextparms_s helloWorldParams;
+	hudtextparms_t helloWorldParams;
 	color32 RGB1 = { 0, 255, 100, 255 };
 	color32 RGB2 = { 0, 50, 255, 255 };
 	helloWorldParams.x = -1.f;
 	helloWorldParams.y = -1.f;
 	helloWorldParams.effect = 2;
+	helloWorldParams.fxTime = 0.2f;
 	helloWorldParams.r1 = RGB1.r;
 	helloWorldParams.g1 = RGB1.g;
 	helloWorldParams.b1 = RGB1.b;
@@ -320,12 +323,14 @@ CON_COMMAND(p2mm_helloworld2, "Hello World 2: Electric Boogaloo!")
 	helloWorldParams.fadeinTime = 0.5f;
 	helloWorldParams.fadeoutTime = 1.f;
 	helloWorldParams.holdTime = 1.f;
-	helloWorldParams.fxTime = 0.2f;
-	helloWorldParams.channel = V_atoi(args.Arg(2));
+
+	helloWorldParams.channel = 3;
+	if (!FStrEq(args.Arg(1), ""))
+		helloWorldParams.channel = V_atoi(args.Arg(1));
 
 	const char* msg = "Hello World 2: Electric Boogaloo!";
-	if (!FStrEq(args.Arg(1), ""))
-		msg = args.Arg(1);
+	if (!FStrEq(args.Arg(2), ""))
+		msg = args.Arg(2);
 
 	UTIL_HudMessage(UTIL_PlayerByIndex(1), helloWorldParams, msg);
 }
@@ -556,9 +561,7 @@ const char* (__cdecl* GetBallBotModel_orig)(bool bLowRes);
 const char* __cdecl GetBallBotModel_hook(bool bLowRes)
 {
 	if (FStrEq(GFunc::GetGameMainDir(), "portal_stories"))
-	{
 		return "models/portal_stories/player/mel.mdl";
-	}
 
 	return GetBallBotModel_orig(bLowRes);
 }
@@ -567,9 +570,7 @@ const char* (__cdecl* GetEggBotModel_orig)(bool bLowRes);
 const char* __cdecl GetEggBotModel_hook(bool bLowRes)
 {
 	if (FStrEq(GFunc::GetGameMainDir(), "portal_stories"))
-	{
 		return "models/player/chell/player.mdl";
-	}
 
 	return GetEggBotModel_orig(bLowRes);
 }
@@ -912,9 +913,7 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand& args)
 {
 	if (!pEntity || pEntity->IsFree())
-	{
 		return PLUGIN_CONTINUE;
-	}
 
 	bool spewinfo = p2mm_spewgameeventinfo.GetBool();
 	const char* pcmd = args[0];
@@ -939,9 +938,7 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 	{
 		HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEClientCommand");
 		if (ge_func)
-		{
 			g_pScriptVM->Call<const char*, const char*, short, int, const char*>(ge_func, NULL, true, NULL, pcmd, fargs, userid, entindex, playername);
-		}
 	}
 
 	// signify is the client command used to make on screen icons appear
@@ -949,18 +946,15 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 	{
 		// Check if its the death icons and if the death icons disable ConVar is on
 		if ((FStrEq(args[1], "death_blue") || FStrEq(args[1], "death_orange")) && !p2mm_deathicons.GetBool())
-		{
 			return PLUGIN_STOP;
-		}
 	}
 
 	// Stop certain client commands from being excecated by clients and not the host
 	for (const char* badcc : forbiddenclientcommands)
 	{
 		if (FSubStr(pcmd, "taunt_auto") || FSubStr(pcmd, "mp_earn_taunt"))
-		{
 			return PLUGIN_STOP;
-		}
+
 		if (entindex != 1 && (FSubStr(pcmd, badcc)) && p2mm_forbidclientcommands.GetBool())
 		{
 			engineServer->ClientPrintf(INDEXENT(entindex), "This command is blocked from execution!\n");
@@ -1003,9 +997,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerPing");
 			if (ge_func)
-			{
 				g_pScriptVM->Call<short, float, float, float, int>(ge_func, NULL, true, NULL, userid, ping_x, ping_y, ping_z, entindex);
-			}
 		}
 
 		if (spewinfo)
@@ -1035,9 +1027,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerPortaled");
 			if (ge_func)
-			{
 				g_pScriptVM->Call<short, bool, int>(ge_func, NULL, true, NULL, userid, portal2, entindex);
-			}
 		}
 
 		if (spewinfo)
@@ -1057,9 +1047,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GETurretHitTurret");
 			if (ge_func)
-			{
 				g_pScriptVM->Call(ge_func, NULL, true, NULL);
-			}
 		}
 
 		return;
@@ -1072,10 +1060,9 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GECamDetach");
 			if (ge_func)
-			{
 				g_pScriptVM->Call(ge_func, NULL, true, NULL);
-			}
 		}
+
 		return;
 	}
 	// Event called when a player touches the ground, "player_landed" returns:	
@@ -1092,9 +1079,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerLanded");
 			if (ge_func)
-			{
 				g_pScriptVM->Call<short, int>(ge_func, NULL, true, NULL, userid, entindex);
-			}
 		}
 
 		return;
@@ -1107,9 +1092,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSpawnBlue");
 			if (ge_func)
-			{
 				g_pScriptVM->Call(ge_func, NULL, true, NULL);
-			}
 		}
 
 		return;
@@ -1122,9 +1105,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSpawnOrange");
 			if (ge_func)
-			{
 				g_pScriptVM->Call(ge_func, NULL, true, NULL);
-			}
 		}
 
 		return;
@@ -1148,17 +1129,13 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			{
 				HSCRIPT playerHandle = INDEXHANDLE(entindex);
 				if (playerHandle)
-				{
 					g_pScriptVM->Call<HSCRIPT>(od_func, NULL, true, NULL, playerHandle);
-				}
 			}
 
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerDeath");
 			if (ge_func)
-			{
 				g_pScriptVM->Call<short, short, int>(ge_func, NULL, true, NULL, userid, attacker, entindex);
-			}
 		}
 		
 		if (spewinfo)
@@ -1184,9 +1161,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSpawn");
 			if (ge_func)
-			{
 				g_pScriptVM->Call<short, int>(ge_func, NULL, true, NULL, userid, entindex);
-			}
 		}
 
 		if (spewinfo)
@@ -1227,9 +1202,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerConnect");
 			if (ge_func)
-			{
 				g_pScriptVM->Call<const char*, int, short, const char*, const char*, const char*, bool, int>(ge_func, NULL, true, NULL, name, index, userid, xuid, networkid, address, bot, entindex);
-			}
 		}
 
 		if (spewinfo)
@@ -1270,9 +1243,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerInfo");
 			if (ge_func)
-			{
 				g_pScriptVM->Call<const char*, int, short, const char*, const char*, bool, int>(ge_func, NULL, true, NULL, name, index, userid, networkid, address, bot, entindex);
-			}
 		}
 
 		if (spewinfo)
@@ -1306,18 +1277,13 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				// Handling chat commands
 				HSCRIPT cc_func = g_pScriptVM->LookupFunction("ChatCommands");
 				if (cc_func)
-				{
 					g_pScriptVM->Call<const char*, int>(cc_func, NULL, true, NULL, text, entindex);
-				}
 			}
 			
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSay");
 			if (ge_func)
-			{
 				g_pScriptVM->Call<short, const char*, int>(ge_func, NULL, true, NULL, userid, text, entindex);
-			}
-			
 		}
 
 		if (spewinfo)
@@ -1357,18 +1323,14 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 		{
 			HSCRIPT playerHandle = INDEXHANDLE(entindex);
 			if (playerHandle)
-			{
 				// player does not have a script scope yet, fire OnPlayerJoin
 				g_pScriptVM->Call<HSCRIPT>(opj_func, NULL, true, NULL, playerHandle);
-			}
 		}
 
 		// Handle VScript game event function
 		HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEClientActive");
 		if (ge_func)
-		{
 			g_pScriptVM->Call<short, int>(ge_func, NULL, true, NULL, userid, entindex);
-		}
 	}
 
 	return;
@@ -1381,16 +1343,12 @@ void CP2MMServerPlugin::GameFrame(bool simulating)
 {
 	HSCRIPT loop_func = g_pScriptVM->LookupFunction("P2MMLoop");
 	if (loop_func && p2mm_loop.GetBool())
-	{
 		g_pScriptVM->Call(loop_func, NULL, false, NULL);
-	}
 
 	// Handle VScript game event function
 	HSCRIPT gf_func = g_pScriptVM->LookupFunction("GEGameFrame");
 	if (gf_func)
-	{
 		g_pScriptVM->Call<bool>(gf_func, NULL, false, NULL, simulating);
-	}
 }
 
 //---------------------------------------------------------------------------------
@@ -1398,7 +1356,7 @@ void CP2MMServerPlugin::GameFrame(bool simulating)
 //---------------------------------------------------------------------------------
 void CP2MMServerPlugin::LevelShutdown(void)
 {
-	p2mm_loop.SetValue("0"); // REMOVE THIS
+	p2mm_loop.SetValue("0"); // REMOVE THIS at some point...
 }
 
 //---------------------------------------------------------------------------------

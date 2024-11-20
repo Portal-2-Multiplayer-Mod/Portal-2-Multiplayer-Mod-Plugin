@@ -255,23 +255,28 @@ void ClientPrint(int playerIndex, const char* msg)
 //---------------------------------------------------------------------------------
 // Purpose: Print a message to the screen based on what the game_text entity does.
 //			See the Valve Developer Commentary page for the game_text entity to read
-//			what each field does. Vectors are in place for sets of RGB values
-//			Specifying no playerIndex or 0 sends to all players.
+//			what each field does. Specifying no playerIndex or 0 sends to all players.
 //			Supports printing localization strings but those that require formatting can't be formatted.
+//			Vectors are in place for sets of RGB values.
+//			Vector is used to consolidate x, y, and channel parameters together.
+//			Vector is used to consolidate fadeinTime, fadeoutTime, and holdTime.
 //---------------------------------------------------------------------------------
-void HudPrint(int playerIndex, const char* msg, 
-	float x, float y, 
-	int effect, 
-	Vector RGB1, float alpha1, Vector RGB2, float alpha2, 
-	float fadeinTime, float fadeoutTime, float holdTime, float fxTime, 
-	int channel)
+void HudPrint
+	(
+	int playerIndex, const char* msg, 
+	Vector posChannel, int effect, float fxTime,
+	Vector RGB1, int alpha1, Vector RGB2, int alpha2,
+	Vector showTimes
+	)
 {
 	if (!msg) return;
 
 	hudtextparms_t hudTextParams;
-	hudTextParams.x = x;
-	hudTextParams.y = y;
+	hudTextParams.x = posChannel.x;
+	hudTextParams.y = posChannel.y;
+	hudTextParams.channel = posChannel.z;
 	hudTextParams.effect = effect;
+	hudTextParams.fxTime = fxTime;
 	hudTextParams.r1 = RGB1.x;
 	hudTextParams.g1 = RGB1.y;
 	hudTextParams.b1 = RGB1.z;
@@ -280,11 +285,9 @@ void HudPrint(int playerIndex, const char* msg,
 	hudTextParams.g2 = RGB2.y;
 	hudTextParams.b2 = RGB2.z;
 	hudTextParams.a2 = alpha2;
-	hudTextParams.fadeinTime = fadeinTime;
-	hudTextParams.fadeoutTime = fadeoutTime;
-	hudTextParams.holdTime = holdTime;
-	hudTextParams.fxTime = fxTime;
-	hudTextParams.channel = channel;
+	hudTextParams.fadeinTime = showTimes.x;
+	hudTextParams.fadeoutTime = showTimes.y;
+	hudTextParams.holdTime = showTimes.z;
 
 	if (!playerIndex)
 	{
@@ -346,13 +349,15 @@ void RegisterFuncsAndRun()
 														   "Supports printing localization strings but those that require formatting can't be formatted."
 	);
 	ScriptRegisterFunction     (g_pScriptVM, ClientPrint, "Print a message to the top center position of a player's screen. Specifying no playerIndex or 0 sends to all players."
-														   "Supports printing localization strings but those that require formatting can't be formatted."
+														  "Supports printing localization strings but those that require formatting can't be formatted."
 	);
 	ScriptRegisterFunction     (g_pScriptVM, HudPrint, "Print a message to the screen based on what the game_text entity does."
 													   "See the Valve Developer Commentary page for the game_text entity to read"
-													   "what each field does. Vectors are in place for sets of RGB values."
-													   "Specifying no playerIndex or 0 sends to all players."
+													   "what each field does. Specifying no playerIndex or 0 sends to all players."
 													   "Supports printing localization strings but those that require formatting can't be formatted."
+													   "Vectors are in place for sets of RGB values."
+													   "Vector is used to consolidate x, y, and channel parameters together."
+													   "Vector is used to consolidate fadeinTime, fadeoutTime, and holdTime."
 	);
 	ScriptRegisterFunction		(g_pScriptVM, GetMaxPlayers, "Self-explanatory.");
 

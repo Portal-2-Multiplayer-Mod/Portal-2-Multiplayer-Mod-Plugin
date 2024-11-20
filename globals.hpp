@@ -110,8 +110,10 @@ namespace GFunc
 	int					UserIDToPlayerIndex(int userid);
 	const char*			GetPlayerName(int playerIndex);
 	int					GetSteamID(int playerIndex);
-	int					GetConVarInt(const char* cvname);
-	const char*			GetConVarString(const char* cvname);
+	int					GetConVarInt(const char* cvName);
+	const char*			GetConVarString(const char* cvName);
+	void				SetConVarInt(const char* cvName, int newValue);
+	void				SetConVarString(const char* cvName, const char* newValue);
 	inline const char*	GetGameMainDir();
 	inline const char*	GetGameBaseDir();
 }

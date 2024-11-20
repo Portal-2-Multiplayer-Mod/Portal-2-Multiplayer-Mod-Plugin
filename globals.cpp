@@ -109,12 +109,12 @@ int GFunc::GetSteamID(int playerIndex)
 //---------------------------------------------------------------------------------
 // Purpose: Self-explanatory.
 //---------------------------------------------------------------------------------
-int GFunc::GetConVarInt(const char* cvname)
+int GFunc::GetConVarInt(const char* cvName)
 {
-	ConVar* pVar = g_pCVar->FindVar(cvname);
+	ConVar* pVar = g_pCVar->FindVar(cvName);
 	if (!pVar)
 	{
-		P2MMLog(1, false, "Could not find ConVar: \"%s\"! Returning -1!", cvname);
+		P2MMLog(1, false, "Could not find ConVar: \"%s\"! Returning -1!", cvName);
 		return -1;
 	}
 
@@ -124,16 +124,46 @@ int GFunc::GetConVarInt(const char* cvname)
 //---------------------------------------------------------------------------------
 // Purpose: Self-explanatory.
 //---------------------------------------------------------------------------------
-const char* GFunc::GetConVarString(const char* cvname)
+const char* GFunc::GetConVarString(const char* cvName)
 {
-	ConVar* pVar = g_pCVar->FindVar(cvname);
+	ConVar* pVar = g_pCVar->FindVar(cvName);
 	if (!pVar)
 	{
-		P2MMLog(1, false, "Could not find ConVar: \"%s\"! Returning \"\"!", cvname);
+		P2MMLog(1, false, "Could not find ConVar: \"%s\"! Returning \"\"!", cvName);
 		return "";
 	}
 
 	return pVar->GetString();
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Self-explanatory.
+//---------------------------------------------------------------------------------
+void GFunc::SetConVarInt(const char* cvName, int newValue)
+{
+	ConVar* pVar = g_pCVar->FindVar(cvName);
+	if (!pVar)
+	{
+		P2MMLog(1, false, "Could not set ConVar: \"%s\"!", cvName);
+		return;
+	}
+	pVar->SetValue(newValue);
+	return;
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Self-explanatory.
+//---------------------------------------------------------------------------------
+void GFunc::SetConVarString(const char* cvName, const char* newValue)
+{
+	ConVar* pVar = g_pCVar->FindVar(cvName);
+	if (!pVar)
+	{
+		P2MMLog(1, false, "Could not set ConVar: \"%s\"!", cvName);
+		return;
+	}
+	pVar->SetValue(newValue);
+	return;
 }
 
 

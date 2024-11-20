@@ -553,15 +553,18 @@ const char* CP2MMServerPlugin::GetPluginDescription(void)
 	return "Portal 2: Multiplayer Mod Server Plugin | Plugin Version: " P2MM_PLUGIN_VERSION " | For P2:MM Version: " P2MM_VERSION;
 }
 
-// NoSteamLogon stop hook. Supposedly Valve fixed this, again, but this will be here just in case.
-//void (__fastcall* disconnect_orig)(void *thisptr, void *edx, void *cl, void *eDenyReason, const char *pchOptionalText);
-//void __fastcall disconnect_hook(void *thisptr, void *edx, void *cl, void *eDenyReason, const char *pchOptionalText)
-//{	
-//	if ((int)eDenyReason == 0xC)
-//		return;
-//
-//	disconnect_orig(thisptr, edx, cl, eDenyReason, pchOptionalText);
-//}
+// NoSteamLogon stop hook.
+class CSteam3Server;
+class CBaseClient;
+void (__fastcall* CSteam3Server__OnGSClientDenyHelper_orig)(CSteam3Server* thisptr, void* edx, CBaseClient* cl, void* eDenyReason, const char* pchOptionalText);
+void __fastcall CSteam3Server__OnGSClientDenyHelper_hook(CSteam3Server* thisptr, void* edx, CBaseClient* cl, void* eDenyReason, const char* pchOptionalText)
+{
+	// If we the game attempts to disconnect with "No Steam Logon", here we just tell it no.
+	if ((int)eDenyReason == 0xC)
+		return;
+
+	CSteam3Server__OnGSClientDenyHelper_orig(thisptr, edx, cl, eDenyReason, pchOptionalText);
+}
 
 // Bottom three hooks are for being able to change the starting models to something different.
 // First two are for changing what model is returned when precaching however...
@@ -773,8 +776,9 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		// MinHook initialization and hooking
 		P2MMLog(0, true, "Initializing MinHook and hooking functions...");
 		MH_Initialize();
+
 		// NoSteamLogon disconnect hook patch.
-		//MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(ENGINEDLL, "55 8B EC 83 EC 08 53 56 57 8B F1 E8 ?? ?? ?? ?? 8B"), &disconnect_hook, (LPVOID*)&disconnect_orig);
+		MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(ENGINEDLL, "55 8B EC 83 EC 08 53 56 57 8B F1 E8 ?? ?? ?? ?? 8B"), &CSteam3Server__OnGSClientDenyHelper_hook, (void**)&CSteam3Server__OnGSClientDenyHelper_orig);
 	
 		// Hook onto the function which defines what Atlas's and PBody's models are.
 		MH_CreateHook(
@@ -870,11 +874,17 @@ void CP2MMServerPlugin::Unload(void)
 	P2MMLog(0, false, "Plugin unloaded! Goodbye!");
 }
 
+//---------------------------------------------------------------------------------
+// Purpose: For ClientCommand.
+//---------------------------------------------------------------------------------
 void CP2MMServerPlugin::SetCommandClient(int index)
 {
 	m_iClientCommandIndex = index;
 }
 
+//---------------------------------------------------------------------------------
+// Purpose: When the server activates, start the P2:MM VScript.
+//---------------------------------------------------------------------------------
 void RegisterFuncsAndRun();
 void CP2MMServerPlugin::ServerActivate(edict_t* pEdictList, int edictCount, int clientMax)
 {

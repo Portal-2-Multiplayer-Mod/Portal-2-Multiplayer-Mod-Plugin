@@ -387,7 +387,11 @@ CON_COMMAND_F(p2mm_helloworld2, "Hello World 2: Electric Boogaloo!", FCVAR_HIDDE
 //---------------------------------------------------------------------------------
 // P2:MM Gelocity ConVars and ConCommands
 //---------------------------------------------------------------------------------
+// Array of the Gelocity map file paths to check if the current map is a gelocity map.
 const char* gelocityMaps[3] = { "workshop/596984281130013835/mp_coop_gelocity_1_v02", "workshop/594730048530814099/mp_coop_gelocity_2_v01", "workshop/613885499245125173/mp_coop_gelocity_3_v02" };
+
+ConVar p2mm_gelocity_laps_default("p2mm_gelocity_laps_default", "3", FCVAR_NONE, "Set the default amount of laps for a Gelocity race.", true, 1, true, 300);
+ConVar p2mm_gelocity_music_default("p2mm_gelocity_music_default", "0", FCVAR_NONE, "Set the default music track for a Gelocity race.", true, 0, true, 5);
 
 void GelocityTournament(IConVar* var, const char* pOldValue, float flOldValue)
 {
@@ -475,7 +479,7 @@ CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race. Specify 0 
 
 	// Check if the gelocity race is already going. Make sure to not mess with the race's laps.
 	ScriptVariant_t raceStartedScript;
-	g_pScriptVM->GetValue("b_RaceStarted", &raceStartedScript);
+	g_pScriptVM->GetValue("bRaceStarted", &raceStartedScript);
 	if (raceStartedScript.m_bool)
 	{
 		P2MMLog(1, false, "Race is currently in progress!");
@@ -488,7 +492,7 @@ CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race. Specify 0 
 	if (V_atoi(args.Arg(1)) == 0 || args.ArgC() == 1)
 	{
 		ScriptVariant_t raceLaps;
-		g_pScriptVM->GetValue("i_GameLaps", &raceLaps);
+		g_pScriptVM->GetValue("iGameLaps", &raceLaps);
 		P2MMLog(0, false, "Current race laps: %i", raceLaps.m_int);
 		return;
 	}
@@ -498,7 +502,7 @@ CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race. Specify 0 
 		return;
 	}
 
-	g_pScriptVM->Run(std::string("i_GameLaps <- " + std::string(args.Arg(1))).c_str(), false);
+	g_pScriptVM->Run(std::string("iGameLaps <- " + std::string(args.Arg(1))).c_str(), false);
 	hudtextparms_s lapMessage;
 	lapMessage.x = -1;
 	lapMessage.y = 0.2f;
@@ -517,7 +521,74 @@ CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race. Specify 0 
 	lapMessage.fxTime = 0.f;
 	lapMessage.channel = 3;
 
-	UTIL_HudMessage(NULL, lapMessage, std::string("Laps: " + std::string(args.Arg(1))).c_str());
+	UTIL_HudMessage(NULL, lapMessage, std::string("Race Laps: " + std::string(args.Arg(1))).c_str());
+}
+
+CON_COMMAND(p2mm_gelocity_music, "Set the music track for the Gelocity Race. 0-5 0 = No Music.")
+{
+	// Check if host is in a Gelocity map.
+	for (int i = 0; i < 3; i++)
+	{
+		if (FStrEq(CURMAPNAME, gelocityMaps[i])) break;
+		if (i == 2)
+		{
+			P2MMLog(1, false, "Not currently in a Gelocity map!");
+			return;
+		}
+	}
+
+	// Check if the final lap has been triggered. LET THE INTENSE FINAL LAP MUSIC PLAY!
+	ScriptVariant_t finalLapScript;
+	g_pScriptVM->GetValue("bFinalLap", &finalLapScript);
+	if (finalLapScript.m_bool)
+	{
+		P2MMLog(1, false, "ITS THE FINAL LAP! LET THE INTENSE FINAL LAP MUSIC PLAY!");
+		return;
+	}
+
+	// Check if value is out of bounds.
+	if (args.ArgC() == 1)
+	{
+		ScriptVariant_t iMusicTrack;
+		g_pScriptVM->GetValue("iMusicTrack", &iMusicTrack);
+		P2MMLog(0, false, "Current music track: %i", iMusicTrack.m_int);
+		return;
+	}
+	else if (V_atoi(args.Arg(1)) < 0 || V_atoi(args.Arg(1)) > 5)
+	{
+		P2MMLog(1, false, "Value out of bounds! Music tracks goes from 0-5!");
+		return;
+	}
+
+	g_pScriptVM->Run(std::string("iMusicTrack <- " + std::to_string(V_atoi(args.Arg(1))) + "; EntFire(\"counter_music\", \"SetValue\", iMusicTrack.tostring());").c_str(), false);
+	hudtextparms_s musicMessage;
+	musicMessage.x = -1;
+	musicMessage.y = 0.2f;
+	musicMessage.effect = 0;
+	musicMessage.r1 = 255;
+	musicMessage.g1 = 255;
+	musicMessage.b1 = 255;
+	musicMessage.a1 = 255;
+	musicMessage.r2 = 0;
+	musicMessage.g2 = 0;
+	musicMessage.b2 = 0;
+	musicMessage.a1 = 0;
+	musicMessage.fadeinTime = 0.5f;
+	musicMessage.fadeoutTime = 0.5f;
+	musicMessage.holdTime = 1.f;
+	musicMessage.fxTime = 0.f;
+	musicMessage.channel = 3;
+
+	if (V_atoi(args.Arg(1)) == 0)
+	{
+		UTIL_HudMessage(NULL, musicMessage, std::string("No Music").c_str());
+		P2MMLog(0, false, "Music turned off!", V_atoi(args.Arg(1)));
+	}
+	else
+	{
+		UTIL_HudMessage(NULL, musicMessage, std::string("Music Track: " + std::string(args.Arg(1))).c_str());
+		P2MMLog(0, false, "Set music track to %i!", V_atoi(args.Arg(1)));
+	}
 }
 
 CON_COMMAND(p2mm_gelocity_start, "Starts the Gelocity race.")

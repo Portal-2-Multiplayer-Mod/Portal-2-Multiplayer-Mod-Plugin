@@ -19,7 +19,7 @@ extern ConVar p2mm_lastmap;
 static void printlP2MM(int level, bool dev, const char* pMsgFormat)
 {
 	va_list argptr;
-	char szFormattedText[1024];
+	char szFormattedText[1024] = { 0 };
 	va_start(argptr, pMsgFormat);
 	V_vsnprintf(szFormattedText, sizeof(szFormattedText), pMsgFormat, argptr);
 	va_end(argptr);
@@ -27,23 +27,20 @@ static void printlP2MM(int level, bool dev, const char* pMsgFormat)
 	char completeMsg[1024];
 	V_snprintf(completeMsg, sizeof(completeMsg), "(P2:MM VSCRIPT): %s\n", szFormattedText);
 
-	if (dev && !p2mm_developer.GetBool())
-	{
-		return;
-	}
+	if (dev && !p2mm_developer.GetBool()) return;
 
 	switch (level)
 	{
-	case 0:
-		ConColorMsg(P2MM_VSCRIPT_CONSOLE_COLOR, completeMsg);
-		return;
-	case 1:
-		Warning(completeMsg);
-		return;
-	default:
-		Warning("(P2:MM VSCRIPT): printlP2MM level set outside of 0-1, \"%i\", defaulting to ConColorMsg().\n", level);
-		ConColorMsg(P2MM_VSCRIPT_CONSOLE_COLOR, completeMsg);
-		return;
+		case 0:
+			ConColorMsg(P2MM_VSCRIPT_CONSOLE_COLOR, completeMsg);
+			return;
+		case 1:
+			Warning(completeMsg);
+			return;
+		default:
+			Warning("(P2:MM VSCRIPT): printlP2MM level set outside of 0-1, \"%i\", defaulting to ConColorMsg().\n", level);
+			ConColorMsg(P2MM_VSCRIPT_CONSOLE_COLOR, completeMsg);
+			return;
 	}
 }
 
@@ -115,10 +112,7 @@ static void InitializeEntity(HSCRIPT ent)
 //---------------------------------------------------------------------------------
 static void SendToChat(int playerIndex, const char* msg)
 {
-	if (!msg)
-	{
-		return;
-	}
+	if (!msg) return;
 
 	if (!playerIndex)
 	{
@@ -126,9 +120,7 @@ static void SendToChat(int playerIndex, const char* msg)
 		{
 			player_info_t playerinfo;
 			if (engineServer->GetPlayerInfo(i, &playerinfo))
-			{
 				UTIL_ClientPrint(UTIL_PlayerByIndex(i), HUD_PRINTTALK, msg);
-			}
 		}
 		return;
 	}
@@ -156,9 +148,9 @@ static const char* GetLastMap()
 //---------------------------------------------------------------------------------
 static bool FirstRunState(int state)
 {
-	if (state == 0 || state == 1) {
+	if (state == 0 || state == 1)
 		return g_P2MMServerPlugin.m_bFirstMapRan = !!state;
-	}
+	
 	return g_P2MMServerPlugin.m_bFirstMapRan;
 }
 
@@ -206,16 +198,15 @@ static void CallFirstRunPrompt()
 //---------------------------------------------------------------------------------
 void ConsolePrint(int playerIndex, const char* msg)
 {
-	if (!msg)
-	{
-		return;
-	}
+	if (!msg) return;
 
 	if (!playerIndex)
 	{
 		FOR_ALL_PLAYERS(i)
 		{
-			UTIL_ClientPrint(UTIL_PlayerByIndex(i), HUD_PRINTCONSOLE, msg);
+			player_info_t playerinfo;
+			if (engineServer->GetPlayerInfo(i, &playerinfo))
+				UTIL_ClientPrint(UTIL_PlayerByIndex(i), HUD_PRINTCONSOLE, msg);
 		}
 		return;
 	}
@@ -238,16 +229,15 @@ void ConsolePrint(int playerIndex, const char* msg)
 //---------------------------------------------------------------------------------
 void ClientPrint(int playerIndex, const char* msg)
 {
-	if (!msg)
-	{
-		return;
-	}
+	if (!msg) return;
 
 	if (!playerIndex)
 	{
 		FOR_ALL_PLAYERS(i)
 		{
-			UTIL_ClientPrint(UTIL_PlayerByIndex(i), HUD_PRINTTALK, msg);
+			player_info_t playerinfo;
+			if (engineServer->GetPlayerInfo(i, &playerinfo))
+				UTIL_ClientPrint(UTIL_PlayerByIndex(i), HUD_PRINTTALK, msg);
 		}
 		return;
 	}
@@ -265,26 +255,28 @@ void ClientPrint(int playerIndex, const char* msg)
 //---------------------------------------------------------------------------------
 // Purpose: Print a message to the screen based on what the game_text entity does.
 //			See the Valve Developer Commentary page for the game_text entity to read
-//			what each field does. Vectors are in place for sets of RGB values
-//			Specifying no playerIndex or 0 sends to all players.
+//			what each field does. Specifying no playerIndex or 0 sends to all players.
 //			Supports printing localization strings but those that require formatting can't be formatted.
+//			Vectors are in place for sets of RGB values.
+//			Vector is used to consolidate x, y, and channel parameters together.
+//			Vector is used to consolidate fadeinTime, fadeoutTime, and holdTime.
 //---------------------------------------------------------------------------------
-void HudPrint(int playerIndex, const char* msg, 
-	float x, float y, 
-	int effect, 
-	Vector RGB1, float alpha1, Vector RGB2, float alpha2, 
-	float fadeinTime, float fadeoutTime, float holdTime, float fxTime, 
-	int channel)
+void HudPrint
+	(
+	int playerIndex, const char* msg, 
+	Vector posChannel, int effect, float fxTime,
+	Vector RGB1, int alpha1, Vector RGB2, int alpha2,
+	Vector showTimes
+	)
 {
-	if (!msg)
-	{
-		return;
-	}
+	if (!msg) return;
 
 	hudtextparms_t hudTextParams;
-	hudTextParams.x = x;
-	hudTextParams.y = y;
+	hudTextParams.x = posChannel.x;
+	hudTextParams.y = posChannel.y;
+	hudTextParams.channel = posChannel.z;
 	hudTextParams.effect = effect;
+	hudTextParams.fxTime = fxTime;
 	hudTextParams.r1 = RGB1.x;
 	hudTextParams.g1 = RGB1.y;
 	hudTextParams.b1 = RGB1.z;
@@ -293,11 +285,9 @@ void HudPrint(int playerIndex, const char* msg,
 	hudTextParams.g2 = RGB2.y;
 	hudTextParams.b2 = RGB2.z;
 	hudTextParams.a2 = alpha2;
-	hudTextParams.fadeinTime = fadeinTime;
-	hudTextParams.fadeoutTime = fadeoutTime;
-	hudTextParams.holdTime = holdTime;
-	hudTextParams.fxTime = fxTime;
-	hudTextParams.channel = channel;
+	hudTextParams.fadeinTime = showTimes.x;
+	hudTextParams.fadeoutTime = showTimes.y;
+	hudTextParams.holdTime = showTimes.z;
 
 	if (!playerIndex)
 	{
@@ -350,6 +340,8 @@ void RegisterFuncsAndRun()
 	ScriptRegisterFunction	   (g_pScriptVM, CallFirstRunPrompt, "Shows the first run prompt if enabled in config.nut.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetConVarInt, "GetConVarInt", "Get the integer value of a ConVar.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetConVarString, "GetConVarString", "Get the string value of a ConVar.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::SetConVarInt, "SetConVarInt", "Set the integer value of a ConVar.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::SetConVarString, "SetConVarString", "Set the string value of a ConVar.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, INDEXHANDLE, "UTIL_PlayerByIndex", "Takes the player's entity index and returns the player's script handle.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, CPortal_Player__RespawnPlayer, "RespawnPlayer", "Respawn the a player by their entity index.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, CPortal_Player__SetFlashlightState, "SetFlashlightState", "Set the flashlight for a player on or off.");
@@ -357,13 +349,15 @@ void RegisterFuncsAndRun()
 														   "Supports printing localization strings but those that require formatting can't be formatted."
 	);
 	ScriptRegisterFunction     (g_pScriptVM, ClientPrint, "Print a message to the top center position of a player's screen. Specifying no playerIndex or 0 sends to all players."
-														   "Supports printing localization strings but those that require formatting can't be formatted."
+														  "Supports printing localization strings but those that require formatting can't be formatted."
 	);
 	ScriptRegisterFunction     (g_pScriptVM, HudPrint, "Print a message to the screen based on what the game_text entity does."
 													   "See the Valve Developer Commentary page for the game_text entity to read"
-													   "what each field does. Vectors are in place for sets of RGB values."
-													   "Specifying no playerIndex or 0 sends to all players."
+													   "what each field does. Specifying no playerIndex or 0 sends to all players."
 													   "Supports printing localization strings but those that require formatting can't be formatted."
+													   "Vectors are in place for sets of RGB values."
+													   "Vector is used to consolidate x, y, and channel parameters together."
+													   "Vector is used to consolidate fadeinTime, fadeoutTime, and holdTime."
 	);
 	ScriptRegisterFunction		(g_pScriptVM, GetMaxPlayers, "Self-explanatory.");
 

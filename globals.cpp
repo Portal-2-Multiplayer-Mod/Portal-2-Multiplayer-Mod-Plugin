@@ -23,7 +23,7 @@ void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 
 	// Take our log message and format any arguments it has into the message.
 	va_list argptr;
-	char szFormattedText[1024];
+	char szFormattedText[1024] = { 0 };
 	va_start(argptr, pMsgFormat);
 	V_vsnprintf(szFormattedText, sizeof(szFormattedText), pMsgFormat, argptr);
 	va_end(argptr);
@@ -56,14 +56,10 @@ int GFunc::UserIDToPlayerIndex(int userid)
 	{
 		edict_t* pEdict = NULL;
 		if (i >= 0 && i < g_pGlobals->maxEntities)
-		{
 			pEdict = (edict_t*)(g_pGlobals->pEdicts + i);
-		}
 
 		if (engineServer->GetPlayerUserId(pEdict) == userid)
-		{
 			return i;
-		}
 	}
 	return NULL; // Return NULL if the index can't be found
 }
@@ -96,25 +92,18 @@ int GFunc::GetSteamID(int playerIndex)
 {
 	edict_t* pEdict = NULL;
 	if (playerIndex >= 0 && playerIndex < MAX_PLAYERS)
-	{
 		pEdict = (edict_t*)(g_pGlobals->pEdicts + playerIndex);
-	}
+
 	if (!pEdict)
-	{
 		return -1;
-	}
 
 	player_info_t playerinfo;
 	if (!engineServer->GetPlayerInfo(playerIndex, &playerinfo))
-	{
 		return -1;
-	}
 
 	const CSteamID* pSteamID = engineServer->GetClientSteamID(pEdict);
 	if (!pSteamID || pSteamID->GetAccountID() == 0)
-	{
 		return -1;
-	}
 
 	return pSteamID->GetAccountID();
 }
@@ -122,12 +111,12 @@ int GFunc::GetSteamID(int playerIndex)
 //---------------------------------------------------------------------------------
 // Purpose: Self-explanatory.
 //---------------------------------------------------------------------------------
-int GFunc::GetConVarInt(const char* cvname)
+int GFunc::GetConVarInt(const char* cvName)
 {
-	ConVar* pVar = g_pCVar->FindVar(cvname);
+	ConVar* pVar = g_pCVar->FindVar(cvName);
 	if (!pVar)
 	{
-		P2MMLog(1, false, "Could not find ConVar: \"%s\"! Returning -1!", cvname);
+		P2MMLog(1, false, "Could not find ConVar: \"%s\"! Returning -1!", cvName);
 		return -1;
 	}
 
@@ -137,16 +126,46 @@ int GFunc::GetConVarInt(const char* cvname)
 //---------------------------------------------------------------------------------
 // Purpose: Self-explanatory.
 //---------------------------------------------------------------------------------
-const char* GFunc::GetConVarString(const char* cvname)
+const char* GFunc::GetConVarString(const char* cvName)
 {
-	ConVar* pVar = g_pCVar->FindVar(cvname);
+	ConVar* pVar = g_pCVar->FindVar(cvName);
 	if (!pVar)
 	{
-		P2MMLog(1, false, "Could not find ConVar: \"%s\"! Returning \"\"!", cvname);
+		P2MMLog(1, false, "Could not find ConVar: \"%s\"! Returning \"\"!", cvName);
 		return "";
 	}
 
 	return pVar->GetString();
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Self-explanatory.
+//---------------------------------------------------------------------------------
+void GFunc::SetConVarInt(const char* cvName, int newValue)
+{
+	ConVar* pVar = g_pCVar->FindVar(cvName);
+	if (!pVar)
+	{
+		P2MMLog(1, false, "Could not set ConVar: \"%s\"!", cvName);
+		return;
+	}
+	pVar->SetValue(newValue);
+	return;
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Self-explanatory.
+//---------------------------------------------------------------------------------
+void GFunc::SetConVarString(const char* cvName, const char* newValue)
+{
+	ConVar* pVar = g_pCVar->FindVar(cvName);
+	if (!pVar)
+	{
+		P2MMLog(1, false, "Could not set ConVar: \"%s\"!", cvName);
+		return;
+	}
+	pVar->SetValue(newValue);
+	return;
 }
 
 
@@ -177,9 +196,9 @@ void UTIL_ClientPrint(CBasePlayer* player, int msg_dest, const char* msg_name, c
 //---------------------------------------------------------------------------------
 // Purpose: Show on text on screen just like game_text does.
 //---------------------------------------------------------------------------------
-void UTIL_HudMessage(CBasePlayer* pPlayer, const hudtextparms_s &textparms, const char* pMessage)
+void UTIL_HudMessage(CBasePlayer* pPlayer, const hudtextparms_t &textparms, const char* pMessage)
 {
-	static auto _HudMessage = reinterpret_cast<void(__cdecl*)(CBasePlayer*, const hudtextparms_s&, const char*)>(Memory::Scanner::Scan(SERVERDLL, "55 8B EC 83 EC 20 8D 4D ?? E8 ?? ?? ?? ?? 8B 45 ?? 8D 4D ?? 85 C0 74 ?? 50 E8 ?? ?? ?? ?? EB ?? E8 ?? ?? ?? ?? 56"));
+	static auto _HudMessage = reinterpret_cast<void(__cdecl*)(CBasePlayer*, const hudtextparms_t &, const char*)>(Memory::Scanner::Scan(SERVERDLL, "55 8B EC 83 EC 20 8D 4D ?? E8 ?? ?? ?? ?? 8B 45 ?? 8D 4D ?? 85 C0 74 ?? 50 E8 ?? ?? ?? ?? EB ?? E8 ?? ?? ?? ?? 56"));
 	_HudMessage(pPlayer, textparms, pMessage);
 }
 
@@ -210,13 +229,8 @@ int CBaseEntity__GetTeamNumber(CBasePlayer* pPlayer)
 HSCRIPT CBaseEntity__GetScriptScope(CBaseEntity* entity)
 {
 	if (entity == NULL)
-	{
 		return NULL;
-	}
-	// Returing class variable of the script scope, offset being 0x33c
-	// Because we have the pointer to the scope, dereference it to get the member variable/function of the class, but in turn the type is now a pointer and the whole thing needs to be derefernenced
-	// offset the reinterpret_case and the return type
-	// 
+
 	return *reinterpret_cast<HSCRIPT*>(reinterpret_cast<uintptr_t>(entity) + 0x33c);
 }
 
@@ -226,7 +240,8 @@ HSCRIPT CBaseEntity__GetScriptScope(CBaseEntity* entity)
 HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity)
 {
 	static auto _GetScriptInstance = reinterpret_cast<HSCRIPT(__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 51 56 8B F1 83 BE 50"));
-	if (!_GetScriptInstance) {
+	if (!_GetScriptInstance)
+	{
 		P2MMLog(1, false , "Could not get script instance for entity!");
 		return nullptr;
 	}
@@ -270,11 +285,7 @@ void CPortal_Player__SetFlashlightState(int playerIndex, bool enable)
 	}
 	
 	if (enable)
-	{
 		reinterpret_cast<void(__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 53 8B D9 8B 83 A8"))((CBaseEntity*)pPlayer, EF_DIMLIGHT);
-	}
 	else
-	{
 		reinterpret_cast<void(__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 53 56 8B 75 08 8B D9 8B 83"))((CBaseEntity*)pPlayer, EF_DIMLIGHT);
-	}
 }

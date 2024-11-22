@@ -99,34 +99,41 @@ static const char* forbiddenclientcommands[] =
 	"bugunpause"
 };
 
+//---------------------------------------------------------------------------------
 // Core P2:MM ConVars | These shouldn't be modified manually. Hidden to prevent accidentally breaking something.
+//---------------------------------------------------------------------------------
 ConVar p2mm_loop("p2mm_loop", "0", FCVAR_HIDDEN, "Flag if P2MMLoop should be looping.");
 ConVar p2mm_lastmap("p2mm_lastmap", "", FCVAR_HIDDEN, "Last map recorded for the Last Map system.");
 ConVar p2mm_splitscreen("p2mm_splitscreen", "0", FCVAR_HIDDEN, "Flag for the main menu buttons and launcher to start in splitscreen or not.");
 
-// UTIL ConVars | ConVars the host can change.
+//---------------------------------------------------------------------------------
+// UTIL P2:MM ConVars | ConVars the host can change.
+//---------------------------------------------------------------------------------
 ConVar p2mm_forbidclientcommands("p2mm_forbidclientcommands", "1", FCVAR_NONE, "Stop client commands clients shouldn't be executing.");
 ConVar p2mm_deathicons("p2mm_deathicons", "1", FCVAR_NONE, "Whether or not when players die the death icon should appear.");
 ConVar p2mm_ds_enable_paint("p2mm_ds_enable_paint", "0", FCVAR_NONE, "Re-enables gel functionality in dedicated servers on the next map load.");
 ConVar p2mm_instant_respawn("p2mm_instant_respawn", "0", FCVAR_NONE, "Whether respawning should be instant or not.");
 
-// Debug ConVars
+//---------------------------------------------------------------------------------
+// Debug P2:MM ConVars | Self-explanatory.
+//---------------------------------------------------------------------------------
 ConVar p2mm_developer("p2mm_developer", "0", FCVAR_NONE, "Enable for P2:MM developer messages.");
 
-void UpdateDisplayGEsConVar(IConVar* var, const char* pOldValue, float flOldValue);
-ConVar p2mm_spewgameeventinfo("p2mm_spewgameeventinfo", "0", FCVAR_NONE, "Log information from called game events in the console, p2mm_developer must also be on. Can cause lots of console spam.", UpdateDisplayGEsConVar);
 void UpdateDisplayGEsConVar(IConVar* var, const char* pOldValue, float flOldValue)
 {
 	ConVar* pGEConVar = g_pCVar->FindVar("display_game_events");
 	if (pGEConVar)
-		pGEConVar->SetValue(p2mm_spewgameeventinfo.GetBool());
+		pGEConVar->SetValue(((ConVar*)var)->GetBool());
 }
+ConVar p2mm_spewgameeventinfo("p2mm_spewgameeventinfo", "0", FCVAR_NONE, "Log information from called game events in the console, p2mm_developer must also be on. Can cause lots of console spam.", UpdateDisplayGEsConVar);
 
-// ConCommands
-
+//---------------------------------------------------------------------------------
+// P2:MM ConCommands
+//---------------------------------------------------------------------------------
 std::vector<std::string> mapList; // List of maps for the p2mm_startsession command auto complete.
 std::vector<std::string> workshopMapList; // List of all workshop map for the p2mm_startsession auto complete.
 
+// Update the map list avaliable to p2mm_startsession by scanning for all map files in SearchPath.
 void updateMapsList() {
 	mapList.clear();
 	CUtlVector<CUtlString> outList;
@@ -137,7 +144,7 @@ void updateMapsList() {
 		// Get each map and get their relative path to each SearchPath and make slashes forward slashes.
 		// Then turn relativePath into a std::string to easily manipulate.
 		const char* curmap = outList[i];
-		char relativePath[MAX_PATH];
+		char relativePath[MAX_PATH] = { 0 };
 		g_pFileSystem->FullPathToRelativePathEx(curmap, "GAME", relativePath, sizeof(relativePath));
 		V_FixSlashes(relativePath, '/');
 		V_StripExtension(relativePath, relativePath, sizeof(relativePath));
@@ -160,6 +167,7 @@ void updateMapsList() {
 	}
 }
 
+// Autocomplete for p2mm_startsession.
 static int p2mm_startsession_CompletionFunc(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH])
 {
 	// If the map list is empty, generate it.
@@ -187,7 +195,7 @@ static int p2mm_startsession_CompletionFunc(const char* partial, char commands[C
 	return numMatchedMaps;
 }
 
-CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a requested map.", 0, p2mm_startsession_CompletionFunc)
+CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a requested map.", FCVAR_NONE, p2mm_startsession_CompletionFunc)
 {
 	// If the map list is empty, generate it.
 	if (mapList.empty()) {
@@ -218,7 +226,7 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 			else if (iAct < 1) iAct = 1;
 
 			// Put the command to start the music and the act number together.
-			char completePVCmd[sizeof("playvol \"#music/mainmenu/portal2_background0%d\" 0.35") + sizeof(iAct)];
+			char completePVCmd[sizeof("playvol \"#music/mainmenu/portal2_background0%d\" 0.35") + sizeof(iAct)] = { 0 };
 			V_snprintf(completePVCmd, sizeof(completePVCmd), "playvol \"#music/mainmenu/portal2_background0%i\" 0.35", iAct);
 
 			P2MMLog(1, false, "p2mm_startsession was called with P2MM_LASTMAP, but p2mm_lastmap is empty or invalid!");
@@ -281,12 +289,12 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 	}
 }
 
-CON_COMMAND(p2mm_updatemaplist, "Manually updates the list of available maps that can be loaded with p2mm_startsession")
+CON_COMMAND(p2mm_updatemaplist, "Manually updates the list of available maps that can be loaded with p2mm_startsession.")
 {
 	updateMapsList();
 }
 
-CON_COMMAND(p2mm_maplist, "Lists available maps that can be loaded with p2mm_startsession")
+CON_COMMAND(p2mm_maplist, "Lists available maps that can be loaded with p2mm_startsession.")
 {
 	P2MMLog(0, false, "AVALIABLE MAPS:");
 	P2MMLog(0, false, "----------------------------------------");
@@ -297,48 +305,18 @@ CON_COMMAND(p2mm_maplist, "Lists available maps that can be loaded with p2mm_sta
 	P2MMLog(0, false, "----------------------------------------");
 }
 
-// Utility/Debug ConCommands
+
+//---------------------------------------------------------------------------------
+// Utility P2:MM ConCommands
+//---------------------------------------------------------------------------------
 CON_COMMAND(p2mm_respawnall, "Respawns all players.")
 {
 	FOR_ALL_PLAYERS(i)
 	{
-		CPortal_Player__RespawnPlayer(i);
+		player_info_t playerinfo;
+		if (engineServer->GetPlayerInfo(i, &playerinfo))
+			CPortal_Player__RespawnPlayer(i);
 	}
-}
-
-CON_COMMAND(p2mm_helloworld, "Hello World!")
-{
-	CBasePlayer* pPlayer = UTIL_PlayerByIndex(1);
-	UTIL_ClientPrint(pPlayer, HUD_PRINTCENTER, "HELLO WORLD! :D\n%s\n%s", "test1", "test2");
-}
-
-CON_COMMAND(p2mm_helloworld2, "Hello World 2: Electric Boogaloo!")
-{
-	hudtextparms_s helloWorldParams;
-	color32 RGB1 = { 0, 255, 100, 255 };
-	color32 RGB2 = { 0, 50, 255, 255 };
-	helloWorldParams.x = -1.f;
-	helloWorldParams.y = -1.f;
-	helloWorldParams.effect = 2;
-	helloWorldParams.r1 = RGB1.r;
-	helloWorldParams.g1 = RGB1.g;
-	helloWorldParams.b1 = RGB1.b;
-	helloWorldParams.a1 = RGB1.a;
-	helloWorldParams.r2 = RGB2.r;
-	helloWorldParams.g2 = RGB2.g;
-	helloWorldParams.b2 = RGB2.b;
-	helloWorldParams.a2 = RGB2.a;
-	helloWorldParams.fadeinTime = 0.5f;
-	helloWorldParams.fadeoutTime = 1.f;
-	helloWorldParams.holdTime = 1.f;
-	helloWorldParams.fxTime = 0.2f;
-	helloWorldParams.channel = V_atoi(args.Arg(2));
-
-	const char* msg = "Hello World 2: Electric Boogaloo!";
-	if (!FStrEq(args.Arg(1), ""))
-		msg = args.Arg(1);
-
-	UTIL_HudMessage(UTIL_PlayerByIndex(1), helloWorldParams, msg);
 }
 
 bool m_ConVarConCommandsShown = false; // Bool to track if the hidden ConVars and ConCommands are showing.
@@ -376,9 +354,128 @@ CON_COMMAND(p2mm_toggle_dev_cc_cvars, "Toggle showing any ConVars and ConCommand
 	P2MMLog(0, false, "%s %i ConVars/ConCommands!", m_ConVarConCommandsShown ? "Unhid" : "Hid", iToggleCount);
 }
 
-// Gelocity ConVars and ConCommands
+//---------------------------------------------------------------------------------
+// Debug P2:MM ConCommands
+//---------------------------------------------------------------------------------
+CON_COMMAND_F(p2mm_helloworld, "Hello World!", FCVAR_HIDDEN)
+{
+	CBasePlayer* pPlayer = UTIL_PlayerByIndex(1);
+	UTIL_ClientPrint(pPlayer, HUD_PRINTCENTER, "HELLO WORLD! :D\n%s\n%s", "test1", "test2");
+}
+
+CON_COMMAND_F(p2mm_helloworld2, "Hello World 2: Electric Boogaloo!", FCVAR_HIDDEN)
+{
+	hudtextparms_t helloWorldParams;
+	color32 RGB1 = { 0, 255, 100, 255 };
+	color32 RGB2 = { 0, 50, 255, 255 };
+	helloWorldParams.x = -1.f;
+	helloWorldParams.y = -1.f;
+	helloWorldParams.effect = 2;
+	helloWorldParams.fxTime = 0.2f;
+	helloWorldParams.r1 = RGB1.r;
+	helloWorldParams.g1 = RGB1.g;
+	helloWorldParams.b1 = RGB1.b;
+	helloWorldParams.a1 = RGB1.a;
+	helloWorldParams.r2 = RGB2.r;
+	helloWorldParams.g2 = RGB2.g;
+	helloWorldParams.b2 = RGB2.b;
+	helloWorldParams.a2 = RGB2.a;
+	helloWorldParams.fadeinTime = 0.5f;
+	helloWorldParams.fadeoutTime = 1.f;
+	helloWorldParams.holdTime = 1.f;
+
+	helloWorldParams.channel = 3;
+	if (!FStrEq(args.Arg(1), ""))
+		helloWorldParams.channel = V_atoi(args.Arg(1));
+
+	const char* msg = "Hello World 2: Electric Boogaloo!";
+	if (!FStrEq(args.Arg(2), ""))
+		msg = args.Arg(2);
+
+	UTIL_HudMessage(UTIL_PlayerByIndex(1), helloWorldParams, msg);
+}
+
+//---------------------------------------------------------------------------------
+// P2:MM Gelocity ConVars and ConCommands
+//---------------------------------------------------------------------------------
+// Array of the Gelocity map file paths to check if the current map is a gelocity map.
 const char* gelocityMaps[3] = { "workshop/596984281130013835/mp_coop_gelocity_1_v02", "workshop/594730048530814099/mp_coop_gelocity_2_v01", "workshop/613885499245125173/mp_coop_gelocity_3_v02" };
-CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race.")
+
+ConVar p2mm_gelocity_laps_default("p2mm_gelocity_laps_default", "3", FCVAR_NONE, "Set the default amount of laps for a Gelocity race.", true, 1, true, 300);
+ConVar p2mm_gelocity_music_default("p2mm_gelocity_music_default", "0", FCVAR_NONE, "Set the default music track for a Gelocity race.", true, 0, true, 5);
+
+void GelocityTournament(IConVar* var, const char* pOldValue, float flOldValue)
+{
+	// Check if host is in a gelocity map.
+	for (int i = 0; i < 3; i++)
+	{
+		if (FStrEq(CURMAPNAME, gelocityMaps[i])) break;
+		if (i == 2)
+		{
+			P2MMLog(0, false, "Gelocity tournament mode ConVar was changed from %i to %i.", (int)flOldValue, ((ConVar*)var)->GetBool());
+			P2MMLog(1, false, "Mode will take effect when Gelocity map is loaded.");
+			return;
+		}
+	}
+
+	// Check if the gelocity race is already going. Make sure to not mess with the race's laps.
+	ScriptVariant_t raceStartedScript;
+	g_pScriptVM->GetValue("b_RaceStarted", &raceStartedScript);
+	if (raceStartedScript.m_bool)
+	{
+		P2MMLog(1, false, "Race is currently in progress!");
+		return;
+	}
+
+	P2MMLog(0, false, "Gelocity tournament mode ConVar was changed from %i to %i!", (int)flOldValue, ((ConVar*)var)->GetBool());
+	P2MMLog(1, false, "Restarting map based on tournament mode change!");
+
+	engineClient->ExecuteClientCmd(std::string("changelevel " + std::string(CURMAPNAME)).c_str());
+}
+ConVar p2mm_gelocity_tournamentmode("p2mm_gelocity_tournamentmode", "0", FCVAR_NONE, "Turn on or off tournament mode.", true, 0, true, 1, GelocityTournament);
+
+void GelocityButtons(IConVar* var, const char* pOldValue, float flOldValue)
+{
+	// Check if host is in a gelocity map.
+	for (int i = 0; i < 3; i++)
+	{
+		if (FStrEq(CURMAPNAME, gelocityMaps[i])) break;
+		if (i == 2)
+		{
+			if (!((ConVar*)var)->GetBool())
+				P2MMLog(0, false, "Unlocked buttons...");
+			else
+				P2MMLog(0, false, "Locked buttons...");
+			P2MMLog(1, false, "Mode will take effect when Gelocity map is loaded.");
+			return;
+		}
+	}
+
+	// Lock or unlock the buttons.
+	if (!((ConVar*)var)->GetBool())
+	{
+		g_pScriptVM->Run(
+			"EntFire(\"rounds_button_1\", \"Unlock\");"
+			"EntFire(\"rounds_button_2\", \"Unlock\");"
+			"EntFire(\"music_button_1\", \"Unlock\");"
+			"EntFire(\"music_button_2\", \"Unlock\");", false
+		);
+		P2MMLog(0, false, "Unlocked buttons...");
+	}
+	else
+	{
+		g_pScriptVM->Run(
+			"EntFire(\"rounds_button_1\", \"Lock\");"
+			"EntFire(\"rounds_button_2\", \"Lock\");"
+			"EntFire(\"music_button_1\", \"Lock\");"
+			"EntFire(\"music_button_2\", \"Lock\");", false
+		);
+		P2MMLog(0, false, "Locked buttons...");
+	}
+}
+ConVar p2mm_gelocity_lockbuttons("p2mm_gelocity_lockbuttons", "0", FCVAR_NONE, "Toggle the state of the music and lap buttons.", true, 0, true, 1, GelocityButtons);
+
+CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race. Specify 0 or no argument to see current lap count.")
 {
 	// Check if host is in a gelocity map.
 	for (int i = 0; i < 3; i++)
@@ -393,20 +490,30 @@ CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race.")
 
 	// Check if the gelocity race is already going. Make sure to not mess with the race's laps.
 	ScriptVariant_t raceStartedScript;
-	g_pScriptVM->GetValue("b_RaceStarted", &raceStartedScript);
+	g_pScriptVM->GetValue("bRaceStarted", &raceStartedScript);
 	if (raceStartedScript.m_bool)
 	{
 		P2MMLog(1, false, "Race is currently in progress!");
 		return;
 	}
 
-	if (V_atoi(args.Arg(1)) < 1 || V_atoi(args.Arg(1)) > 300)
+	// Check if 0 or no arguments are specified so that the ConCommand
+	// returns how many laps are currently set.
+	// But if it's a value out of range, return error.
+	if (V_atoi(args.Arg(1)) == 0 || args.ArgC() == 1)
+	{
+		ScriptVariant_t raceLaps;
+		g_pScriptVM->GetValue("iGameLaps", &raceLaps);
+		P2MMLog(0, false, "Current race laps: %i", raceLaps.m_int);
+		return;
+	}
+	else if (V_atoi(args.Arg(1)) < 1 || V_atoi(args.Arg(1)) > 300)
 	{
 		P2MMLog(1, false, "Value out of bounds! Lap counter goes from 1-300!");
 		return;
 	}
 
-	g_pScriptVM->Run(std::string("i_GameLaps <- " + std::string(args.Arg(1))).c_str(), false);
+	g_pScriptVM->Run(std::string("iGameLaps <- " + std::string(args.Arg(1))).c_str(), false);
 	hudtextparms_s lapMessage;
 	lapMessage.x = -1;
 	lapMessage.y = 0.2f;
@@ -425,7 +532,74 @@ CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race.")
 	lapMessage.fxTime = 0.f;
 	lapMessage.channel = 3;
 
-	UTIL_HudMessage(NULL, lapMessage, std::string("Laps: " + std::string(args.Arg(1))).c_str());
+	UTIL_HudMessage(NULL, lapMessage, std::string("Race Laps: " + std::string(args.Arg(1))).c_str());
+}
+
+CON_COMMAND(p2mm_gelocity_music, "Set the music track for the Gelocity Race. 0-5 0 = No Music.")
+{
+	// Check if host is in a Gelocity map.
+	for (int i = 0; i < 3; i++)
+	{
+		if (FStrEq(CURMAPNAME, gelocityMaps[i])) break;
+		if (i == 2)
+		{
+			P2MMLog(1, false, "Not currently in a Gelocity map!");
+			return;
+		}
+	}
+
+	// Check if the final lap has been triggered. LET THE INTENSE FINAL LAP MUSIC PLAY!
+	ScriptVariant_t finalLapScript;
+	g_pScriptVM->GetValue("bFinalLap", &finalLapScript);
+	if (finalLapScript.m_bool)
+	{
+		P2MMLog(1, false, "ITS THE FINAL LAP! LET THE INTENSE FINAL LAP MUSIC PLAY!");
+		return;
+	}
+
+	// Check if value is out of bounds.
+	if (args.ArgC() == 1)
+	{
+		ScriptVariant_t iMusicTrack;
+		g_pScriptVM->GetValue("iMusicTrack", &iMusicTrack);
+		P2MMLog(0, false, "Current music track: %i", iMusicTrack.m_int);
+		return;
+	}
+	else if (V_atoi(args.Arg(1)) < 0 || V_atoi(args.Arg(1)) > 5)
+	{
+		P2MMLog(1, false, "Value out of bounds! Music tracks goes from 0-5!");
+		return;
+	}
+
+	g_pScriptVM->Run(std::string("iMusicTrack <- " + std::to_string(V_atoi(args.Arg(1))) + "; EntFire(\"counter_music\", \"SetValue\", iMusicTrack.tostring());").c_str(), false);
+	hudtextparms_s musicMessage;
+	musicMessage.x = -1;
+	musicMessage.y = 0.2f;
+	musicMessage.effect = 0;
+	musicMessage.r1 = 255;
+	musicMessage.g1 = 255;
+	musicMessage.b1 = 255;
+	musicMessage.a1 = 255;
+	musicMessage.r2 = 0;
+	musicMessage.g2 = 0;
+	musicMessage.b2 = 0;
+	musicMessage.a1 = 0;
+	musicMessage.fadeinTime = 0.5f;
+	musicMessage.fadeoutTime = 0.5f;
+	musicMessage.holdTime = 1.f;
+	musicMessage.fxTime = 0.f;
+	musicMessage.channel = 3;
+
+	if (V_atoi(args.Arg(1)) == 0)
+	{
+		UTIL_HudMessage(NULL, musicMessage, std::string("No Music").c_str());
+		P2MMLog(0, false, "Music turned off!", V_atoi(args.Arg(1)));
+	}
+	else
+	{
+		UTIL_HudMessage(NULL, musicMessage, std::string("Music Track: " + std::string(args.Arg(1))).c_str());
+		P2MMLog(0, false, "Set music track to %i!", V_atoi(args.Arg(1)));
+	}
 }
 
 CON_COMMAND(p2mm_gelocity_start, "Starts the Gelocity race.")
@@ -452,69 +626,6 @@ CON_COMMAND(p2mm_gelocity_start, "Starts the Gelocity race.")
 
 	g_pScriptVM->Run("StartGelocityRace();", false);
 }
-
-void GelocityTournament(IConVar* var, const char* pOldValue, float flOldValue);
-ConVar p2mm_gelocity_tournamentmode("p2mm_gelocity_tournamentmode", "0", FCVAR_NONE, "Turn on or off tournament mode.", true, 0, true, 1, GelocityTournament);
-void GelocityTournament(IConVar* var, const char* pOldValue, float flOldValue)
-{
-	// Check if host is in a gelocity map.
-	for (int i = 0; i < 3; i++)
-	{
-		if (FStrEq(CURMAPNAME, gelocityMaps[i])) break;
-		if (i == 2)
-		{
-			P2MMLog(1, false, "Not currently in a Gelocity map!");
-			p2mm_gelocity_tournamentmode.SetValue(flOldValue);
-			return;
-		}
-	}
-
-	// Check if the gelocity race is already going. Make sure to not mess with the race's laps.
-	ScriptVariant_t raceStartedScript;
-	g_pScriptVM->GetValue("b_RaceStarted", &raceStartedScript);
-	if (raceStartedScript.m_bool)
-	{
-		P2MMLog(1, false, "Race is currently in progress!");
-		return;
-	}
-
-	P2MMLog(1, false, "Restarting map based on tournament mode change!");
-
-	engineClient->ExecuteClientCmd(std::string("changelevel " + std::string(CURMAPNAME)).c_str());
-}
-
-void GelocityButtons(IConVar* var, const char* pOldValue, float flOldValue);
-ConVar p2mm_gelocity_lockbuttons("p2mm_gelocity_lockbuttons", "0", FCVAR_NONE, "Toggle the state of the music and lap buttons.", true, 0, true, 1, GelocityButtons);
-void GelocityButtons(IConVar* var, const char* pOldValue, float flOldValue)
-{
-	// Check if host is in a gelocity map.
-	for (int i = 0; i < 3; i++)
-	{
-		if (FStrEq(CURMAPNAME, gelocityMaps[i])) break;
-		if (i == 2)
-		{
-			P2MMLog(1, false, "Not currently in a Gelocity map!");
-			p2mm_gelocity_lockbuttons.Revert();
-			return;
-		}
-	}
-
-	if (!p2mm_gelocity_lockbuttons.GetBool())
-	{
-		g_pScriptVM->Run(
-			"EntFire(\"rounds_button_1\", \"unlock\");"
-			"EntFire(\"rounds_button_2\", \"unlock\");", false);
-		P2MMLog(1, false, "Unlocked buttons...");
-	}
-	else
-	{
-		g_pScriptVM->Run(
-			"EntFire(\"rounds_button_1\", \"lock\");"
-			"EntFire(\"rounds_button_2\", \"lock\");", false);
-		P2MMLog(1, false, "Locked buttons...");
-	}
-}
-
 
 //---------------------------------------------------------------------------------
 // Purpose: constructor
@@ -549,15 +660,18 @@ const char* CP2MMServerPlugin::GetPluginDescription(void)
 	return "Portal 2: Multiplayer Mod Server Plugin | Plugin Version: " P2MM_PLUGIN_VERSION " | For P2:MM Version: " P2MM_VERSION;
 }
 
-// NoSteamLogon stop hook. Supposedly Valve fixed this, again, but this will be here just in case.
-//void (__fastcall* disconnect_orig)(void *thisptr, void *edx, void *cl, void *eDenyReason, const char *pchOptionalText);
-//void __fastcall disconnect_hook(void *thisptr, void *edx, void *cl, void *eDenyReason, const char *pchOptionalText)
-//{	
-//	if ((int)eDenyReason == 0xC)
-//		return;
-//
-//	disconnect_orig(thisptr, edx, cl, eDenyReason, pchOptionalText);
-//}
+// NoSteamLogon stop hook.
+class CSteam3Server;
+class CBaseClient;
+void (__fastcall* CSteam3Server__OnGSClientDenyHelper_orig)(CSteam3Server* thisptr, void* edx, CBaseClient* cl, void* eDenyReason, const char* pchOptionalText);
+void __fastcall CSteam3Server__OnGSClientDenyHelper_hook(CSteam3Server* thisptr, void* edx, CBaseClient* cl, void* eDenyReason, const char* pchOptionalText)
+{
+	// If we the game attempts to disconnect with "No Steam Logon", here we just tell it no.
+	if ((int)eDenyReason == 0xC)
+		return;
+
+	CSteam3Server__OnGSClientDenyHelper_orig(thisptr, edx, cl, eDenyReason, pchOptionalText);
+}
 
 // Bottom three hooks are for being able to change the starting models to something different.
 // First two are for changing what model is returned when precaching however...
@@ -567,9 +681,7 @@ const char* (__cdecl* GetBallBotModel_orig)(bool bLowRes);
 const char* __cdecl GetBallBotModel_hook(bool bLowRes)
 {
 	if (FStrEq(GFunc::GetGameMainDir(), "portal_stories"))
-	{
 		return "models/portal_stories/player/mel.mdl";
-	}
 
 	return GetBallBotModel_orig(bLowRes);
 }
@@ -578,9 +690,7 @@ const char* (__cdecl* GetEggBotModel_orig)(bool bLowRes);
 const char* __cdecl GetEggBotModel_hook(bool bLowRes)
 {
 	if (FStrEq(GFunc::GetGameMainDir(), "portal_stories"))
-	{
 		return "models/player/chell/player.mdl";
-	}
 
 	return GetEggBotModel_orig(bLowRes);
 }
@@ -620,12 +730,12 @@ void __cdecl respawn_hook(CBaseEntity* pEdict, bool fCopyCorpse)
 		// Handling OnRespawn VScript event
 		HSCRIPT or_func = g_pScriptVM->LookupFunction("OnRespawn");
 		if (or_func)
-			g_pScriptVM->Call<HSCRIPT>(or_func, NULL, true, NULL, INDEXHANDLE(ENTINDEX(pEdict)));
+			g_pScriptVM->Call<HSCRIPT>(or_func, NULL, false, NULL, INDEXHANDLE(ENTINDEX(pEdict)));
 
 		// Handle VScript game event function
 		HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerRespawn");
 		if (ge_func)
-			g_pScriptVM->Call<HSCRIPT>(ge_func, NULL, true, NULL, INDEXHANDLE(ENTINDEX(pEdict)));
+			g_pScriptVM->Call<HSCRIPT>(ge_func, NULL, false, NULL, INDEXHANDLE(ENTINDEX(pEdict)));
 	}
 }
 
@@ -773,8 +883,9 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		// MinHook initialization and hooking
 		P2MMLog(0, true, "Initializing MinHook and hooking functions...");
 		MH_Initialize();
+
 		// NoSteamLogon disconnect hook patch.
-		//MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(ENGINEDLL, "55 8B EC 83 EC 08 53 56 57 8B F1 E8 ?? ?? ?? ?? 8B"), &disconnect_hook, (LPVOID*)&disconnect_orig);
+		MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(ENGINEDLL, "55 8B EC 83 EC 08 53 56 57 8B F1 E8 ?? ?? ?? ?? 8B"), &CSteam3Server__OnGSClientDenyHelper_hook, (void**)&CSteam3Server__OnGSClientDenyHelper_orig);
 	
 		// Hook onto the function which defines what Atlas's and PBody's models are.
 		MH_CreateHook(
@@ -876,11 +987,17 @@ void CP2MMServerPlugin::Unload(void)
 	P2MMLog(0, false, "Plugin unloaded! Goodbye!");
 }
 
+//---------------------------------------------------------------------------------
+// Purpose: For ClientCommand.
+//---------------------------------------------------------------------------------
 void CP2MMServerPlugin::SetCommandClient(int index)
 {
 	m_iClientCommandIndex = index;
 }
 
+//---------------------------------------------------------------------------------
+// Purpose: When the server activates, start the P2:MM VScript.
+//---------------------------------------------------------------------------------
 void RegisterFuncsAndRun();
 void CP2MMServerPlugin::ServerActivate(edict_t* pEdictList, int edictCount, int clientMax)
 {
@@ -945,9 +1062,7 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand& args)
 {
 	if (!pEntity || pEntity->IsFree())
-	{
 		return PLUGIN_CONTINUE;
-	}
 
 	bool spewinfo = p2mm_spewgameeventinfo.GetBool();
 	const char* pcmd = args[0];
@@ -972,9 +1087,7 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 	{
 		HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEClientCommand");
 		if (ge_func)
-		{
-			g_pScriptVM->Call<const char*, const char*, short, int, const char*>(ge_func, NULL, true, NULL, pcmd, fargs, userid, entindex, playername);
-		}
+			g_pScriptVM->Call<const char*, const char*, short, int, const char*>(ge_func, NULL, false, NULL, pcmd, fargs, userid, entindex, playername);
 	}
 
 	// signify is the client command used to make on screen icons appear
@@ -982,18 +1095,15 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 	{
 		// Check if its the death icons and if the death icons disable ConVar is on
 		if ((FStrEq(args[1], "death_blue") || FStrEq(args[1], "death_orange")) && !p2mm_deathicons.GetBool())
-		{
 			return PLUGIN_STOP;
-		}
 	}
 
 	// Stop certain client commands from being excecated by clients and not the host
 	for (const char* badcc : forbiddenclientcommands)
 	{
 		if (FSubStr(pcmd, "taunt_auto") || FSubStr(pcmd, "mp_earn_taunt"))
-		{
 			return PLUGIN_STOP;
-		}
+
 		if (entindex != 1 && (FSubStr(pcmd, badcc)) && p2mm_forbidclientcommands.GetBool())
 		{
 			engineServer->ClientPrintf(INDEXENT(entindex), "This command is blocked from execution!\n");
@@ -1036,9 +1146,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerPing");
 			if (ge_func)
-			{
-				g_pScriptVM->Call<short, float, float, float, int>(ge_func, NULL, true, NULL, userid, ping_x, ping_y, ping_z, entindex);
-			}
+				g_pScriptVM->Call<short, float, float, float, int>(ge_func, NULL, false, NULL, userid, ping_x, ping_y, ping_z, entindex);
 		}
 
 		if (spewinfo)
@@ -1068,9 +1176,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerPortaled");
 			if (ge_func)
-			{
-				g_pScriptVM->Call<short, bool, int>(ge_func, NULL, true, NULL, userid, portal2, entindex);
-			}
+				g_pScriptVM->Call<short, bool, int>(ge_func, NULL, false, NULL, userid, portal2, entindex);
 		}
 
 		if (spewinfo)
@@ -1090,9 +1196,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GETurretHitTurret");
 			if (ge_func)
-			{
-				g_pScriptVM->Call(ge_func, NULL, true, NULL);
-			}
+				g_pScriptVM->Call(ge_func, NULL, false, NULL);
 		}
 
 		return;
@@ -1105,9 +1209,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GECamDetach");
 			if (ge_func)
-			{
-				g_pScriptVM->Call(ge_func, NULL, true, NULL);
-			}
+				g_pScriptVM->Call(ge_func, NULL, false, NULL);
 		}
 
 		return;
@@ -1126,9 +1228,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerLanded");
 			if (ge_func)
-			{
-				g_pScriptVM->Call<short, int>(ge_func, NULL, true, NULL, userid, entindex);
-			}
+				g_pScriptVM->Call<short, int>(ge_func, NULL, false, NULL, userid, entindex);
 		}
 
 		return;
@@ -1141,9 +1241,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSpawnBlue");
 			if (ge_func)
-			{
-				g_pScriptVM->Call(ge_func, NULL, true, NULL);
-			}
+				g_pScriptVM->Call(ge_func, NULL, false, NULL);
 		}
 
 		return;
@@ -1156,9 +1254,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSpawnOrange");
 			if (ge_func)
-			{
-				g_pScriptVM->Call(ge_func, NULL, true, NULL);
-			}
+				g_pScriptVM->Call(ge_func, NULL, false, NULL);
 		}
 
 		return;
@@ -1183,19 +1279,15 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				HSCRIPT playerHandle = INDEXHANDLE(entindex);
 				if (playerHandle)
 				{
-					g_pScriptVM->Call<HSCRIPT>(od_func, NULL, true, NULL, playerHandle);
-					std::string playerdied = std::string(GFunc::GetPlayerName(entindex));
-					std::string deathtitlestr = playerdied + std::string(" Died!");
-					discordIntegration.SendWebHookEmbed(deathtitlestr, "", EMBEDCOLOR_PLAYERDEATH);
+					g_pScriptVM->Call<HSCRIPT>(od_func, NULL, false, NULL, playerHandle);
+					discordIntegration.SendWebHookEmbed(std::string(GFunc::GetPlayerName(entindex) + std::string(" Died!")), "", EMBEDCOLOR_PLAYERDEATH);
 				}
 			}
 
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerDeath");
 			if (ge_func)
-			{
-				g_pScriptVM->Call<short, short, int>(ge_func, NULL, true, NULL, userid, attacker, entindex);
-			}
+				g_pScriptVM->Call<short, short, int>(ge_func, NULL, false, NULL, userid, attacker, entindex);
 		}
 
 		if (spewinfo)
@@ -1221,9 +1313,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSpawn");
 			if (ge_func)
-			{
-				g_pScriptVM->Call<short, int>(ge_func, NULL, true, NULL, userid, entindex);
-			}
+				g_pScriptVM->Call<short, int>(ge_func, NULL, false, NULL, userid, entindex);
 		}
 
 		if (spewinfo)
@@ -1265,11 +1355,8 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerConnect");
 			if (ge_func)
 			{
-				g_pScriptVM->Call<const char*, int, short, const char*, const char*, const char*, bool, int>(ge_func, NULL, true, NULL, name, index, userid, xuid, networkid, address, bot, entindex);
-				
-				std::string jointitlestr = std::string(name + std::string(" Joinned!"));
-				std::string joindescstr = std::string(name + std::string(" joinned the server!"));
-				discordIntegration.SendWebHookEmbed(jointitlestr, joindescstr);
+				g_pScriptVM->Call<const char*, int, short, const char*, const char*, const char*, bool, int>(ge_func, NULL, false, NULL, name, index, userid, xuid, networkid, address, bot, entindex);
+				discordIntegration.SendWebHookEmbed(std::string(name + std::string(" Joinned!")), std::string(name + std::string(" joinned the server!")));
 			}
 		}
 
@@ -1311,9 +1398,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerInfo");
 			if (ge_func)
-			{
-				g_pScriptVM->Call<const char*, int, short, const char*, const char*, bool, int>(ge_func, NULL, true, NULL, name, index, userid, networkid, address, bot, entindex);
-			}
+				g_pScriptVM->Call<const char*, int, short, const char*, const char*, bool, int>(ge_func, NULL, false, NULL, name, index, userid, networkid, address, bot, entindex);
 		}
 
 		if (spewinfo)
@@ -1348,7 +1433,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				HSCRIPT cc_func = g_pScriptVM->LookupFunction("ChatCommands");
 				if (cc_func)
 				{
-					g_pScriptVM->Call<const char*, int>(cc_func, NULL, true, NULL, text, entindex);
+					g_pScriptVM->Call<const char*, int>(cc_func, NULL, false, NULL, text, entindex);
 
 					std::string playerName = GFunc::GetPlayerName(entindex);
 					std::string chatMsg = text;
@@ -1375,10 +1460,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSay");
 			if (ge_func)
-			{
-				g_pScriptVM->Call<short, const char*, int>(ge_func, NULL, true, NULL, userid, text, entindex);
-			}
-
+				g_pScriptVM->Call<short, const char*, int>(ge_func, NULL, false, NULL, userid, text, entindex);
 		}
 
 		if (spewinfo)
@@ -1418,18 +1500,13 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 		{
 			HSCRIPT playerHandle = INDEXHANDLE(entindex);
 			if (playerHandle)
-			{
-				// player does not have a script scope yet, fire OnPlayerJoin
-				g_pScriptVM->Call<HSCRIPT>(opj_func, NULL, true, NULL, playerHandle);
-			}
+				g_pScriptVM->Call<HSCRIPT>(opj_func, NULL, false, NULL, playerHandle);
 		}
 
 		// Handle VScript game event function
 		HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEClientActive");
 		if (ge_func)
-		{
-			g_pScriptVM->Call<short, int>(ge_func, NULL, true, NULL, userid, entindex);
-		}
+			g_pScriptVM->Call<short, int>(ge_func, NULL, false, NULL, userid, entindex);
 	}
 
 	std::string curplayercount = std::to_string(CURPLAYERCOUNT());
@@ -1457,16 +1534,12 @@ void CP2MMServerPlugin::GameFrame(bool simulating)
 {
 	HSCRIPT loop_func = g_pScriptVM->LookupFunction("P2MMLoop");
 	if (loop_func && p2mm_loop.GetBool())
-	{
 		g_pScriptVM->Call(loop_func, NULL, false, NULL);
-	}
 
 	// Handle VScript game event function
 	HSCRIPT gf_func = g_pScriptVM->LookupFunction("GEGameFrame");
 	if (gf_func)
-	{
 		g_pScriptVM->Call<bool>(gf_func, NULL, false, NULL, simulating);
-	}
 }
 
 //---------------------------------------------------------------------------------
@@ -1474,7 +1547,7 @@ void CP2MMServerPlugin::GameFrame(bool simulating)
 //---------------------------------------------------------------------------------
 void CP2MMServerPlugin::LevelShutdown(void)
 {
-	p2mm_loop.SetValue("0"); // REMOVE THIS
+	p2mm_loop.SetValue("0"); // REMOVE THIS at some point...
 }
 
 //---------------------------------------------------------------------------------

@@ -14,11 +14,30 @@
 #include "tier0/memdbgon.h"
 
 // Discord integration ConVars
-ConVar p2mm_discord_webhook("p2mm_discord_webhook", "", FCVAR_HIDDEN, "Channel webhook URL to send messages to. Should be set in launcher, not here.");
+ConVar p2mm_discord_webhook("p2mm_discord_webhook", "", FCVAR_HIDDEN, "Channel webhook URL to send messages to. Should be set in launcher, not here.", true, 0, true, 1, WebhookCheck);
 ConVar p2mm_discord_webhook_defaultfooter("p2mm_discord_webhook_defaultfooter", "1", FCVAR_NONE, "Enable or disable the default embed footer for webhooks.", true, 0, true, 1);
 ConVar p2mm_discord_webhook_customfooter("p2mm_discord_webhook_customfooter", "", FCVAR_NONE, "Set a custom embed footer for webhook messages.");
 ConVar p2mm_discord_rpc("p2mm_discord_rpc", "1", FCVAR_NONE, "Enable or disable Discord RPC with P2:MM.");
 ConVar p2mm_discord_rpc_appid("p2mm_discord_rpc_appid", "1201562647880015954", FCVAR_DEVELOPMENTONLY | FCVAR_CHEAT, "Application ID used for Discord RPC with P2:MM.");
+
+int timestamp = time(0);
+
+void WebhookCheck(IConVar* var, const char* pOldValue, float flOldValue)
+{
+	// Make sure people know that the chat is being recorded if webhook is set
+	if (strlen(p2mm_discord_webhook.GetString()) > 0)
+	{
+		FOR_ALL_PLAYERS(i)
+		{
+			player_info_t playerinfo;
+			if (engineServer->GetPlayerInfo(i, &playerinfo))
+			{
+				UTIL_ClientPrint(UTIL_PlayerByIndex(i), HUD_PRINTTALK, "This lobby has Discord Webhook Intergration enabled. All of your ingame messages may be sent to a Discord channel.");
+			}
+		}
+		P2MMLog(0, true, "Webhook warning called");
+	}
+}
 
 // Log Discord GameSDK logs to the console. This is mainly a developer mode only logging system and only the warning and error logs should be shown.
 void DiscordLog(int level, bool dev, const char* pMsgFormat, ...)
@@ -81,7 +100,7 @@ struct WebHookParams
 // Thread sending a curl request to the specified Discord WebHook
 unsigned SendWebHook(void* webhookParams)
 {
-	if (sizeof(p2mm_discord_webhook.GetString()) <= 0)
+	if (strlen(p2mm_discord_webhook.GetString()) <= 0)
 	{
 		P2MMLog(0, true, "Webhook for 'p2mm_discord_webhook' has not been specified.");
 		return 1;
@@ -128,7 +147,7 @@ unsigned SendWebHook(void* webhookParams)
 		P2MMLog(1, false, "Failed to send curl request! Error Code: %i", curlCode);
 	}
 	else {
-		P2MMLog(0, true, "Send webhook curl request!");
+		P2MMLog(0, true, "Sent webhook curl request!");
 	}
 
 	// Cleanup curl request
@@ -136,7 +155,7 @@ unsigned SendWebHook(void* webhookParams)
 	curl_easy_cleanup(curl);
 	curl_global_cleanup();
 
-	// Free the messages parameters from memory
+	// Free the message parameters from memory
 	delete webhookParams;
 
 	return 0;
@@ -266,7 +285,7 @@ bool CDiscordIntegration::StartDiscordRPC()
 	memset(&discordPresence, 0, sizeof(discordPresence));
 
 	discordPresence.details = "Starting up...";
-	discordPresence.startTimestamp = time(0);
+	discordPresence.startTimestamp = timestamp;
 	discordPresence.largeImageKey = "p2mmlogo";
 	Discord_UpdatePresence(&discordPresence);
 	
@@ -279,7 +298,7 @@ void CDiscordIntegration::ShutdownDiscordRPC()
 	memset(&discordPresence, 0, sizeof(discordPresence));
 
 	discordPresence.details = "Shutting down...";
-	discordPresence.startTimestamp = time(0);
+	discordPresence.startTimestamp = timestamp;
 	discordPresence.largeImageKey = "p2mmlogo";
 	Discord_UpdatePresence(&discordPresence);
 }

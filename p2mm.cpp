@@ -1049,11 +1049,7 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 	std::string maxplayercount = std::to_string(g_pGlobals->maxClients);
 	std::string activityState = std::string("Players: (") + curplayercount + "/" + maxplayercount + ")";
 
-	discordPresence.state = activityState.c_str();
-	discordPresence.details = "Starting map...";
-	discordPresence.startTimestamp = time(0);
-	discordPresence.largeImageKey = "p2mmlogo";
-	Discord_UpdatePresence(&discordPresence);
+
 }
 
 //---------------------------------------------------------------------------------
@@ -1438,8 +1434,8 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 					std::string playerName = GFunc::GetPlayerName(entindex);
 					std::string chatMsg = text;
 
-					P2MMLog(0, false, playerName.c_str());
-					P2MMLog(0, false, chatMsg.c_str());
+					P2MMLog(0, true, playerName.c_str());
+					P2MMLog(0, true, chatMsg.c_str());
 
 					// Replace any "\\" characters with "\\\\" so backslashes can exist but not break anything
 					size_t pos = 0;
@@ -1480,6 +1476,13 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 // Purpose: Called when a player is "activated" in the server, meaning fully loaded, not fully connect which happens before that.
 // Called when game event "player_activate" is also called so this is used to call "GEClientActive".
 //---------------------------------------------------------------------------------
+
+// have a consistent time so the timestamp doesnt get reset on every update (Discord RPC)
+extern int timestamp;
+
+// needed for webhook check
+extern ConVar p2mm_discord_webhook;
+
 void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 {
 	short userid = engineServer->GetPlayerUserId(pEntity);
@@ -1490,6 +1493,15 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 		P2MMLog(0, true, "ClientActive Called!");
 		P2MMLog(0, true, "userid: %i", userid);
 		P2MMLog(0, true, "entindex: %i", entindex);
+	}
+
+	
+	// Make sure people know that the chat is being recorded if webhook is set
+	if (strlen(p2mm_discord_webhook.GetString()) > 0)
+	{
+		CBasePlayer* pPlayer = UTIL_PlayerByIndex(entindex);
+		P2MMLog(0, true, "Webhook warning called");
+		UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, "This lobby has Discord Webhook Intergration enabled. All of your ingame messages may be sent to a Discord channel.");
 	}
 
 	if (g_pScriptVM)
@@ -1512,17 +1524,17 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 	std::string curplayercount = std::to_string(CURPLAYERCOUNT());
 	std::string maxplayercount = std::to_string(g_pGlobals->maxClients);
 	std::string activityState = std::string("Players: (") + curplayercount + "/" + maxplayercount + ")";
+	DiscordRichPresence discordPresence;
+	memset(&discordPresence, 0, sizeof(discordPresence));
 
-	//DiscordRichPresence discordPresence;
-	//memset(&discordPresence, 0, sizeof(discordPresence));
-
-	//char buffer[256];
-	//discordPresence.state = activityState.c_str();
-	//sprintf(buffer, "Map: %s", CURMAPNAME);
-	//discordPresence.details = buffer;
-	//discordPresence.largeImageKey = "p2mmlogo";
-	//discordPresence.largeImageText = "P2:MM";
-	//Discord_UpdatePresence(&discordPresence);
+	char buffer[256];
+	discordPresence.state = activityState.c_str();
+	sprintf(buffer, "Map: %s", CURMAPNAME);
+	discordPresence.details = buffer;
+	discordPresence.largeImageKey = "p2mmlogo";
+	discordPresence.largeImageText = "P2:MM";
+	discordPresence.startTimestamp = timestamp;
+	Discord_UpdatePresence(&discordPresence);
 
 	return;
 }

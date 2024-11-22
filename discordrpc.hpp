@@ -20,6 +20,8 @@
 #define EMBEDCOLOR_SERVER 4390995 // Dark Purple
 //#define EMBEDCOLOR_PLAYER Color()
 
+void WebhookCheck(IConVar* var, const char* pOldValue, float flOldValue);
+
 class CDiscordIntegration {
 public:
 	void SendWebHookEmbed(std::string title = "Unknown", std::string description = "*Insert Yapping Here*", int color = EMBEDCOLOR_PLAYER, bool hasFooter = true);

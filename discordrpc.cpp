@@ -29,13 +29,13 @@ void WebhookCheck(IConVar* var, const char* pOldValue, float flOldValue)
 	{
 		FOR_ALL_PLAYERS(i)
 		{
-			player_info_t playerinfo;
-			if (engineServer->GetPlayerInfo(i, &playerinfo))
+			CBasePlayer* pPlayer = UTIL_PlayerByIndex(i);
+			if (pPlayer)
 			{
-				UTIL_ClientPrint(UTIL_PlayerByIndex(i), HUD_PRINTTALK, "This lobby has Discord Webhook Intergration enabled. All of your ingame messages may be sent to a Discord channel.");
+				UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, "This lobby has Discord Webhook Intergration enabled. All of your ingame messages may be sent to a Discord channel.");
 			}
 		}
-		P2MMLog(0, true, "Webhook warning called");
+		return;
 	}
 }
 

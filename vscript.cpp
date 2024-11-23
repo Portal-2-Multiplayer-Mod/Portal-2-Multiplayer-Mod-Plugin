@@ -120,7 +120,13 @@ static void SendToChat(const char* msg, int playerIndex)
 		{
 			player_info_t playerinfo;
 			if (engineServer->GetPlayerInfo(i, &playerinfo))
-				UTIL_ClientPrint(UTIL_PlayerByIndex(i), HUD_PRINTTALK, msg);
+			{
+				CBasePlayer* pPlayer = UTIL_PlayerByIndex(i);
+				if (pPlayer) 
+				{
+					UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, msg);
+				}
+			}
 		}
 		return;
 	}
@@ -206,7 +212,13 @@ void ConsolePrint(int playerIndex, const char* msg)
 		{
 			player_info_t playerinfo;
 			if (engineServer->GetPlayerInfo(i, &playerinfo))
-				UTIL_ClientPrint(UTIL_PlayerByIndex(i), HUD_PRINTCONSOLE, msg);
+			{
+				CBasePlayer* pPlayer = UTIL_PlayerByIndex(i);
+				if (pPlayer)
+				{
+					UTIL_ClientPrint(pPlayer, HUD_PRINTCONSOLE, msg);
+				}
+			}
 		}
 		return;
 	}
@@ -237,7 +249,13 @@ void ClientPrint(int playerIndex, const char* msg)
 		{
 			player_info_t playerinfo;
 			if (engineServer->GetPlayerInfo(i, &playerinfo))
-				UTIL_ClientPrint(UTIL_PlayerByIndex(i), HUD_PRINTTALK, msg);
+			{
+				CBasePlayer* pPlayer = UTIL_PlayerByIndex(i);
+				if (pPlayer)
+				{
+					UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, msg);
+				}
+			}
 		}
 		return;
 	}

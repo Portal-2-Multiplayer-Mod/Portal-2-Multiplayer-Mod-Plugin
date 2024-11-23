@@ -110,7 +110,7 @@ static void InitializeEntity(HSCRIPT ent)
 // Purpose: Sends a raw message to the chat HUD. Specifying no playerIndex or 0 sends to all players.
 //			Supports printing localization strings but those that require formatting can't be formatted.
 //---------------------------------------------------------------------------------
-static void SendToChat(int playerIndex, const char* msg)
+static void SendToChat(const char* msg, int playerIndex)
 {
 	if (!msg) return;
 

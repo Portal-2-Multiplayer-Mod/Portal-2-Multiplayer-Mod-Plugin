@@ -53,12 +53,13 @@ public:
 
 	virtual int				GetCommandIndex() { return m_iClientCommandIndex; }
 
+	bool		m_bPluginLoaded;
+	int			iCurGameIndex;
+
 	bool		m_bSeenFirstRunPrompt;
 	bool		m_bFirstMapRan;
 
 private:
-
-	bool		m_bPluginLoaded;
 	bool		m_bNoUnload;
 	
 	int			m_nDebugID;

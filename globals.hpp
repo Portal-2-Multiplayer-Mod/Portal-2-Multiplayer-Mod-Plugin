@@ -88,7 +88,7 @@ typedef struct hudtextparms_s
 
 
 //---------------------------------------------------------------------------------
-// Any ConVars or CON_COMMANDS that need to be globally available.
+// Any ConVars or ConCommands that need to be globally available.
 //---------------------------------------------------------------------------------
 extern ConVar p2mm_developer;
 
@@ -102,7 +102,7 @@ extern IPlayerInfoManager* playerinfomanager;
 extern IScriptVM* g_pScriptVM;
 extern IServerTools* g_pServerTools;
 extern IGameEventManager2* gameeventmanager_;
-extern IServerPluginHelpers* pluginHelpers;
+extern IServerPluginHelpers* g_pPluginHelpers;
 extern IFileSystem* g_pFileSystem;
 
 // Logging function.

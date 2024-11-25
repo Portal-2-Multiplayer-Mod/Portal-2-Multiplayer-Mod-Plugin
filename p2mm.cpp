@@ -23,7 +23,7 @@ IPlayerInfoManager* playerinfomanager = NULL; // Access interface functions for 
 IScriptVM* g_pScriptVM = NULL; // Access VScript interface.
 IServerTools* g_pServerTools = NULL; // Access to interface from engine to tools for manipulating entities.
 IGameEventManager2* gameeventmanager_ = NULL; // Access game events interface.
-IServerPluginHelpers* pluginHelpers = NULL; // Access interface for plugin helper functions.
+IServerPluginHelpers* g_pPluginHelpers = NULL; // Access interface for plugin helper functions.
 IFileSystem* g_pFileSystem = NULL; // Access interface for Valve's file system interface.
 #ifndef GAME_DLL
 #define gameeventmanager gameeventmanager_
@@ -640,6 +640,12 @@ CP2MMServerPlugin::CP2MMServerPlugin()
 	this->m_bPluginLoaded = false;
 	this->m_bNoUnload = false;				// If we fail to load, we don't want to run anything on Unload().
 
+	// Current Portal 2 branch based game being run.
+	// Helps when checking for specific game related things instead of getting the game directory everytime.
+	// Portal 2: 0
+	// Portal Stories: Mel: 1
+	this->iCurGameIndex = 0;
+
 	m_nDebugID = EVENT_DEBUG_ID_INIT;
 	this->m_iClientCommandIndex = 0;
 }
@@ -680,7 +686,7 @@ void __fastcall CSteam3Server__OnGSClientDenyHelper_hook(CSteam3Server* thisptr,
 const char* (__cdecl* GetBallBotModel_orig)(bool bLowRes);
 const char* __cdecl GetBallBotModel_hook(bool bLowRes)
 {
-	if (FStrEq(GFunc::GetGameMainDir(), "portal_stories"))
+	if (g_P2MMServerPlugin.iCurGameIndex == 1)
 		return "models/portal_stories/player/mel.mdl";
 
 	return GetBallBotModel_orig(bLowRes);
@@ -689,7 +695,7 @@ const char* __cdecl GetBallBotModel_hook(bool bLowRes)
 const char* (__cdecl* GetEggBotModel_orig)(bool bLowRes);
 const char* __cdecl GetEggBotModel_hook(bool bLowRes)
 {
-	if (FStrEq(GFunc::GetGameMainDir(), "portal_stories"))
+	if (g_P2MMServerPlugin.iCurGameIndex == 1)
 		return "models/player/chell/player.mdl";
 
 	return GetEggBotModel_orig(bLowRes);
@@ -755,6 +761,27 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 
 	P2MMLog(0, false, "Loading plugin...");
 
+	// Determine which Portal 2 branch game we are running.
+	P2MMLog(0, true, "Determining which Portal 2 branch game is being run...");
+	this->iCurGameIndex = 0; // Portal 2
+	if ((FStrEq(GetGameMainDir(), "portal_stories")))
+		this->iCurGameIndex = 1; // Portal Stories: Mel
+
+	if (p2mm_developer.GetBool())
+	{
+		switch (this->iCurGameIndex)
+		{
+		case 0:
+			P2MMLog(0, true, "Currently running Portal 2.");
+			break;
+		case 1:
+			P2MMLog(0, true, "Currently running Portal Stories: Mel.");
+		default:
+			P2MMLog(0, true, "Currently running Portal 2.");
+			break;
+		}
+	}
+
 	P2MMLog(0, true, "Connecting tier libraries...");
 	ConnectTier1Libraries(&interfaceFactory, 1);
 	ConnectTier2Libraries(&interfaceFactory, 1);
@@ -809,10 +836,10 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 
-	pluginHelpers = (IServerPluginHelpers*)interfaceFactory(INTERFACEVERSION_ISERVERPLUGINHELPERS, 0);
-	if (!pluginHelpers)
+	g_pPluginHelpers = (IServerPluginHelpers*)interfaceFactory(INTERFACEVERSION_ISERVERPLUGINHELPERS, 0);
+	if (!g_pPluginHelpers)
 	{
-		P2MMLog(1, false, "Unable to load pluginHelpers!");
+		P2MMLog(1, false, "Unable to load g_pPluginHelpers!");
 		this->m_bNoUnload = true;
 		return false;
 	}

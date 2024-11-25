@@ -190,7 +190,7 @@ static void CallFirstRunPrompt()
 
 	// CreateMessage prompts can only be seen when the pause menu is up, so pause the game.
 	engineClient->ExecuteClientCmd("gameui_activate");
-	pluginHelpers->CreateMessage(INDEXENT(1), DIALOG_TEXT, kv, &g_P2MMServerPlugin);
+	g_pPluginHelpers->CreateMessage(INDEXENT(1), DIALOG_TEXT, kv, &g_P2MMServerPlugin);
 	kv->deleteThis();
 
 	// Set the plugin variable flag that the host seen the prompt to true so its not reshown.

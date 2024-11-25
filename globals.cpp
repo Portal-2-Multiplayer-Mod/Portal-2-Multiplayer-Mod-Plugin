@@ -50,7 +50,7 @@ void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 //---------------------------------------------------------------------------------
 // Purpose: Get the player's entity index by their userid.
 //---------------------------------------------------------------------------------
-int GFunc::UserIDToPlayerIndex(int userid)
+int UserIDToPlayerIndex(int userid)
 {
 	for (int i = 1; i <= MAX_PLAYERS; i++)
 	{
@@ -67,7 +67,7 @@ int GFunc::UserIDToPlayerIndex(int userid)
 //---------------------------------------------------------------------------------
 // Purpose: Gets player username by their entity index.
 //---------------------------------------------------------------------------------
-const char* GFunc::GetPlayerName(int playerIndex)
+const char* GetPlayerName(int playerIndex)
 {
 	if (playerIndex <= 0 || playerIndex > MAX_PLAYERS)
 	{
@@ -88,7 +88,7 @@ const char* GFunc::GetPlayerName(int playerIndex)
 //---------------------------------------------------------------------------------
 // Purpose: Gets the account ID component of player SteamID by the player's entity index.
 //---------------------------------------------------------------------------------
-int GFunc::GetSteamID(int playerIndex)
+int GetSteamID(int playerIndex)
 {
 	edict_t* pEdict = NULL;
 	if (playerIndex >= 0 && playerIndex < MAX_PLAYERS)
@@ -111,7 +111,7 @@ int GFunc::GetSteamID(int playerIndex)
 //---------------------------------------------------------------------------------
 // Purpose: Self-explanatory.
 //---------------------------------------------------------------------------------
-int GFunc::GetConVarInt(const char* cvName)
+int GetConVarInt(const char* cvName)
 {
 	ConVar* pVar = g_pCVar->FindVar(cvName);
 	if (!pVar)
@@ -126,7 +126,7 @@ int GFunc::GetConVarInt(const char* cvName)
 //---------------------------------------------------------------------------------
 // Purpose: Self-explanatory.
 //---------------------------------------------------------------------------------
-const char* GFunc::GetConVarString(const char* cvName)
+const char* GetConVarString(const char* cvName)
 {
 	ConVar* pVar = g_pCVar->FindVar(cvName);
 	if (!pVar)
@@ -141,7 +141,7 @@ const char* GFunc::GetConVarString(const char* cvName)
 //---------------------------------------------------------------------------------
 // Purpose: Self-explanatory.
 //---------------------------------------------------------------------------------
-void GFunc::SetConVarInt(const char* cvName, int newValue)
+void SetConVarInt(const char* cvName, int newValue)
 {
 	ConVar* pVar = g_pCVar->FindVar(cvName);
 	if (!pVar)
@@ -156,7 +156,7 @@ void GFunc::SetConVarInt(const char* cvName, int newValue)
 //---------------------------------------------------------------------------------
 // Purpose: Self-explanatory.
 //---------------------------------------------------------------------------------
-void GFunc::SetConVarString(const char* cvName, const char* newValue)
+void SetConVarString(const char* cvName, const char* newValue)
 {
 	ConVar* pVar = g_pCVar->FindVar(cvName);
 	if (!pVar)
@@ -249,9 +249,9 @@ HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity)
 	return _GetScriptInstance(entity);
 }
 
+///			 CBasePlayer/CPortal_Player Class Functions				\\\
 
 
-///			 CPortal_Player/CBasePlayer Class Functions				\\\
 
 //---------------------------------------------------------------------------------
 // Purpose: Respawn the a player by their entity index.

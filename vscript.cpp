@@ -341,9 +341,9 @@ void RegisterFuncsAndRun()
 	}
 
 	ScriptRegisterFunction	   (g_pScriptVM, printlP2MM, "Logging for the P2MM VScript. The log message must be passed as a string or it will error.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetPlayerName, "GetPlayerName", "Gets player username by their entity index.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetSteamID, "GetSteamID", "Gets the account ID component of player SteamID by the player's entity index.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::UserIDToPlayerIndex, "UserIDToPlayerIndex", "Get the player's entity index by their userid.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GetPlayerName, "GetPlayerName", "Gets player username by their entity index.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GetSteamID, "GetSteamID", "Gets the account ID component of player SteamID by the player's entity index.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, UserIDToPlayerIndex, "UserIDToPlayerIndex", "Get the player's entity index by their userid.");
 	ScriptRegisterFunction	   (g_pScriptVM, IsMapValid, "Returns true is the supplied string is a available map to load and run.");
 	ScriptRegisterFunction	   (g_pScriptVM, GetDeveloperLevelP2MM, "Returns the value of ConVar p2mm_developer.");
 	ScriptRegisterFunction	   (g_pScriptVM, SetPhysTypeConVar, "Sets 'player_held_object_use_view_model' to the supplied integer value.");
@@ -351,15 +351,15 @@ void RegisterFuncsAndRun()
 	ScriptRegisterFunction	   (g_pScriptVM, IsDedicatedServer, "Returns true if this is a dedicated server.");
 	ScriptRegisterFunction	   (g_pScriptVM, InitializeEntity, "Initializes an entity. Note: Not all entities will work even after being initialized with this function.");
 	ScriptRegisterFunction	   (g_pScriptVM, SendToChat, "Sends a raw message to the chat HUD. Specifying no playerIndex or 0 sends to all players. Supports printing localization strings but those that require formatting can't be formatted.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetGameMainDir, "GetGameMainDir", "Returns the game directory. Ex. portal2");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetGameBaseDir, "GetGameBaseDir", "Get the main game directory being used. Ex. Portal 2");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GetGameMainDir, "GetGameMainDir", "Returns the game directory. Ex. portal2");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GetGameBaseDir, "GetGameBaseDir", "Get the main game directory being used. Ex. Portal 2");
 	ScriptRegisterFunction	   (g_pScriptVM, GetLastMap, "Returns the last map recorded by the launcher's Last Map system.");
 	ScriptRegisterFunction	   (g_pScriptVM, FirstRunState, "Get or set the state of whether the first map was run or not. Set false/true = 0/1 | -1 to get state.");
 	ScriptRegisterFunction	   (g_pScriptVM, CallFirstRunPrompt, "Shows the first run prompt if enabled in config.nut.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetConVarInt, "GetConVarInt", "Get the integer value of a ConVar.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetConVarString, "GetConVarString", "Get the string value of a ConVar.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::SetConVarInt, "SetConVarInt", "Set the integer value of a ConVar.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::SetConVarString, "SetConVarString", "Set the string value of a ConVar.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GetConVarInt, "GetConVarInt", "Get the integer value of a ConVar.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GetConVarString, "GetConVarString", "Get the string value of a ConVar.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, SetConVarInt, "SetConVarInt", "Set the integer value of a ConVar.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, SetConVarString, "SetConVarString", "Set the string value of a ConVar.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, INDEXHANDLE, "UTIL_PlayerByIndex", "Takes the player's entity index and returns the player's script handle.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, CPortal_Player__RespawnPlayer, "RespawnPlayer", "Respawn the a player by their entity index.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, CPortal_Player__SetFlashlightState, "SetFlashlightState", "Set the flashlight for a player on or off.");

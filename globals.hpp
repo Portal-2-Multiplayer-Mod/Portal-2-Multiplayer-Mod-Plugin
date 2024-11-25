@@ -105,33 +105,43 @@ extern IGameEventManager2* gameeventmanager_;
 extern IServerPluginHelpers* pluginHelpers;
 extern IFileSystem* g_pFileSystem;
 
+// Logging function.
 void P2MMLog(int level, bool dev, const char* pMsgFormat, ...);
 
-namespace GFunc
-{
-	int					UserIDToPlayerIndex(int userid);
-	const char*			GetPlayerName(int playerIndex);
-	int					GetSteamID(int playerIndex);
-	int					GetConVarInt(const char* cvName);
-	const char*			GetConVarString(const char* cvName);
-	void				SetConVarInt(const char* cvName, int newValue);
-	void				SetConVarString(const char* cvName, const char* newValue);
-	inline const char*	GetGameMainDir();
-	inline const char*	GetGameBaseDir();
-}
+//---------------------------------------------------------------------------------
+// Interfaced game functions.
+//---------------------------------------------------------------------------------
+int					UserIDToPlayerIndex(int userid);
+const char*			GetPlayerName(int playerIndex);
+int					GetSteamID(int playerIndex);
+int					GetConVarInt(const char* cvName);
+const char*			GetConVarString(const char* cvName);
+void				SetConVarInt(const char* cvName, int newValue);
+void				SetConVarString(const char* cvName, const char* newValue);
+inline const char*	GetGameMainDir();
+inline const char*	GetGameBaseDir();
 
+//---------------------------------------------------------------------------------
+// Interfaced game functions.
+//---------------------------------------------------------------------------------
+// UTIL functions
 CBasePlayer* UTIL_PlayerByIndex(int playerIndex);
 void UTIL_ClientPrint(CBasePlayer* player, int msg_dest, const char* msg_name, const char* param1 = NULL, const char* param2 = NULL, const char* param3 = NULL, const char* param4 = NULL);
 void UTIL_HudMessage(CBasePlayer* pPlayer, const hudtextparms_t& textparms, const char* pMessage);
 
+// CBaseEntity functions
 void CBaseEntity__RemoveEntity(CBaseEntity* pEntity);
 int CBaseEntity__GetTeamNumber(CBasePlayer* pPlayer);
 HSCRIPT CBaseEntity__GetScriptScope(CBaseEntity* entity);
 HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity);
 
+// CPortal_Player functions
 void CPortal_Player__RespawnPlayer(int playerIndex);
 void CPortal_Player__SetFlashlightState(int playerIndex, bool enable);
 
+//---------------------------------------------------------------------------------
+// Player recipient filter.
+//---------------------------------------------------------------------------------
 class CFilter : public IRecipientFilter
 {
 public:
@@ -172,6 +182,19 @@ inline bool FSubStr(const char* sz1, const char* search)
 	return (V_strstr(sz1, search));
 }
 
+// Get the current player count on the server
+inline int CURPLAYERCOUNT() {
+	int playerCount = 0;
+	FOR_ALL_PLAYERS(i)
+	{
+		if (UTIL_PlayerByIndex(i))
+		{
+			playerCount++;
+		}
+	}
+	return playerCount;
+}
+
 //---------------------------------------------------------------------------------
 // Purpose: Entity edict to entity index. Taken from utils.h.
 //---------------------------------------------------------------------------------
@@ -209,20 +232,6 @@ inline edict_t* INDEXENT(int iEdictNum)
 	return NULL;
 }
 
-// Get the current player count on the server
-inline int CURPLAYERCOUNT() {
-	int playerCount = 0;
-	for (int i = 1; i < g_pGlobals->maxClients; i++)
-	{
-		IPlayerInfo* playerinfo = playerinfomanager->GetPlayerInfo(INDEXENT(i));
-		if (playerinfo)
-		{
-			playerCount++;
-		}
-	}
-	return playerCount;
-}
-
 //---------------------------------------------------------------------------------
 // Purpose: Entity index to script handle.
 //---------------------------------------------------------------------------------
@@ -238,13 +247,13 @@ inline HSCRIPT INDEXHANDLE(int iEdictNum) {
 }
 
 // Get the main game directory being used. Ex. portal2
-inline const char* GFunc::GetGameMainDir()
+inline const char* GetGameMainDir()
 {
 	return CommandLine()->ParmValue("-game", CommandLine()->ParmValue("-defaultgamedir", "portal2"));
 }
 
 // Get base game directory. Ex. Portal 2
-inline const char* GFunc::GetGameBaseDir()
+inline const char* GetGameBaseDir()
 {
 	char baseDir[MAX_PATH] = { 0 };
 	std::string fullGameDirectoryPath = engineClient->GetGameDirectory();

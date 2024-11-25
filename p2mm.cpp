@@ -696,8 +696,9 @@ const char* __cdecl GetEggBotModel_hook(bool bLowRes)
 }
 
 const char* (__fastcall* CPortal_Player__GetPlayerModelName_orig)(CPortal_Player* thisptr);
-const char* __fastcall CPortal_Player__GetPlayerModelName_hook(CPortal_Player* thisptr) {
-	if (FStrEq(GFunc::GetGameMainDir(), "portal_stories"))
+const char* __fastcall CPortal_Player__GetPlayerModelName_hook(CPortal_Player* thisptr)
+{
+	if (g_P2MMServerPlugin.iCurGameIndex == 1)
 	{
 		if (CBaseEntity__GetTeamNumber((CBasePlayer*)thisptr) == TEAM_BLUE)
 			return "models/portal_stories/player/mel.mdl";
@@ -747,7 +748,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 {
 	if (m_bPluginLoaded)
 	{
-		P2MMLog(1, false, "Already loaded!");
+		P2MMLog(1, false, "PLugin already loaded!");
 		m_bNoUnload = true;
 		return false;
 	}
@@ -914,18 +915,13 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		);
 
 		MH_EnableHook(MH_ALL_HOOKS);
-
-		P2MMLog(0, false, "Loaded plugin! Hooray! :D");
-		m_bPluginLoaded = true;
 	} catch (const std::exception& ex) {
 		P2MMLog(0, false, "Failed to load plugin! :( Exception: \"%s\"", ex.what());
 		this->m_bNoUnload = true;
 		return false;
 	}
 
-	discordIntegration.StartDiscordRPC();
-
-	P2MMLog(0, false, "Loaded plugin! Horray!");
+	P2MMLog(0, false, "Loaded plugin! Horray! :D");
 	m_bPluginLoaded = true;
 	return true;
 }
@@ -1065,8 +1061,8 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 	const char* fargs = args.ArgS();
 
 	short userid = engineServer->GetPlayerUserId(pEntity);
-	int entindex = GFunc::UserIDToPlayerIndex(userid);
-	const char* playername = GFunc::GetPlayerName(entindex);
+	int entindex = UserIDToPlayerIndex(userid);
+	const char* playername = GetPlayerName(entindex);
 
 	if (spewinfo)
 	{
@@ -1135,7 +1131,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		float ping_x = event->GetFloat("ping_x");
 		float ping_y = event->GetFloat("ping_y");
 		float ping_z = event->GetFloat("ping_z");
-		int entindex = GFunc::UserIDToPlayerIndex(userid);
+		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{
@@ -1165,7 +1161,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	{
 		short userid = event->GetInt("userid");
 		bool portal2 = event->GetString("text");
-		int entindex = GFunc::UserIDToPlayerIndex(userid);
+		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{
@@ -1217,7 +1213,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	else if (FStrEq(event->GetName(), "player_landed"))
 	{
 		short userid = event->GetInt("userid");
-		int entindex = GFunc::UserIDToPlayerIndex(userid);
+		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{
@@ -1264,7 +1260,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	{
 		short userid = event->GetInt("userid");
 		short attacker = event->GetInt("attacker");
-		int entindex = GFunc::UserIDToPlayerIndex(userid);
+		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{
@@ -1302,7 +1298,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	else if (FStrEq(event->GetName(), "player_spawn"))
 	{
 		short userid = event->GetInt("userid");
-		int entindex = GFunc::UserIDToPlayerIndex(userid);
+		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{
@@ -1343,7 +1339,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		const char* networkid = event->GetString("networkid");
 		const char* address = event->GetString("address");
 		bool bot = event->GetBool("bot");
-		int entindex = GFunc::UserIDToPlayerIndex(userid);
+		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{
@@ -1387,7 +1383,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		const char* networkid = event->GetString("networkid");
 		const char* address = event->GetString("address");
 		bool bot = event->GetBool("bot");
-		int entindex = GFunc::UserIDToPlayerIndex(userid);
+		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{
@@ -1419,7 +1415,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	{
 		short userid = event->GetInt("userid");
 		const char* text = event->GetString("text");
-		int entindex = GFunc::UserIDToPlayerIndex(userid);
+		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{
@@ -1431,7 +1427,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				{
 					g_pScriptVM->Call<const char*, int>(cc_func, NULL, false, NULL, text, entindex);
 
-					std::string playerName = GFunc::GetPlayerName(entindex);
+					std::string playerName = GetPlayerName(entindex);
 					std::string chatMsg = text;
 
 					P2MMLog(0, true, playerName.c_str());
@@ -1486,7 +1482,7 @@ extern ConVar p2mm_discord_webhook;
 void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 {
 	short userid = engineServer->GetPlayerUserId(pEntity);
-	int entindex = GFunc::UserIDToPlayerIndex(userid);
+	int entindex = UserIDToPlayerIndex(userid);
 
 	if (p2mm_spewgameeventinfo.GetBool())
 	{

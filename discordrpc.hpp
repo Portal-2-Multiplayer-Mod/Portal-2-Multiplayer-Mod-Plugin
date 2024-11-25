@@ -18,7 +18,6 @@
 #define EMBEDCOLOR_PLAYER 61297 // Light Green
 #define EMBEDCOLOR_PLAYERDEATH 6881280 // Crimson Red
 #define EMBEDCOLOR_SERVER 4390995 // Dark Purple
-//#define EMBEDCOLOR_PLAYER Color()
 
 void WebhookCheck(IConVar* var, const char* pOldValue, float flOldValue);
 

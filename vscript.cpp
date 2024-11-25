@@ -18,6 +18,8 @@ extern ConVar p2mm_lastmap;
 //---------------------------------------------------------------------------------
 static void printlP2MM(int level, bool dev, const char* pMsgFormat)
 {
+	if (dev && !p2mm_developer.GetBool()) return;
+
 	va_list argptr;
 	char szFormattedText[1024] = { 0 };
 	va_start(argptr, pMsgFormat);
@@ -26,8 +28,6 @@ static void printlP2MM(int level, bool dev, const char* pMsgFormat)
 
 	char completeMsg[1024];
 	V_snprintf(completeMsg, sizeof(completeMsg), "(P2:MM VSCRIPT): %s\n", szFormattedText);
-
-	if (dev && !p2mm_developer.GetBool()) return;
 
 	switch (level)
 	{

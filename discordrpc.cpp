@@ -42,17 +42,17 @@ void WebhookCheck(IConVar* var, const char* pOldValue, float flOldValue)
 // Log Discord GameSDK logs to the console. This is mainly a developer mode only logging system and only the warning and error logs should be shown.
 void DiscordLog(int level, bool dev, const char* pMsgFormat, ...)
 {
-	if (!p2mm_developer.GetBool()) { return; } // Stop debug and info messages when p2mm_developer isn't enabled.
+	if (dev && !p2mm_developer.GetBool()) return; // Stop debug and info messages when p2mm_developer isn't enabled.
 
 	// Take our log message and format any arguments it has into the message.
 	va_list argptr;
-	char szFormattedText[1024];
+	char szFormattedText[1024] = { 0 };
 	va_start(argptr, pMsgFormat);
 	V_vsnprintf(szFormattedText, sizeof(szFormattedText), pMsgFormat, argptr);
 	va_end(argptr);
 
 	// Add a header to the log message.
-	char completeMsg[1024];
+	char completeMsg[1024] = { 0 };
 	V_snprintf(completeMsg, sizeof(completeMsg), "(P2:MM DISCORD): %s\n", szFormattedText);
 
 	switch (level)
@@ -64,7 +64,7 @@ void DiscordLog(int level, bool dev, const char* pMsgFormat, ...)
 		ConColorMsg(P2MM_DISCORD_CONSOLE_COLOR_WARNING, completeMsg);
 		return;
 	default:
-		Warning("(P2:MM DISCORD): DiscordLog level out of range, \"%i\". Defaulting to discord::LogLevel::Info.\n", level);
+		Warning("(P2:MM DISCORD): DiscordLog level out of range, \"%i\". Defaulting to level 0.\n", level);
 		ConColorMsg(P2MM_DISCORD_CONSOLE_COLOR_NORMAL, completeMsg);
 		return;
 	}
@@ -78,7 +78,7 @@ void DiscordLog(int level, bool dev, const char* pMsgFormat, ...)
 std::string DefaultFooter()
 {
 	// g_pGlobals doesn't exist yet at certain situations, so return a blank string.
-	if (!g_pGlobals) { return ""; }
+	if (!g_pGlobals) return "";
 
 	std::string curplayercount = std::to_string(CURPLAYERCOUNT());
 	std::string maxplayercount = std::to_string(g_pGlobals->maxClients);
@@ -143,12 +143,9 @@ unsigned SendWebHook(void* webhookParams)
 
 	// Perform the request and check for errors
 	if (curlCode != CURLE_OK)
-	{
 		P2MMLog(1, false, "Failed to send curl request! Error Code: %i", curlCode);
-	}
-	else {
+	else
 		P2MMLog(0, true, "Sent webhook curl request!");
-	}
 
 	// Cleanup curl request
 	curl_slist_free_all(headers);
@@ -241,7 +238,7 @@ static void HandleDiscordReady(const DiscordUser* connectedUser)
 
 static void HandleDiscordDisconnected(int errcode, const char* message)
 {
-	DiscordLog(0, false, "Discord: Disconnected (%d: %s)\n", errcode, message);
+	DiscordLog(1, false, "Discord: Disconnected (%d: %s)\n", errcode, message);
 }
 
 static void HandleDiscordError(int errcode, const char* message)
@@ -266,7 +263,8 @@ static void HandleDiscordJoinRequest(const DiscordUser* request)
 
 bool CDiscordIntegration::StartDiscordRPC()
 {
-	// Discord RPC
+	DiscordLog(0, false, "Starting up Discord RPC!");
+
 	DiscordEventHandlers handlers;
 	memset(&handlers, 0, sizeof(handlers));
 
@@ -278,7 +276,7 @@ bool CDiscordIntegration::StartDiscordRPC()
 	handlers.joinRequest = HandleDiscordJoinRequest;
 
 	char appid[255];
-	sprintf(appid, "%d", engineServer->GetAppID());
+	V_snprintf(appid, 255, "%d", engineServer->GetAppID());
 	Discord_Initialize(p2mm_discord_rpc_appid.GetString(), &handlers, 1, appid);
 	
 	DiscordRichPresence discordPresence;
@@ -288,12 +286,15 @@ bool CDiscordIntegration::StartDiscordRPC()
 	discordPresence.startTimestamp = timestamp;
 	discordPresence.largeImageKey = "p2mmlogo";
 	Discord_UpdatePresence(&discordPresence);
-	
+
+	DiscordLog(0, false, "Discord RPC activated!");
 	return true;
 }
 
 void CDiscordIntegration::ShutdownDiscordRPC()
 {
+	DiscordLog(0, false, "Shutting down Discord RPC...");
+
 	DiscordRichPresence discordPresence;
 	memset(&discordPresence, 0, sizeof(discordPresence));
 

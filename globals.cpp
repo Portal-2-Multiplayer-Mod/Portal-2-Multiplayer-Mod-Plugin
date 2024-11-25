@@ -19,7 +19,7 @@
 //---------------------------------------------------------------------------------
 void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 {
-	if (dev && !p2mm_developer.GetBool()) { return; } // Stop developer messages when p2mm_developer isn't enabled.
+	if (dev && !p2mm_developer.GetBool()) return; // Stop developer messages when p2mm_developer isn't enabled.
 
 	// Take our log message and format any arguments it has into the message.
 	va_list argptr;

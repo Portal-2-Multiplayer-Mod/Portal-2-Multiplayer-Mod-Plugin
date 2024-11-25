@@ -1282,7 +1282,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				if (playerHandle)
 				{
 					g_pScriptVM->Call<HSCRIPT>(od_func, NULL, false, NULL, playerHandle);
-					discordIntegration.SendWebHookEmbed(std::string(GFunc::GetPlayerName(entindex) + std::string(" Died!")), "", EMBEDCOLOR_PLAYERDEATH);
+					discordIntegration.SendWebHookEmbed(std::string(GetPlayerName(entindex) + std::string(" Died!")), "", EMBEDCOLOR_PLAYERDEATH);
 				}
 			}
 

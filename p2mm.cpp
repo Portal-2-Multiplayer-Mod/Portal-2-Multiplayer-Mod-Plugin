@@ -321,7 +321,7 @@ CON_COMMAND(p2mm_respawnall, "Respawns all players.")
 
 bool m_ConVarConCommandsShown = false; // Bool to track if the hidden ConVars and ConCommands are showing.
 std::vector<ConCommandBase*> toggledCVCCs; // List of toggled ConVars and ConCommands with the FCVAR_DEVELOPMENTONLY and FCVAR_HIDDEN ConVar flags removed.
-CON_COMMAND(p2mm_toggle_dev_cc_cvars, "Toggle showing any ConVars and ConCommands that have the FCVAR_DEVELOPMENTONLY and FCVAR_HIDDEN ConVar flags.")
+CON_COMMAND_F(p2mm_toggle_dev_cc_cvars, "Toggle showing any ConVars and ConCommands that have the FCVAR_DEVELOPMENTONLY and FCVAR_HIDDEN ConVar flags.", FCVAR_HIDDEN)
 {
 	int iToggleCount = 0; // To tell the user how many ConVars and ConCommands where toggle to show or hide.
 
@@ -401,21 +401,32 @@ CON_COMMAND_F(p2mm_helloworld2, "Hello World 2: Electric Boogaloo!", FCVAR_HIDDE
 // Array of the Gelocity map file paths to check if the current map is a gelocity map.
 const char* gelocityMaps[3] = { "workshop/596984281130013835/mp_coop_gelocity_1_v02", "workshop/594730048530814099/mp_coop_gelocity_2_v01", "workshop/613885499245125173/mp_coop_gelocity_3_v02" };
 
+// Self-explanatory.
+bool HostInGelocityMap()
+{
+	for (int i = 0; i < 3; i++)
+	{
+		if (FStrEq(CURMAPNAME, gelocityMaps[i])) break;
+		if (i >= 2)
+		{
+			P2MMLog(1, false, "Not currently in a Gelocity map!");
+			return false;
+		}
+	}
+	return true;
+}
+
 ConVar p2mm_gelocity_laps_default("p2mm_gelocity_laps_default", "3", FCVAR_NONE, "Set the default amount of laps for a Gelocity race.", true, 1, true, 300);
 ConVar p2mm_gelocity_music_default("p2mm_gelocity_music_default", "0", FCVAR_NONE, "Set the default music track for a Gelocity race.", true, 0, true, 5);
 
 void GelocityTournament(IConVar* var, const char* pOldValue, float flOldValue)
 {
 	// Check if host is in a gelocity map.
-	for (int i = 0; i < 3; i++)
+	if (!HostInGelocityMap())
 	{
-		if (FStrEq(CURMAPNAME, gelocityMaps[i])) break;
-		if (i == 2)
-		{
-			P2MMLog(0, false, "Gelocity tournament mode ConVar was changed from %i to %i.", (int)flOldValue, ((ConVar*)var)->GetBool());
-			P2MMLog(1, false, "Mode will take effect when Gelocity map is loaded.");
-			return;
-		}
+		P2MMLog(0, false, "Gelocity tournament mode ConVar was changed from %i to %i.", (int)flOldValue, ((ConVar*)var)->GetBool());
+		P2MMLog(1, false, "Mode will take effect when Gelocity map is loaded.");
+		return;
 	}
 
 	// Check if the gelocity race is already going. Make sure to not mess with the race's laps.
@@ -437,18 +448,14 @@ ConVar p2mm_gelocity_tournamentmode("p2mm_gelocity_tournamentmode", "0", FCVAR_N
 void GelocityButtons(IConVar* var, const char* pOldValue, float flOldValue)
 {
 	// Check if host is in a gelocity map.
-	for (int i = 0; i < 3; i++)
+	if (!HostInGelocityMap())
 	{
-		if (FStrEq(CURMAPNAME, gelocityMaps[i])) break;
-		if (i == 2)
-		{
-			if (!((ConVar*)var)->GetBool())
-				P2MMLog(0, false, "Unlocked buttons...");
-			else
-				P2MMLog(0, false, "Locked buttons...");
-			P2MMLog(1, false, "Mode will take effect when Gelocity map is loaded.");
-			return;
-		}
+		if (!((ConVar*)var)->GetBool())
+			P2MMLog(0, false, "Unlocked buttons...");
+		else
+			P2MMLog(0, false, "Locked buttons...");
+		P2MMLog(1, false, "Mode will take effect when Gelocity map is loaded.");
+		return;
 	}
 
 	// Lock or unlock the buttons.
@@ -478,15 +485,7 @@ ConVar p2mm_gelocity_lockbuttons("p2mm_gelocity_lockbuttons", "0", FCVAR_NONE, "
 CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race. Specify 0 or no argument to see current lap count.")
 {
 	// Check if host is in a gelocity map.
-	for (int i = 0; i < 3; i++)
-	{
-		if (FStrEq(CURMAPNAME, gelocityMaps[i])) break;
-		if (i == 2)
-		{
-			P2MMLog(1, false, "Not currently in a Gelocity map!");
-			return;
-		}
-	}
+	if (!HostInGelocityMap()) return;
 
 	// Check if the gelocity race is already going. Make sure to not mess with the race's laps.
 	ScriptVariant_t raceStartedScript;
@@ -537,16 +536,8 @@ CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race. Specify 0 
 
 CON_COMMAND(p2mm_gelocity_music, "Set the music track for the Gelocity Race. 0-5 0 = No Music.")
 {
-	// Check if host is in a Gelocity map.
-	for (int i = 0; i < 3; i++)
-	{
-		if (FStrEq(CURMAPNAME, gelocityMaps[i])) break;
-		if (i == 2)
-		{
-			P2MMLog(1, false, "Not currently in a Gelocity map!");
-			return;
-		}
-	}
+	// Check if host is in a gelocity map.
+	if (!HostInGelocityMap()) return;
 
 	// Check if the final lap has been triggered. LET THE INTENSE FINAL LAP MUSIC PLAY!
 	ScriptVariant_t finalLapScript;
@@ -605,15 +596,7 @@ CON_COMMAND(p2mm_gelocity_music, "Set the music track for the Gelocity Race. 0-5
 CON_COMMAND(p2mm_gelocity_start, "Starts the Gelocity race.")
 {
 	// Check if host is in a gelocity map.
-	for (int i = 0; i < 3; i++)
-	{
-		if (FStrEq(CURMAPNAME, gelocityMaps[i])) break;
-		if (i == 2)
-		{
-			P2MMLog(1, false, "Not currently in a Gelocity map!");
-			return;
-		}
-	}
+	if (!HostInGelocityMap()) return;
 
 	// Check if the gelocity race is already going. Make sure to not mess with the race's laps.
 	ScriptVariant_t raceStartedScript;

@@ -48,9 +48,13 @@ int         GetMaxPlayers();                                           | "Self-e
 ## Game Events Interfaced To Squirrel VScript Functions:
 
 The "game events" listed at the top of `portal2allgameevents.res` are not actually game events but are some plugin callbacks or other events interfaced to VScript so they can be utilized.
+
 `GEClientCommand` is the plugin's ClientCommand callback function.
+
 `GEClientActive` is the plugin's ClientActive callback function.
+
 `GEGameFrame` is the plugin's GameFrame callback function.
+
 `GEPlayerRespawn` is called by the hooked respawn function the game uses to respawn players.
 
 ```c++

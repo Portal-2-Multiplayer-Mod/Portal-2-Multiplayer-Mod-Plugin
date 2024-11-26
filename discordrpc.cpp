@@ -216,6 +216,7 @@ CDiscordIntegration::CDiscordIntegration()
 	RPC->smallImageText = "";
 	RPC->partyId = "";
 	RPC->partySize = 0;
+	RPC->partyMax = 0;
 	RPC->matchSecret = "";
 	RPC->joinSecret = "";
 	RPC->spectateSecret = "";

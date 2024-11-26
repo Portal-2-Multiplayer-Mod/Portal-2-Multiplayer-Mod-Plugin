@@ -46,9 +46,9 @@ class CPortal_Player;
 // A macro to iterate through all ConVars and ConCommand in the game.
 // Thanks to Nanoman2525 for this.
 #define FOR_ALL_CONSOLE_COMMANDS(pCommandVarName) \
-    ConCommandBase *m_pConCommandList = *reinterpret_cast<ConCommandBase **>((uintptr_t)g_pCVar + 0x30); /* CCvar::m_pConCommandList */ \
+    ConCommandBase *m_pConCommandList = *reinterpret_cast<ConCommandBase**>((uintptr_t)g_pCVar + 0x30); /* CCvar::m_pConCommandList */ \
     for (ConCommandBase *pCommandVarName = m_pConCommandList; \
-	pCommandVarName; pCommandVarName = *reinterpret_cast<ConCommandBase **>(reinterpret_cast<uintptr_t>(pCommandVarName) + 0x04)) /* ConCommandBase::m_pNext (private variable) */
+	pCommandVarName; pCommandVarName = *reinterpret_cast<ConCommandBase**>(reinterpret_cast<uintptr_t>(pCommandVarName) + 0x04)) /* ConCommandBase::m_pNext (private variable) */
 
 // Macro to iterate through all players.
 #define FOR_ALL_PLAYERS(i) \
@@ -86,6 +86,17 @@ typedef struct hudtextparms_s
 	int			channel;
 } hudtextparms_t;
 
+// Struct for map arrays.
+typedef struct
+{
+	const char* filename;
+	const char* mapname;
+	int chapter;
+} MapParams;
+
+MapParams* InGelocityMap();
+MapParams* InP2CampaignMap(bool mpMaps = false);
+MapParams* InMelCampaignMap(bool advanced = false);
 
 //---------------------------------------------------------------------------------
 // Any ConVars or ConCommands that need to be globally available.

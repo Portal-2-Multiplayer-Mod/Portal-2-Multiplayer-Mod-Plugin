@@ -30,9 +30,9 @@ IFileSystem* g_pFileSystem = NULL; // Access interface for Valve's file system i
 #endif
 
 //---------------------------------------------------------------------------------
-// Class declarations
+// Class declarations/creations
 //---------------------------------------------------------------------------------
-CDiscordIntegration discordIntegration;
+CDiscordIntegration* g_pDiscordIntegration = new CDiscordIntegration;
 
 //---------------------------------------------------------------------------------
 // The plugin is a static singleton that is exported as an interface
@@ -276,7 +276,7 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 		engineClient->ExecuteClientCmd(std::string(mapString + "mp_coop_community_hub").c_str());
 		
 		std::string initmapstr = std::string("Server has started with map: `" + std::string(requestedMap) + "`");
-		discordIntegration.SendWebHookEmbed(std::string("Server"), initmapstr, EMBEDCOLOR_SERVER, false);
+		g_pDiscordIntegration->SendWebHookEmbed(std::string("Server"), initmapstr, EMBEDCOLOR_SERVER, false);
 	}
 	else
 	{
@@ -285,7 +285,7 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 		engineClient->ExecuteClientCmd(std::string(mapString + requestedMap).c_str());
 
 		std::string initmapstr = std::string("Server has started with map: `" + std::string(requestedMap) + "`");
-		discordIntegration.SendWebHookEmbed(std::string("Server"), initmapstr, EMBEDCOLOR_SERVER, false);
+		g_pDiscordIntegration->SendWebHookEmbed(std::string("Server"), initmapstr, EMBEDCOLOR_SERVER, false);
 	}
 }
 
@@ -398,31 +398,13 @@ CON_COMMAND_F(p2mm_helloworld2, "Hello World 2: Electric Boogaloo!", FCVAR_HIDDE
 //---------------------------------------------------------------------------------
 // P2:MM Gelocity ConVars and ConCommands
 //---------------------------------------------------------------------------------
-// Array of the Gelocity map file paths to check if the current map is a gelocity map.
-const char* gelocityMaps[3] = { "workshop/596984281130013835/mp_coop_gelocity_1_v02", "workshop/594730048530814099/mp_coop_gelocity_2_v01", "workshop/613885499245125173/mp_coop_gelocity_3_v02" };
-
-// Self-explanatory.
-bool HostInGelocityMap()
-{
-	for (int i = 0; i < 3; i++)
-	{
-		if (FStrEq(CURMAPNAME, gelocityMaps[i])) break;
-		if (i >= 2)
-		{
-			P2MMLog(1, false, "Not currently in a Gelocity map!");
-			return false;
-		}
-	}
-	return true;
-}
-
 ConVar p2mm_gelocity_laps_default("p2mm_gelocity_laps_default", "3", FCVAR_NONE, "Set the default amount of laps for a Gelocity race.", true, 1, true, 300);
 ConVar p2mm_gelocity_music_default("p2mm_gelocity_music_default", "0", FCVAR_NONE, "Set the default music track for a Gelocity race.", true, 0, true, 5);
 
 void GelocityTournament(IConVar* var, const char* pOldValue, float flOldValue)
 {
 	// Check if host is in a gelocity map.
-	if (!HostInGelocityMap())
+	if (!InGelocityMap())
 	{
 		P2MMLog(0, false, "Gelocity tournament mode ConVar was changed from %i to %i.", (int)flOldValue, ((ConVar*)var)->GetBool());
 		P2MMLog(1, false, "Mode will take effect when Gelocity map is loaded.");
@@ -448,7 +430,7 @@ ConVar p2mm_gelocity_tournamentmode("p2mm_gelocity_tournamentmode", "0", FCVAR_N
 void GelocityButtons(IConVar* var, const char* pOldValue, float flOldValue)
 {
 	// Check if host is in a gelocity map.
-	if (!HostInGelocityMap())
+	if (!InGelocityMap())
 	{
 		if (!((ConVar*)var)->GetBool())
 			P2MMLog(0, false, "Unlocked buttons...");
@@ -485,7 +467,11 @@ ConVar p2mm_gelocity_lockbuttons("p2mm_gelocity_lockbuttons", "0", FCVAR_NONE, "
 CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race. Specify 0 or no argument to see current lap count.")
 {
 	// Check if host is in a gelocity map.
-	if (!HostInGelocityMap()) return;
+	if (!InGelocityMap())
+	{
+		P2MMLog(1, false, "Not currently in a Gelocity map!");
+		return;
+	}
 
 	// Check if the gelocity race is already going. Make sure to not mess with the race's laps.
 	ScriptVariant_t raceStartedScript;
@@ -537,7 +523,11 @@ CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race. Specify 0 
 CON_COMMAND(p2mm_gelocity_music, "Set the music track for the Gelocity Race. 0-5 0 = No Music.")
 {
 	// Check if host is in a gelocity map.
-	if (!HostInGelocityMap()) return;
+	if (!InGelocityMap())
+	{
+		P2MMLog(1, false, "Not currently in a Gelocity map!");
+		return;
+	}
 
 	// Check if the final lap has been triggered. LET THE INTENSE FINAL LAP MUSIC PLAY!
 	ScriptVariant_t finalLapScript;
@@ -596,7 +586,11 @@ CON_COMMAND(p2mm_gelocity_music, "Set the music track for the Gelocity Race. 0-5
 CON_COMMAND(p2mm_gelocity_start, "Starts the Gelocity race.")
 {
 	// Check if host is in a gelocity map.
-	if (!HostInGelocityMap()) return;
+	if (!InGelocityMap())
+	{
+		P2MMLog(1, false, "Not currently in a Gelocity map!");
+		return;
+	}
 
 	// Check if the gelocity race is already going. Make sure to not mess with the race's laps.
 	ScriptVariant_t raceStartedScript;
@@ -759,6 +753,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 			break;
 		case 1:
 			P2MMLog(0, true, "Currently running Portal Stories: Mel.");
+			break;
 		default:
 			P2MMLog(0, true, "Currently running Portal 2.");
 			break;
@@ -839,6 +834,11 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	MathLib_Init(2.2f, 2.2f, 0.0f, 2.0f);
 	ConVar_Register(0);
 
+	// Discord RPC
+	P2MMLog(0, true, "Checking if Discord RPC should be started...");
+	if (p2mm_discord_rpc.GetBool() && !g_pDiscordIntegration->RPCRunning)
+		g_pDiscordIntegration->StartDiscordRPC();
+
 	// Add listener for all used game events
 	P2MMLog(0, true, "Adding listeners for game events...");
 	for (const char* gameevent : gameevents)
@@ -852,9 +852,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	{
 		ConCommandBase* commandbase = g_pCVar->FindCommandBase(concommand);
 		if (commandbase)
-		{
 			commandbase->RemoveFlags(FCVAR_GAMEDLL);
-		}
 	}
 	
 	// big ol' try catch because game has a TerminateProcess handler for exceptions...
@@ -950,6 +948,14 @@ void CP2MMServerPlugin::Unload(void)
 
 	P2MMLog(0, false, "Unloading Plugin...");
 
+	g_pDiscordIntegration->RPC->state = "See you around!";
+	g_pDiscordIntegration->RPC->details = "Shutting down...";
+	g_pDiscordIntegration->RPC->startTimestamp = 0;
+	g_pDiscordIntegration->RPC->endTimestamp = 0;
+	g_pDiscordIntegration->RPC->smallImageKey = "wave";
+	g_pDiscordIntegration->RPC->smallImageText = "See you around!";
+	Discord_UpdatePresence(g_pDiscordIntegration->RPC);
+
 	P2MMLog(0, true, "Removing listeners for game events...");
 	gameeventmanager->RemoveListener(this);
 
@@ -987,7 +993,8 @@ void CP2MMServerPlugin::Unload(void)
 	MH_DisableHook(MH_ALL_HOOKS);
 	MH_Uninitialize();
 
-	discordIntegration.ShutdownDiscordRPC();
+	if (p2mm_discord_rpc.GetBool() && g_pDiscordIntegration->RPCRunning)
+		g_pDiscordIntegration->ShutdownDiscordRPC();
 
 	m_bPluginLoaded = false;
 	P2MMLog(0, false, "Plugin unloaded! Goodbye!");
@@ -1046,16 +1053,61 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 	}
 
 	std::string changemapstr = std::string("The server has changed the map to: `" + std::string(CURMAPNAME) + "`");
-	discordIntegration.SendWebHookEmbed(std::string("Server"), changemapstr, EMBEDCOLOR_SERVER, false);
-
-	DiscordRichPresence discordPresence;
-	memset(&discordPresence, 0, sizeof(discordPresence));
+	g_pDiscordIntegration->SendWebHookEmbed("Server", changemapstr, EMBEDCOLOR_SERVER, false);
 
 	std::string curplayercount = std::to_string(CURPLAYERCOUNT());
 	std::string maxplayercount = std::to_string(g_pGlobals->maxClients);
+	std::string curMapName("Map: " + std::string(CURMAPNAME));
 	std::string activityState = std::string("Players: (") + curplayercount + "/" + maxplayercount + ")";
+	g_pDiscordIntegration->RPC->state = activityState.c_str();
+	g_pDiscordIntegration->RPC->details = curMapName.c_str();
 
+	MapParams* map = NULL;
+	std::string imgKey = "";
+	switch (this->iCurGameIndex)
+	{
+	case (0):
+		if (FStrEq(CURMAPNAME, "mp_coop_community_hub"))
+		{
+			g_pDiscordIntegration->RPC->smallImageKey = "coop";
+			g_pDiscordIntegration->RPC->smallImageText = "Community Hub";
+		}
+		else if (std::strstr(CURMAPNAME, "sp_a"))
+		{
+			map = InP2CampaignMap();
+			imgKey = std::string("chapter" + std::to_string(map->chapter));
+			g_pDiscordIntegration->RPC->smallImageKey = imgKey.c_str();
+			g_pDiscordIntegration->RPC->smallImageText = map->mapname;
+		}
+		else if (std::strstr(CURMAPNAME, "gelocity"))
+		{
+			map = InGelocityMap();
+			g_pDiscordIntegration->RPC->smallImageKey = "race";
+			g_pDiscordIntegration->RPC->smallImageText = map->mapname;
+		}
+		else
+		{
+			map = InP2CampaignMap(true);
+			g_pDiscordIntegration->RPC->smallImageKey = "coop";
+			g_pDiscordIntegration->RPC->smallImageText = map->mapname;
+		}
+		break;
+	case (1):
+		if (FStrEq(CURMAPNAME, "mp_coop_community_hub")) break;
 
+		if (std::strstr(CURMAPNAME, "sp_"))
+			map = InMelCampaignMap(true);
+		else
+			map = InMelCampaignMap();
+		imgKey = std::string("melchapter" + std::to_string(map->chapter));
+		g_pDiscordIntegration->RPC->smallImageKey = imgKey.c_str();
+		g_pDiscordIntegration->RPC->smallImageText = map->mapname;
+		break;
+	default:
+		break;
+	}
+
+	Discord_UpdatePresence(g_pDiscordIntegration->RPC);
 }
 
 //---------------------------------------------------------------------------------
@@ -1282,7 +1334,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				if (playerHandle)
 				{
 					g_pScriptVM->Call<HSCRIPT>(od_func, NULL, false, NULL, playerHandle);
-					discordIntegration.SendWebHookEmbed(std::string(GetPlayerName(entindex) + std::string(" Died!")), "", EMBEDCOLOR_PLAYERDEATH);
+					g_pDiscordIntegration->SendWebHookEmbed(std::string(GetPlayerName(entindex) + std::string(" Died!")), "", EMBEDCOLOR_PLAYERDEATH);
 				}
 			}
 
@@ -1358,7 +1410,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			if (ge_func)
 			{
 				g_pScriptVM->Call<const char*, int, short, const char*, const char*, const char*, bool, int>(ge_func, NULL, false, NULL, name, index, userid, xuid, networkid, address, bot, entindex);
-				discordIntegration.SendWebHookEmbed(std::string(name + std::string(" Joinned!")), std::string(name + std::string(" joinned the server!")));
+				g_pDiscordIntegration->SendWebHookEmbed(std::string(name + std::string(" Joinned!")), std::string(name + std::string(" joinned the server!")));
 			}
 		}
 
@@ -1455,7 +1507,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 						pos += std::string("\\\\").length();
 					}
 
-					discordIntegration.SendWebHookEmbed(playerName, chatMsg);
+					g_pDiscordIntegration->SendWebHookEmbed(playerName, chatMsg);
 				}
 			}
 
@@ -1483,12 +1535,6 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 // Called when game event "player_activate" is also called so this is used to call "GEClientActive".
 //---------------------------------------------------------------------------------
 
-// have a consistent time so the timestamp doesnt get reset on every update (Discord RPC)
-extern int timestamp;
-
-// needed for webhook check
-extern ConVar p2mm_discord_webhook;
-
 void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 {
 	short userid = engineServer->GetPlayerUserId(pEntity);
@@ -1500,10 +1546,9 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 		P2MMLog(0, true, "userid: %i", userid);
 		P2MMLog(0, true, "entindex: %i", entindex);
 	}
-
 	
 	// Make sure people know that the chat is being recorded if webhook is set
-	if (strlen(p2mm_discord_webhook.GetString()) > 0)
+	if (p2mm_discord_webhook.GetBool())
 	{
 		CBasePlayer* pPlayer = UTIL_PlayerByIndex(entindex);
 		P2MMLog(0, true, "Webhook warning called");
@@ -1529,19 +1574,11 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 
 	std::string curplayercount = std::to_string(CURPLAYERCOUNT());
 	std::string maxplayercount = std::to_string(g_pGlobals->maxClients);
+	std::string curMapName("Map: " + std::string(CURMAPNAME));
 	std::string activityState = std::string("Players: (") + curplayercount + "/" + maxplayercount + ")";
-	DiscordRichPresence discordPresence;
-	memset(&discordPresence, 0, sizeof(discordPresence));
-
-	char buffer[256];
-	discordPresence.state = activityState.c_str();
-	sprintf(buffer, "Map: %s", CURMAPNAME);
-	discordPresence.details = buffer;
-	discordPresence.largeImageKey = "p2mmlogo";
-	discordPresence.largeImageText = "P2:MM";
-	discordPresence.startTimestamp = timestamp;
-	Discord_UpdatePresence(&discordPresence);
-
+	g_pDiscordIntegration->RPC->state = activityState.c_str();
+	g_pDiscordIntegration->RPC->details = curMapName.c_str();;
+	Discord_UpdatePresence(g_pDiscordIntegration->RPC);
 	return;
 }
 

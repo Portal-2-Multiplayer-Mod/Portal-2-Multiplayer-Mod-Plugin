@@ -29,8 +29,6 @@
 extern ConVar p2mm_discord_rpc;
 extern ConVar p2mm_discord_webhook;
 
-void DiscordLog(int level, bool dev, const char* pMsgFormat, ...);
-
 class CDiscordIntegration {
 public:
 	bool RPCRunning;

@@ -36,7 +36,7 @@ class CPortal_Player;
 #define P2MM_DISCORD_CONSOLE_COLOR_NORMAL Color(0, 200, 255, 255) // Even Lighter Blue
 #define P2MM_DISCORD_CONSOLE_COLOR_WARNING Color(255, 150, 0, 255) // Orange
 
-#define CURMAPFILENAME STRING(g_pGlobals->mapname)
+#define CURMAPFILENAME std::string(STRING((g_pGlobals->mapname)))
 #define MAX_PLAYERS g_pGlobals->maxClients
 
 // Used for autocomplete console commands.

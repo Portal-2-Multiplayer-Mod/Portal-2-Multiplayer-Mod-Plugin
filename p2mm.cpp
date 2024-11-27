@@ -423,7 +423,7 @@ void GelocityTournament(IConVar* var, const char* pOldValue, float flOldValue)
 	P2MMLog(0, false, "Gelocity tournament mode ConVar was changed from %i to %i!", (int)flOldValue, ((ConVar*)var)->GetBool());
 	P2MMLog(1, false, "Restarting map based on tournament mode change!");
 
-	engineClient->ExecuteClientCmd(std::string("changelevel " + std::string(CURMAPFILENAME)).c_str());
+	engineClient->ExecuteClientCmd(std::string("changelevel " + CURMAPFILENAME).c_str());
 }
 ConVar p2mm_gelocity_tournamentmode("p2mm_gelocity_tournamentmode", "0", FCVAR_NONE, "Turn on or off tournament mode.", true, 0, true, 1, GelocityTournament);
 
@@ -1063,67 +1063,72 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 	g_pDiscordIntegration->RPC->partyMax = maxPlayers;
 
 	MapParams* map = NULL;
-	std::string imgKey = "";
-	std::string mapName = "Map: ";
-	const char* mapChapterName;
+	std::string details = "Map: ";
+	std::string smallImageKey = "";
+	std::string smallImageText = "";
 	switch (this->iCurGameIndex)
 	{
 	case (0):
-		if (FStrEq(CURMAPFILENAME, "mp_coop_community_hub"))
+		if (CURMAPFILENAME.compare("mp_coop_community_hub"))
 		{
-			g_pDiscordIntegration->RPC->smallImageKey = "coop";
-			g_pDiscordIntegration->RPC->smallImageText = "Community Hub";
-			g_pDiscordIntegration->RPC->details = "Map: Community Hub";
-			break;
+			details = "Map: Community Hub";
+			smallImageKey = "coop";
+			smallImageText = "Community Hub";
 		}
-		
-		if (std::strstr(CURMAPFILENAME, "sp_"))
+		else if (CURMAPFILENAME.find("sp_"))
 		{
 			map = InP2CampaignMap();
-			imgKey = std::string("chapter" + std::to_string(map->chapter));
-			g_pDiscordIntegration->RPC->smallImageKey = imgKey.c_str();
-			mapChapterName = map->chaptername;
-			g_pDiscordIntegration->RPC->smallImageText = mapChapterName;
+			if (!map) break;
+
+			details = details + std::string(map->mapname);
+			smallImageKey = std::string("chapter" + std::to_string(map->chapter));
+			smallImageText = map->chaptername;
 		}
-		else if (std::strstr(CURMAPFILENAME, "gelocity"))
+		else if (CURMAPFILENAME.find("gelocity"))
 		{
 			map = InGelocityMap();
-			g_pDiscordIntegration->RPC->smallImageKey = "race";
-			const char* gelocityMapName = map->mapname;
-			g_pDiscordIntegration->RPC->smallImageText = gelocityMapName;
+			if (!map) break;
+
+			details = details + std::string(map->mapname);
+			smallImageKey = "race";
+			smallImageText = map->mapname;
 		}
-		else if (std::strstr(CURMAPFILENAME, "workshop"))
+		else if (CURMAPFILENAME.find("workshop"))
 		{
-			g_pDiscordIntegration->RPC->smallImageKey = "workshop";
-			g_pDiscordIntegration->RPC->smallImageText = "Workshop Map";
-			std::string mapFileName(CURMAPFILENAME);
-			mapName = mapName + mapFileName.substr(mapFileName.find_last_of("/"));
-			g_pDiscordIntegration->RPC->details = mapName.c_str();
-			break;
+			details = details + CURMAPFILENAME.substr(CURMAPFILENAME.find_last_of("/") + 1);
+			smallImageKey = "workshop";
+			smallImageText = "Workshop Map";
 		}
 		else
 		{
 			map = InP2CampaignMap(true);
-			g_pDiscordIntegration->RPC->smallImageKey = "coop";
-			const char* coopBranchName = map->chaptername;
-			g_pDiscordIntegration->RPC->smallImageText = coopBranchName;
+			if (!map) break;
+
+			details = details + std::string(map->mapname);
+			smallImageKey = "coop";
+			smallImageText = map->chaptername;
 		}
-		mapName = mapName + std::string(map->mapname);
-		g_pDiscordIntegration->RPC->details = mapName.c_str();
+
+		g_pDiscordIntegration->RPC->details = details.c_str();
+		g_pDiscordIntegration->RPC->smallImageKey = smallImageKey.c_str();
+		g_pDiscordIntegration->RPC->smallImageText = smallImageText.c_str();
 		break;
 	case (1):
-		if (FStrEq(CURMAPFILENAME, "mp_coop_community_hub")) break;
+		if (CURMAPFILENAME.compare("mp_coop_community_hub") == 0) break;
 
-		if (std::strstr(CURMAPFILENAME, "sp_"))
+		if (CURMAPFILENAME.find("sp_"))
 			map = InMelCampaignMap(true);
 		else
 			map = InMelCampaignMap();
-		imgKey = std::string("melchapter" + std::to_string(map->chapter));
-		g_pDiscordIntegration->RPC->smallImageKey = imgKey.c_str();
-		mapChapterName = map->chaptername;
-		g_pDiscordIntegration->RPC->smallImageText = mapChapterName;
-		mapName = mapName + std::string(map->mapname);
-		g_pDiscordIntegration->RPC->details = mapName.c_str();
+		if (!map) break;
+
+		details = details + std::string(map->mapname);
+		smallImageKey = std::string("melchapter" + std::to_string(map->chapter));
+		smallImageText = map->chaptername;
+
+		g_pDiscordIntegration->RPC->smallImageKey = smallImageKey.c_str();
+		g_pDiscordIntegration->RPC->smallImageText = smallImageText.c_str();
+		g_pDiscordIntegration->RPC->details = details.c_str();
 		break;
 	default:
 		break;
@@ -1627,7 +1632,6 @@ void CP2MMServerPlugin::GameFrame(bool simulating)
 void CP2MMServerPlugin::LevelShutdown(void)
 {
 	p2mm_loop.SetValue("0"); // REMOVE THIS at some point...
-	P2MMLog(0, false, CURMAPFILENAME);
 }
 
 //---------------------------------------------------------------------------------

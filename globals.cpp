@@ -333,7 +333,7 @@ MapParams* InGelocityMap()
 {
 	for (int i = 0; i < gelocityMaps.size(); i++)
 	{
-		if (FStrEq(gelocityMaps[i].mapfile, CURMAPFILENAME)) return &gelocityMaps[i];
+		if (CURMAPFILENAME.compare(gelocityMaps[i].mapfile) == 0) return &gelocityMaps[i];
 	}
 	return NULL;
 }
@@ -464,7 +464,7 @@ std::vector<MapParams> mpCampaignMaps =
 };
 
 // Checks if the host is in a singleplayer or cooperative campaign map.
-// Setting mpMaps to true checks through the 
+// Setting mpMaps to true checks through the cooperative campaign maps array.
 // Returns the map file name, chapter/branch number, and chapter/branch name.
 // Returns NULL if not in a singleplayer or cooperative campaign map.
 MapParams* InP2CampaignMap(bool mpMaps)
@@ -473,14 +473,14 @@ MapParams* InP2CampaignMap(bool mpMaps)
 	{
 		for (int i = 0; i < mpCampaignMaps.size(); i++)
 		{
-			if (FStrEq(mpCampaignMaps[i].mapfile, CURMAPFILENAME)) return &mpCampaignMaps[i];
+			if (CURMAPFILENAME.compare(mpCampaignMaps[i].mapfile) == 0) return &mpCampaignMaps[i];
 		}
 	}
 	else
 	{
 		for (int i = 0; i < spCampaignMaps.size(); i++)
 		{
-			if (FStrEq(spCampaignMaps[i].mapfile, CURMAPFILENAME)) return &spCampaignMaps[i];
+			if (CURMAPFILENAME.compare(spCampaignMaps[i].mapfile) == 0) return &spCampaignMaps[i];
 		}
 	}
 	return NULL;
@@ -548,14 +548,14 @@ MapParams* InMelCampaignMap(bool advanced)
 	{
 		for (int i = 0; i < melAdvancedCampaignMaps.size(); i++)
 		{
-			if (FStrEq(melAdvancedCampaignMaps[i].mapfile, CURMAPFILENAME)) return &melAdvancedCampaignMaps[i];
+			if (CURMAPFILENAME.compare(melAdvancedCampaignMaps[i].mapfile) == 0) return &melAdvancedCampaignMaps[i];
 		}
 	}
 	else
 	{
 		for (int i = 0; i < melStoryCampaignMaps.size(); i++)
 		{
-			if (FStrEq(melStoryCampaignMaps[i].mapfile, CURMAPFILENAME)) return &melStoryCampaignMaps[i];
+			if (CURMAPFILENAME.compare(melStoryCampaignMaps[i].mapfile) == 0) return &melStoryCampaignMaps[i];
 		}
 	}
 	return NULL;

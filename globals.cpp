@@ -251,7 +251,22 @@ HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity)
 
 ///			 CBasePlayer/CPortal_Player Class Functions				\\\
 
+void CBasePlayer__ShowViewPortPanel(int playerIndex, const char* name, bool bShow = true, KeyValues* data = NULL)
+{
+	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
+	if (!pPlayer)
+	{
+		P2MMLog(1, false, "Couldn't get player to display view port panel to! playerIndex: %i", playerIndex);
+		return;
+	}
+	static auto _ShowViewPortPanel = reinterpret_cast<void(__thiscall*)(CBasePlayer*, const char*, bool, KeyValues*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 83 EC 20 53 56 8B F1 57 8D 4D ?? E8 ?? ?? ?? ?? 56"));
+	_ShowViewPortPanel(pPlayer, name, bShow, data);
+}
 
+CON_COMMAND(testscore, "testscore")
+{
+	CBasePlayer__ShowViewPortPanel(V_atoi(args.Arg(1)), args.Arg(2));
+}
 
 //---------------------------------------------------------------------------------
 // Purpose: Respawn the a player by their entity index.
@@ -290,6 +305,19 @@ void CPortal_Player__SetFlashlightState(int playerIndex, bool enable)
 		reinterpret_cast<void(__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 53 56 8B 75 08 8B D9 8B 83"))((CBaseEntity*)pPlayer, EF_DIMLIGHT);
 }
 
+///			 CBaseServer Class Functions			\\\
+
+//---------------------------------------------------------------------------------
+// Purpose: Returns if there is a active server running.
+//---------------------------------------------------------------------------------
+//void CBaseServer__IsActive()
+//{
+//	return reinterpret_cast<void(__cdecl*)()
+//}
+
+//33 C0 83 79 ?? ?? 0F 9D C0
+
+
 // Array of the Gelocity maps
 std::vector<MapParams> gelocityMaps =
 {
@@ -305,7 +333,7 @@ MapParams* InGelocityMap()
 {
 	for (int i = 0; i < gelocityMaps.size(); i++)
 	{
-		if (FStrEq(gelocityMaps[i].filename, CURMAPNAME)) return &gelocityMaps[i];
+		if (FStrEq(gelocityMaps[i].mapfile, CURMAPFILENAME)) return &gelocityMaps[i];
 	}
 	return NULL;
 }
@@ -313,125 +341,126 @@ MapParams* InGelocityMap()
 // Array of Portal 2 single player campaign maps.
 std::vector<MapParams> spCampaignMaps =
 {
-	{"sp_a1_intro1",                 "Container Ride",       1},
-	{"sp_a1_intro2",                 "Portal Carousel",      1},
-	{"sp_a1_intro3",                 "Portal Gun",           1},
-	{"sp_a1_intro4",                 "Smooth Jazz",          1},
-	{"sp_a1_intro5",                 "Cube Momentum",        1},
-	{"sp_a1_intro6",                 "Future Starter",       1},
-	{"sp_a1_intro7",                 "Secret Panel",         1},
-	{"sp_a1_wakeup",                 "Wakeup",               1},
-	{"sp_a2_intro",                  "Incinerator",          1},
-	{"sp_a2_laser_intro",            "Laser Intro",          2},
-	{"sp_a2_laser_stairs",           "Laser Stairs",         2},
-	{"sp_a2_dual_lasers",            "Dual Lasers",          2},
-	{"sp_a2_laser_over_goo",         "Laser Over Goo",       2},
-	{"sp_a2_catapult_intro",         "Catapult Intro",       2},
-	{"sp_a2_trust_fling",            "Trust Fling",          2},
-	{"sp_a2_pit_flings",             "Pit Flings",           2},
-	{"sp_a2_fizzler_intro",          "Fizzler Intro",        2},
-	{"sp_a2_sphere_peek",            "Ceiling Catapult",     3},
-	{"sp_a2_ricochet",               "Ricochet",             3},
-	{"sp_a2_bridge_intro",           "Bridge Intro",         3},
-	{"sp_a2_bridge_the_gap",         "Bridge The Gap",       3},
-	{"sp_a2_turret_intro",           "Turret Intro",         3},
-	{"sp_a2_laser_relays",           "Laser Relays",         3},
-	{"sp_a2_turret_blocker",         "Turret Blocker",       3},
-	{"sp_a2_laser_vs_turret",        "Laser vs Turret",      3},
-	{"sp_a2_pull_the_rug",           "Pull the Rug",         3},
-	{"sp_a2_column_blocker",         "Column Blocker",       4},
-	{"sp_a2_laser_chaining",         "Laser Chaining",       4},
-	{"sp_a2_triple_laser",           "Triple Laser",         4},
-	{"sp_a2_bts1",                   "Jailbreak",            4},
-	{"sp_a2_bts2",                   "Escape",               4},
-	{"sp_a2_bts3",                   "Turret Factory",       5},
-	{"sp_a2_bts4",                   "Turret Sabotage",      5},
-	{"sp_a2_bts5",                   "Neurotoxin Sabotage",  5},
-	{"sp_a2_bts6",                   "Tube Ride",            5},
-	{"sp_a2_core",                   "Core",                 5},
-	{"sp_a3_00",                     "Long Fall",            6},
-	{"sp_a3_01",                     "Underground",          6},
-	{"sp_a3_03",                     "Cave Johnson",         6},
-	{"sp_a3_jump_intro",             "Repulsion Intro",      6},
-	{"sp_a3_bomb_flings",            "Bomb Flings",          6},
-	{"sp_a3_crazy_box",              "Crazy Box",            6},
-	{"sp_a3_transition01",           "PotatOS",              6},
-	{"sp_a3_speed_ramp",             "Propulsion Intro",     7},
-	{"sp_a3_speed_flings",           "Propulsion Flings",    7},
-	{"sp_a3_portal_intro",           "Conversion Intro",     7},
-	{"sp_a3_end",                    "Three Gels",           7},
-	{"sp_a4_intro",                  "Test",                 8},
-	{"sp_a4_tb_intro",               "Funnel Intro",         8},
-	{"sp_a4_tb_trust_drop",          "Ceiling Button",       8},
-	{"sp_a4_tb_wall_button",         "Wall Button",          8},
-	{"sp_a4_tb_polarity",            "Polarity",             8},
-	{"sp_a4_tb_catch",               "Funnel Catch",         8},
-	{"sp_a4_stop_the_box",           "Stop the Box",         8},
-	{"sp_a4_laser_catapult",         "Laser Catapult",       8},
-	{"sp_a4_laser_platform",         "Laser Platform",       8},
-	{"sp_a4_speed_tb_catch",         "Propulsion Catch",     8},
-	{"sp_a4_jump_polarity",          "Repulsion Polarity",   8},
-	{"sp_a4_finale1",                "Finale 1",             9},
-	{"sp_a4_finale2",                "Finale 2",             9},
-	{"sp_a4_finale3",                "Finale 3",             9},
-	{"sp_a4_finale4",                "Finale 4",             9},
-	{"sp_a5_credits",				 "Credits",				 10}
+	{"sp_a1_intro1",                 "Container Ride",       1,		"THE COURTESY CALL"},
+	{"sp_a1_intro2",                 "Portal Carousel",      1,		"THE COURTESY CALL"},
+	{"sp_a1_intro3",                 "Portal Gun",           1,		"THE COURTESY CALL"},
+	{"sp_a1_intro4",                 "Smooth Jazz",          1,		"THE COURTESY CALL"},
+	{"sp_a1_intro5",                 "Cube Momentum",        1,		"THE COURTESY CALL"},
+	{"sp_a1_intro6",                 "Future Starter",       1,		"THE COURTESY CALL"},
+	{"sp_a1_intro7",                 "Secret Panel",         1,		"THE COURTESY CALL"},
+	{"sp_a1_wakeup",                 "Wakeup",               1,		"THE COURTESY CALL"},
+	{"sp_a2_intro",                  "Incinerator",          1,		"THE COURTESY CALL"},
+	{"sp_a2_laser_intro",            "Laser Intro",          2,		"THE COLD BOOT"},
+	{"sp_a2_laser_stairs",           "Laser Stairs",         2,		"THE COLD BOOT"},
+	{"sp_a2_dual_lasers",            "Dual Lasers",          2,		"THE COLD BOOT"},
+	{"sp_a2_laser_over_goo",         "Laser Over Goo",       2,		"THE COLD BOOT"},
+	{"sp_a2_catapult_intro",         "Catapult Intro",       2,		"THE COLD BOOT"},
+	{"sp_a2_trust_fling",            "Trust Fling",          2,		"THE COLD BOOT"},
+	{"sp_a2_pit_flings",             "Pit Flings",           2,		"THE COLD BOOT"},
+	{"sp_a2_fizzler_intro",          "Fizzler Intro",        2,		"THE COLD BOOT"},
+	{"sp_a2_sphere_peek",            "Ceiling Catapult",     3,		"THE RETURN"},
+	{"sp_a2_ricochet",               "Ricochet",             3,		"THE RETURN"},
+	{"sp_a2_bridge_intro",           "Bridge Intro",         3,		"THE RETURN"},
+	{"sp_a2_bridge_the_gap",         "Bridge The Gap",       3,		"THE RETURN"},
+	{"sp_a2_turret_intro",           "Turret Intro",         3,		"THE RETURN"},
+	{"sp_a2_laser_relays",           "Laser Relays",         3,		"THE RETURN"},
+	{"sp_a2_turret_blocker",         "Turret Blocker",       3,		"THE RETURN"},
+	{"sp_a2_laser_vs_turret",        "Laser vs Turret",      3,		"THE RETURN"},
+	{"sp_a2_pull_the_rug",           "Pull the Rug",         3,		"THE RETURN"},
+	{"sp_a2_column_blocker",         "Column Blocker",       4,		"THE SURPRISE"},
+	{"sp_a2_laser_chaining",         "Laser Chaining",       4,		"THE SURPRISE"},
+	{"sp_a2_triple_laser",           "Triple Laser",         4,		"THE SURPRISE"},
+	{"sp_a2_bts1",                   "Jailbreak",            4,		"THE SURPRISE"},
+	{"sp_a2_bts2",                   "Escape",               4,		"THE SURPRISE"},
+	{"sp_a2_bts3",                   "Turret Factory",       5,		"THE ESCAPE"},
+	{"sp_a2_bts4",                   "Turret Sabotage",      5,		"THE ESCAPE"},
+	{"sp_a2_bts5",                   "Neurotoxin Sabotage",  5,		"THE ESCAPE"},
+	{"sp_a2_bts6",                   "Tube Ride",            5,		"THE ESCAPE"},
+	{"sp_a2_core",                   "Core",                 5,		"THE ESCAPE"},
+	{"sp_a3_00",                     "Long Fall",            6,		"THE FALL"},
+	{"sp_a3_01",                     "Underground",          6,		"THE FALL"},
+	{"sp_a3_03",                     "Cave Johnson",         6,		"THE FALL"},
+	{"sp_a3_jump_intro",             "Repulsion Intro",      6,		"THE FALL"},
+	{"sp_a3_bomb_flings",            "Bomb Flings",          6,		"THE FALL"},
+	{"sp_a3_crazy_box",              "Crazy Box",            6,		"THE FALL"},
+	{"sp_a3_transition01",           "PotatOS",              6,		"THE FALL"},
+	{"sp_a3_speed_ramp",             "Propulsion Intro",     7,		"THE REUNION"},
+	{"sp_a3_speed_flings",           "Propulsion Flings",    7,		"THE REUNION"},
+	{"sp_a3_portal_intro",           "Conversion Intro",     7,		"THE REUNION"},
+	{"sp_a3_end",                    "Three Gels",           7,		"THE REUNION"},
+	{"sp_a4_intro",                  "Test",                 8,		"THE ITCH"},
+	{"sp_a4_tb_intro",               "Funnel Intro",         8,		"THE ITCH"},
+	{"sp_a4_tb_trust_drop",          "Ceiling Button",       8,		"THE ITCH"},
+	{"sp_a4_tb_wall_button",         "Wall Button",          8,		"THE ITCH"},
+	{"sp_a4_tb_polarity",            "Polarity",             8,		"THE ITCH"},
+	{"sp_a4_tb_catch",               "Funnel Catch",         8,		"THE ITCH"},
+	{"sp_a4_stop_the_box",           "Stop the Box",         8,		"THE ITCH"},
+	{"sp_a4_laser_catapult",         "Laser Catapult",       8,		"THE ITCH"},
+	{"sp_a4_laser_platform",         "Laser Platform",       8,		"THE ITCH"},
+	{"sp_a4_speed_tb_catch",         "Propulsion Catch",     8,		"THE ITCH"},
+	{"sp_a4_jump_polarity",          "Repulsion Polarity",   8,		"THE ITCH"},
+	{"sp_a4_finale1",                "Finale 1",             9,		"THE PART WHERE HE KILLS YOU"},
+	{"sp_a4_finale2",                "Finale 2",             9,		"THE PART WHERE HE KILLS YOU"},
+	{"sp_a4_finale3",                "Finale 3",             9,		"THE PART WHERE HE KILLS YOU"},
+	{"sp_a4_finale4",                "Finale 4",             9,		"THE PART WHERE HE KILLS YOU"},
+	{"sp_a5_credits",				 "Credits",				 10,	"The End :D"}
 };
 
 // Array of cooperative campaign maps.
 std::vector<MapParams> mpCampaignMaps =
 {
-	{"mp_coop_start",                "Calibration",          0},
-	{"mp_coop_lobby_2",              "Cooperative Lobby",    0},
-	{"mp_coop_lobby_3",              "Cooperative Lobby",    0},
-	{"mp_coop_doors",                "Doors",                1},
-	{"mp_coop_race_2",               "Buttons",              1},
-	{"mp_coop_laser_2",              "Lasers",               1},
-	{"mp_coop_rat_maze",             "Rat Maze",             1},
-	{"mp_coop_laser_crusher",        "Laser Crusher",        1},
-	{"mp_coop_teambts",              "Behind the Scenes",    1},
-	{"mp_coop_fling_3",              "Flings",               2},
-	{"mp_coop_infinifling_train",    "Infinifling",          2},
-	{"mp_coop_come_along",           "Team Retrieval",       2},
-	{"mp_coop_fling_1",              "Vertical Flings",      2},
-	{"mp_coop_catapult_1",           "Catapults",            2},
-	{"mp_coop_multifling_1",         "Multifling",           2},
-	{"mp_coop_fling_crushers",       "Fling Crushers",       2},
-	{"mp_coop_fan",                  "Industrial Fan",       2},
-	{"mp_coop_wall_intro",           "Cooperative Bridges",  3},
-	{"mp_coop_wall_2",               "Bridge Swap",          3},
-	{"mp_coop_catapult_wall_intro",  "Fling Block",          3},
-	{"mp_coop_wall_block",           "Catapult Block",       3},
-	{"mp_coop_catapult_2",           "Bridge Fling",         3},
-	{"mp_coop_turret_walls",         "Turret Walls",         3},
-	{"mp_coop_turret_ball",          "Turret Assassin",      3},
-	{"mp_coop_wall_5",               "Bridge Testing",       3},
-	{"mp_coop_tbeam_redirect",       "Cooperative Funnels",  4},
-	{"mp_coop_tbeam_drill",          "Funnel Drill",         4},
-	{"mp_coop_tbeam_catch_grind_1",  "Funnel Catch Coop",    4},
-	{"mp_coop_tbeam_laser_1",        "Funnel Laser",         4},
-	{"mp_coop_tbeam_polarity",       "Cooperative Polarity", 4},
-	{"mp_coop_tbeam_polarity2",      "Funnel Hop",           4},
-	{"mp_coop_tbeam_polarity3",      "Advanced Polarity",    4},
-	{"mp_coop_tbeam_maze",           "Funnel Maze",          4},
-	{"mp_coop_tbeam_end",            "Turret Warehouse",     4},
-	{"mp_coop_paint_come_along",     "Repulsion Jumps",      5},
-	{"mp_coop_paint_redirect",       "Double Bounce",        5},
-	{"mp_coop_paint_bridge",         "Bridge Repulsion",     5},
-	{"mp_coop_paint_walljumps",      "Wall Repulsion",       5},
-	{"mp_coop_paint_speed_fling",    "Propulsion Crushers",  5},
-	{"mp_coop_paint_red_racer",      "Turret Ninja",         5},
-	{"mp_coop_paint_speed_catch",    "Propulsion Retrieval", 5},
-	{"mp_coop_paint_longjump_intro", "Vault Entrance",       5},
-	{"mp_coop_separation_1",         "Separation",           6},
-	{"mp_coop_tripleaxis",           "Triple Axis",          6},
-	{"mp_coop_catapult_catch",       "Catapult Catch",       6},
-	{"mp_coop_2paints_1bridge",      "Bridge Gels",          6},
-	{"mp_coop_paint_conversion",     "Maintenance",          6},
-	{"mp_coop_bridge_catch",         "Bridge Catch",         6},
-	{"mp_coop_laser_tbeam",          "Double Lift",          6},
-	{"mp_coop_paint_rat_maze",       "Gel Maze",             6},
-	{"mp_coop_paint_crazy_box",      "Crazier Box",          6},
+	{"mp_coop_start",                "Calibration",          0,		"INTRODUCTION"},
+	{"mp_coop_lobby_2",              "Cooperative Lobby",    0,		"INTRODUCTION"},
+	{"mp_coop_lobby_3",              "Cooperative Lobby",    0,		"INTRODUCTION"},
+	{"mp_coop_doors",                "Doors",                1,		"TEAM BUILDING"},
+	{"mp_coop_race_2",               "Buttons",              1,		"TEAM BUILDING"},
+	{"mp_coop_laser_2",              "Lasers",               1,		"TEAM BUILDING"},
+	{"mp_coop_rat_maze",             "Rat Maze",             1,		"TEAM BUILDING"},
+	{"mp_coop_laser_crusher",        "Laser Crusher",        1,		"TEAM BUILDING"},
+	{"mp_coop_teambts",              "Behind the Scenes",    1,		"TEAM BUILDING"},
+	{"mp_coop_fling_3",              "Flings",               2,		"MASS AND VELOCITY"},
+	{"mp_coop_infinifling_train",    "Infinifling",          2,		"MASS AND VELOCITY"},
+	{"mp_coop_come_along",           "Team Retrieval",       2,		"MASS AND VELOCITY"},
+	{"mp_coop_fling_1",              "Vertical Flings",      2,		"MASS AND VELOCITY"},
+	{"mp_coop_catapult_1",           "Catapults",            2,		"MASS AND VELOCITY"},
+	{"mp_coop_multifling_1",         "Multifling",           2,		"MASS AND VELOCITY"},
+	{"mp_coop_fling_crushers",       "Fling Crushers",       2,		"MASS AND VELOCITY"},
+	{"mp_coop_fan",                  "Industrial Fan",       2,		"MASS AND VELOCITY"},
+	{"mp_coop_wall_intro",           "Cooperative Bridges",  3,		"HARD-LIGHT SURFACES"},
+	{"mp_coop_wall_2",               "Bridge Swap",          3,		"HARD-LIGHT SURFACES"},
+	{"mp_coop_catapult_wall_intro",  "Fling Block",          3,		"HARD-LIGHT SURFACES"},
+	{"mp_coop_wall_block",           "Catapult Block",       3,		"HARD-LIGHT SURFACES"},
+	{"mp_coop_catapult_2",           "Bridge Fling",         3,		"HARD-LIGHT SURFACES"},
+	{"mp_coop_turret_walls",         "Turret Walls",         3,		"HARD-LIGHT SURFACES"},
+	{"mp_coop_turret_ball",          "Turret Assassin",      3,		"HARD-LIGHT SURFACES"},
+	{"mp_coop_wall_5",               "Bridge Testing",       3,		"HARD-LIGHT SURFACES"},
+	{"mp_coop_tbeam_redirect",       "Cooperative Funnels",  4,		"EXCURSION FUNNELS"},
+	{"mp_coop_tbeam_drill",          "Funnel Drill",         4,		"EXCURSION FUNNELS"},
+	{"mp_coop_tbeam_catch_grind_1",  "Funnel Catch Coop",    4,		"EXCURSION FUNNELS"},
+	{"mp_coop_tbeam_laser_1",        "Funnel Laser",         4,		"EXCURSION FUNNELS"},
+	{"mp_coop_tbeam_polarity",       "Cooperative Polarity", 4,		"EXCURSION FUNNELS"},
+	{"mp_coop_tbeam_polarity2",      "Funnel Hop",           4,		"EXCURSION FUNNELS"},
+	{"mp_coop_tbeam_polarity3",      "Advanced Polarity",    4,		"EXCURSION FUNNELS"},
+	{"mp_coop_tbeam_maze",           "Funnel Maze",          4,		"EXCURSION FUNNELS"},
+	{"mp_coop_tbeam_end",            "Turret Warehouse",     4,		"EXCURSION FUNNELS"},
+	{"mp_coop_paint_come_along",     "Repulsion Jumps",      5,		"MOBILITY GELS"},
+	{"mp_coop_paint_redirect",       "Double Bounce",        5,		"MOBILITY GELS"},
+	{"mp_coop_paint_bridge",         "Bridge Repulsion",     5,		"MOBILITY GELS"},
+	{"mp_coop_paint_walljumps",      "Wall Repulsion",       5,		"MOBILITY GELS"},
+	{"mp_coop_paint_speed_fling",    "Propulsion Crushers",  5,		"MOBILITY GELS"},
+	{"mp_coop_paint_red_racer",      "Turret Ninja",         5,		"MOBILITY GELS"},
+	{"mp_coop_paint_speed_catch",    "Propulsion Retrieval", 5,		"MOBILITY GELS"},
+	{"mp_coop_paint_longjump_intro", "Vault Entrance",       5,		"MOBILITY GELS"},
+	{"mp_coop_credits",				 "Credits",				 5,		"The End! :D"},
+	{"mp_coop_separation_1",         "Separation",           6,		"ART THERAPY"},
+	{"mp_coop_tripleaxis",           "Triple Axis",          6,		"ART THERAPY"},
+	{"mp_coop_catapult_catch",       "Catapult Catch",       6,		"ART THERAPY"},
+	{"mp_coop_2paints_1bridge",      "Bridge Gels",          6,		"ART THERAPY"},
+	{"mp_coop_paint_conversion",     "Maintenance",          6,		"ART THERAPY"},
+	{"mp_coop_bridge_catch",         "Bridge Catch",         6,		"ART THERAPY"},
+	{"mp_coop_laser_tbeam",          "Double Lift",          6,		"ART THERAPY"},
+	{"mp_coop_paint_rat_maze",       "Gel Maze",             6,		"ART THERAPY"},
+	{"mp_coop_paint_crazy_box",      "Crazier Box",          6,		"ART THERAPY"}
 };
 
 // Checks if the host is in a singleplayer or cooperative campaign map.
@@ -444,14 +473,14 @@ MapParams* InP2CampaignMap(bool mpMaps)
 	{
 		for (int i = 0; i < mpCampaignMaps.size(); i++)
 		{
-			if (FStrEq(mpCampaignMaps[i].filename, CURMAPNAME)) return &mpCampaignMaps[i];
+			if (FStrEq(mpCampaignMaps[i].mapfile, CURMAPFILENAME)) return &mpCampaignMaps[i];
 		}
 	}
 	else
 	{
 		for (int i = 0; i < spCampaignMaps.size(); i++)
 		{
-			if (FStrEq(spCampaignMaps[i].filename, CURMAPNAME)) return &spCampaignMaps[i];
+			if (FStrEq(spCampaignMaps[i].mapfile, CURMAPFILENAME)) return &spCampaignMaps[i];
 		}
 	}
 	return NULL;
@@ -460,54 +489,56 @@ MapParams* InP2CampaignMap(bool mpMaps)
 // Array of Portal Stories: Mel campaign maps.
 std::vector<MapParams> melStoryCampaignMaps =
 {
-	{"st_a1_tramride",      "Tram Ride",			1},
-	{"st_a1_mel_intro",     "Mel Intro",			1},
-	{"st_a1_lift",          "Lift",					1},
-	{"st_a1_garden",        "Garden",				1},
-	{"st_a2_garden_de",     "Destroyed Garden",		2},
-	{"st_a2_underbounce",   "Underbounce",			2},
-	{"st_a2_once_upon",     "Once Upon",			2},
-	{"st_a2_past_power",    "Past Power",			2},
-	{"st_a2_ramp",          "Ramp",					2},
-	{"st_a2_firestorm",     "Firestorm",			2},
-	{"st_a3_junkyard",      "Junkyard",				3},
-	{"st_a3_concepts",      "Concepts",				3},
-	{"st_a3_paint_fling",   "Paint Fling",			3},
-	{"st_a3_faith_plate",   "Faith Plate",			3},
-	{"st_a3_transition",    "Transition",			3},
-	{"st_a4_overgrown",     "Overgrown",			4},
-	{"st_a4_tb_over_goo",   "Funnel Over Goo",		4},
-	{"st_a4_two_of_a_kind", "Two of a Kind",		4},
-	{"st_a4_destroyed",     "Destroyed",			4},
-	{"st_a4_factory",       "Factory",				4},
-	{"st_a4_core_access",   "Core Access",			5},
-	{"st_a4_finale",        "Finale",				5}
+	{"st_a1_tramride",      "Tram Ride",			1,	"1952"},
+	{"st_a1_mel_intro",     "Mel Intro",			1,	"1952"},
+	{"st_a1_lift",          "Lift",					1,	"1952"},
+	{"st_a1_garden",        "Garden",				1,	"1952"},
+	{"st_a2_garden_de",     "Destroyed Garden",		2,	"EXTENDED RELAXATION"},
+	{"st_a2_underbounce",   "Underbounce",			2,	"EXTENDED RELAXATION"},
+	{"st_a2_once_upon",     "Once Upon",			2,	"EXTENDED RELAXATION"},
+	{"st_a2_past_power",    "Past Power",			2,	"EXTENDED RELAXATION"},
+	{"st_a2_ramp",          "Ramp",					2,	"EXTENDED RELAXATION"},
+	{"st_a2_firestorm",     "Firestorm",			2,	"EXTENDED RELAXATION"},
+	{"st_a3_junkyard",      "Junkyard",				3,	"THE ASCENT"},
+	{"st_a3_concepts",      "Concepts",				3,	"THE ASCENT"},
+	{"st_a3_paint_fling",   "Paint Fling",			3,	"THE ASCENT"},
+	{"st_a3_faith_plate",   "Faith Plate",			3,	"THE ASCENT"},
+	{"st_a3_transition",    "Transition",			3,	"THE ASCENT"},
+	{"st_a4_overgrown",     "Overgrown",			4,	"ORGANIC COMPLICATIONS"},
+	{"st_a4_tb_over_goo",   "Funnel Over Goo",		4,	"ORGANIC COMPLICATIONS"},
+	{"st_a4_two_of_a_kind", "Two of a Kind",		4,	"ORGANIC COMPLICATIONS"},
+	{"st_a4_destroyed",     "Destroyed",			4,	"ORGANIC COMPLICATIONS"},
+	{"st_a4_factory",       "Factory",				4,	"ORGANIC COMPLICATIONS"},
+	{"st_a4_core_access",   "Core Access",			5,	"INTRUSION"},
+	{"st_a4_finale",        "Finale",				5,	"INTRUSION"},
+	{"st_a5_credits",		"Credits",				6,	"The End :D"}
 };
 
 std::vector<MapParams> melAdvancedCampaignMaps =
 {
-	{"sp_a1_tramride",      "Tram Ride Advanced",			1},
-	{"sp_a1_mel_intro",     "Mel Intro Advanced",			1},
-	{"sp_a1_lift",          "Lift Advanced",				1},
-	{"sp_a1_garden",        "Garden Advanced",				1},
-	{"sp_a2_garden_de",     "Destroyed Garden Advanced",	2},
-	{"sp_a2_underbounce",   "Underbounce Advanced",			2},
-	{"sp_a2_once_upon",     "Once Upon Advanced",			2},
-	{"sp_a2_past_power",    "Past Power Advanced",			2},
-	{"sp_a2_ramp",          "Ramp Advanced",				2},
-	{"sp_a2_firestorm",     "Firestorm Advanced",			2},
-	{"sp_a3_junkyard",      "Junkyard Advanced",			3},
-	{"sp_a3_concepts",      "Concepts Advanced",			3},
-	{"sp_a3_paint_fling",   "Paint Fling Advanced",			3},
-	{"sp_a3_faith_plate",   "Faith Plate Advanced",			3},
-	{"sp_a3_transition",    "Transition Advanced",			3},
-	{"sp_a4_overgrown",     "Overgrown Advanced",			4},
-	{"sp_a4_tb_over_goo",   "Funnel Over Goo Advanced",		4},
-	{"sp_a4_two_of_a_kind", "Two of a Kind Advanced",		4},
-	{"sp_a4_destroyed",     "Destroyed Advanced",			4},
-	{"sp_a4_factory",       "Factory Advanced",				4},
-	{"sp_a4_core_access",   "Core Access Advanced",			5},
-	{"sp_a4_finale",        "Finale Advanced",				5}
+	{"sp_a1_tramride",      "Tram Ride Advanced",			1,	"1952"},
+	{"sp_a1_mel_intro",     "Mel Intro Advanced",			1,	"1952"},
+	{"sp_a1_lift",          "Lift Advanced",				1,	"1952"},
+	{"sp_a1_garden",        "Garden Advanced",				1,	"1952"},
+	{"sp_a2_garden_de",     "Destroyed Garden Advanced",	2,	"EXTENDED RELAXATION"},
+	{"sp_a2_underbounce",   "Underbounce Advanced",			2,	"EXTENDED RELAXATION"},
+	{"sp_a2_once_upon",     "Once Upon Advanced",			2,	"EXTENDED RELAXATION"},
+	{"sp_a2_past_power",    "Past Power Advanced",			2,	"EXTENDED RELAXATION"},
+	{"sp_a2_ramp",          "Ramp Advanced",				2,	"EXTENDED RELAXATION"},
+	{"sp_a2_firestorm",     "Firestorm Advanced",			2,	"EXTENDED RELAXATION"},
+	{"sp_a3_junkyard",      "Junkyard Advanced",			3,	"THE ASCENT"},
+	{"sp_a3_concepts",      "Concepts Advanced",			3,	"THE ASCENT"},
+	{"sp_a3_paint_fling",   "Paint Fling Advanced",			3,	"THE ASCENT"},
+	{"sp_a3_faith_plate",   "Faith Plate Advanced",			3,	"THE ASCENT"},
+	{"sp_a3_transition",    "Transition Advanced",			3,	"THE ASCENT"},
+	{"sp_a4_overgrown",     "Overgrown Advanced",			4,	"ORGANIC COMPLICATIONS"},
+	{"sp_a4_tb_over_goo",   "Funnel Over Goo Advanced",		4,	"ORGANIC COMPLICATIONS"},
+	{"sp_a4_two_of_a_kind", "Two of a Kind Advanced",		4,	"ORGANIC COMPLICATIONS"},
+	{"sp_a4_destroyed",     "Destroyed Advanced",			4,	"ORGANIC COMPLICATIONS"},
+	{"sp_a4_factory",       "Factory Advanced",				4,	"ORGANIC COMPLICATIONS"},
+	{"sp_a4_core_access",   "Core Access Advanced",			5,	"INTRUSION"},
+	{"sp_a4_finale",        "Finale Advanced",				5,	"INTRUSION"},
+	{"sp_a5_credits",		"Credits Advanced",				6,	"The End :D"}
 };
 
 // Check to see which Mel map is being played.
@@ -517,14 +548,14 @@ MapParams* InMelCampaignMap(bool advanced)
 	{
 		for (int i = 0; i < melAdvancedCampaignMaps.size(); i++)
 		{
-			if (FStrEq(melAdvancedCampaignMaps[i].filename, CURMAPNAME)) return &melAdvancedCampaignMaps[i];
+			if (FStrEq(melAdvancedCampaignMaps[i].mapfile, CURMAPFILENAME)) return &melAdvancedCampaignMaps[i];
 		}
 	}
 	else
 	{
 		for (int i = 0; i < melStoryCampaignMaps.size(); i++)
 		{
-			if (FStrEq(melStoryCampaignMaps[i].filename, CURMAPNAME)) return &melStoryCampaignMaps[i];
+			if (FStrEq(melStoryCampaignMaps[i].mapfile, CURMAPFILENAME)) return &melStoryCampaignMaps[i];
 		}
 	}
 	return NULL;

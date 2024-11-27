@@ -423,7 +423,7 @@ void GelocityTournament(IConVar* var, const char* pOldValue, float flOldValue)
 	P2MMLog(0, false, "Gelocity tournament mode ConVar was changed from %i to %i!", (int)flOldValue, ((ConVar*)var)->GetBool());
 	P2MMLog(1, false, "Restarting map based on tournament mode change!");
 
-	engineClient->ExecuteClientCmd(std::string("changelevel " + std::string(CURMAPNAME)).c_str());
+	engineClient->ExecuteClientCmd(std::string("changelevel " + std::string(CURMAPFILENAME)).c_str());
 }
 ConVar p2mm_gelocity_tournamentmode("p2mm_gelocity_tournamentmode", "0", FCVAR_NONE, "Turn on or off tournament mode.", true, 0, true, 1, GelocityTournament);
 
@@ -929,6 +929,8 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 
+	g_pDiscordIntegration->RPC->details = "Main Menu";
+	g_pDiscordIntegration->UpdateDiscordRPC();
 	P2MMLog(0, false, "Loaded plugin! Horray! :D");
 	m_bPluginLoaded = true;
 	return true;
@@ -950,11 +952,11 @@ void CP2MMServerPlugin::Unload(void)
 
 	g_pDiscordIntegration->RPC->state = "See you around!";
 	g_pDiscordIntegration->RPC->details = "Shutting down...";
-	g_pDiscordIntegration->RPC->startTimestamp = 0;
-	g_pDiscordIntegration->RPC->endTimestamp = 0;
 	g_pDiscordIntegration->RPC->smallImageKey = "wave";
 	g_pDiscordIntegration->RPC->smallImageText = "See you around!";
-	Discord_UpdatePresence(g_pDiscordIntegration->RPC);
+	g_pDiscordIntegration->RPC->partySize = 0;
+	g_pDiscordIntegration->RPC->partyMax = 0;
+	g_pDiscordIntegration->UpdateDiscordRPC();
 
 	P2MMLog(0, true, "Removing listeners for game events...");
 	gameeventmanager->RemoveListener(this);
@@ -1052,62 +1054,82 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 		}
 	}
 
-	std::string changemapstr = std::string("The server has changed the map to: `" + std::string(CURMAPNAME) + "`");
+	std::string changemapstr = std::string("The server has changed the map to: `" + std::string(CURMAPFILENAME) + "`");
 	g_pDiscordIntegration->SendWebHookEmbed("Server", changemapstr, EMBEDCOLOR_SERVER, false);
 
-	std::string curplayercount = std::to_string(CURPLAYERCOUNT());
-	std::string maxplayercount = std::to_string(g_pGlobals->maxClients);
-	std::string curMapName("Map: " + std::string(CURMAPNAME));
-	std::string activityState = std::string("Players: (") + curplayercount + "/" + maxplayercount + ")";
-	g_pDiscordIntegration->RPC->state = activityState.c_str();
-	g_pDiscordIntegration->RPC->details = curMapName.c_str();
+	g_pDiscordIntegration->RPC->state = "Players: ";
+	g_pDiscordIntegration->RPC->partySize = CURPLAYERCOUNT();
+	int maxPlayers = MAX_PLAYERS;
+	g_pDiscordIntegration->RPC->partyMax = maxPlayers;
 
 	MapParams* map = NULL;
 	std::string imgKey = "";
+	std::string mapName = "Map: ";
+	const char* mapChapterName;
 	switch (this->iCurGameIndex)
 	{
 	case (0):
-		if (FStrEq(CURMAPNAME, "mp_coop_community_hub"))
+		if (FStrEq(CURMAPFILENAME, "mp_coop_community_hub"))
 		{
 			g_pDiscordIntegration->RPC->smallImageKey = "coop";
 			g_pDiscordIntegration->RPC->smallImageText = "Community Hub";
+			g_pDiscordIntegration->RPC->details = "Map: Community Hub";
+			break;
 		}
-		else if (std::strstr(CURMAPNAME, "sp_a"))
+		
+		if (std::strstr(CURMAPFILENAME, "sp_"))
 		{
 			map = InP2CampaignMap();
 			imgKey = std::string("chapter" + std::to_string(map->chapter));
 			g_pDiscordIntegration->RPC->smallImageKey = imgKey.c_str();
-			g_pDiscordIntegration->RPC->smallImageText = map->mapname;
+			mapChapterName = map->chaptername;
+			g_pDiscordIntegration->RPC->smallImageText = mapChapterName;
 		}
-		else if (std::strstr(CURMAPNAME, "gelocity"))
+		else if (std::strstr(CURMAPFILENAME, "gelocity"))
 		{
 			map = InGelocityMap();
 			g_pDiscordIntegration->RPC->smallImageKey = "race";
-			g_pDiscordIntegration->RPC->smallImageText = map->mapname;
+			const char* gelocityMapName = map->mapname;
+			g_pDiscordIntegration->RPC->smallImageText = gelocityMapName;
+		}
+		else if (std::strstr(CURMAPFILENAME, "workshop"))
+		{
+			g_pDiscordIntegration->RPC->smallImageKey = "workshop";
+			g_pDiscordIntegration->RPC->smallImageText = "Workshop Map";
+			std::string mapFileName(CURMAPFILENAME);
+			mapName = mapName + mapFileName.substr(mapFileName.find_last_of("/"));
+			g_pDiscordIntegration->RPC->details = mapName.c_str();
+			break;
 		}
 		else
 		{
 			map = InP2CampaignMap(true);
 			g_pDiscordIntegration->RPC->smallImageKey = "coop";
-			g_pDiscordIntegration->RPC->smallImageText = map->mapname;
+			const char* coopBranchName = map->chaptername;
+			g_pDiscordIntegration->RPC->smallImageText = coopBranchName;
 		}
+		mapName = mapName + std::string(map->mapname);
+		g_pDiscordIntegration->RPC->details = mapName.c_str();
 		break;
 	case (1):
-		if (FStrEq(CURMAPNAME, "mp_coop_community_hub")) break;
+		if (FStrEq(CURMAPFILENAME, "mp_coop_community_hub")) break;
 
-		if (std::strstr(CURMAPNAME, "sp_"))
+		if (std::strstr(CURMAPFILENAME, "sp_"))
 			map = InMelCampaignMap(true);
 		else
 			map = InMelCampaignMap();
 		imgKey = std::string("melchapter" + std::to_string(map->chapter));
 		g_pDiscordIntegration->RPC->smallImageKey = imgKey.c_str();
-		g_pDiscordIntegration->RPC->smallImageText = map->mapname;
+		mapChapterName = map->chaptername;
+		g_pDiscordIntegration->RPC->smallImageText = mapChapterName;
+		mapName = mapName + std::string(map->mapname);
+		g_pDiscordIntegration->RPC->details = mapName.c_str();
 		break;
 	default:
 		break;
 	}
 
-	Discord_UpdatePresence(g_pDiscordIntegration->RPC);
+	g_pDiscordIntegration->UpdateDiscordRPC();
 }
 
 //---------------------------------------------------------------------------------
@@ -1551,8 +1573,11 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 	if (p2mm_discord_webhook.GetBool())
 	{
 		CBasePlayer* pPlayer = UTIL_PlayerByIndex(entindex);
-		P2MMLog(0, true, "Webhook warning called");
-		UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, "This lobby has Discord Webhook Intergration enabled. All of your ingame messages may be sent to a Discord channel.");
+		if (pPlayer)
+		{
+			P2MMLog(0, true, "Warning for enabled webhooks sent to player index %i.", entindex);
+			UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, "This lobby has Discord Webhook Intergration enabled. All of your ingame messages may be sent to a Discord channel.");
+		}
 	}
 
 	if (g_pScriptVM)
@@ -1572,13 +1597,12 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 			g_pScriptVM->Call<short, int>(ge_func, NULL, false, NULL, userid, entindex);
 	}
 
-	std::string curplayercount = std::to_string(CURPLAYERCOUNT());
-	std::string maxplayercount = std::to_string(g_pGlobals->maxClients);
-	std::string curMapName("Map: " + std::string(CURMAPNAME));
-	std::string activityState = std::string("Players: (") + curplayercount + "/" + maxplayercount + ")";
-	g_pDiscordIntegration->RPC->state = activityState.c_str();
-	g_pDiscordIntegration->RPC->details = curMapName.c_str();;
-	Discord_UpdatePresence(g_pDiscordIntegration->RPC);
+	// Update Discord RPC
+	g_pDiscordIntegration->RPC->state = "Players: ";
+	g_pDiscordIntegration->RPC->partySize = CURPLAYERCOUNT();
+	int maxPlayers = MAX_PLAYERS;
+	g_pDiscordIntegration->RPC->partyMax = maxPlayers;
+	g_pDiscordIntegration->UpdateDiscordRPC();
 	return;
 }
 
@@ -1603,6 +1627,7 @@ void CP2MMServerPlugin::GameFrame(bool simulating)
 void CP2MMServerPlugin::LevelShutdown(void)
 {
 	p2mm_loop.SetValue("0"); // REMOVE THIS at some point...
+	P2MMLog(0, false, CURMAPFILENAME);
 }
 
 //---------------------------------------------------------------------------------

@@ -33,10 +33,10 @@ class CPortal_Player;
 // Color macros for game chat and console printing.
 #define P2MM_PLUGIN_CONSOLE_COLOR  Color(100, 192, 252, 255) // Light Blue
 #define P2MM_VSCRIPT_CONSOLE_COLOR Color(110, 247, 76, 255)  // Light Green
-#define P2MM_DISCORD_CONSOLE_COLOR_NORMAL Color(88, 101, 242, 255)
-#define P2MM_DISCORD_CONSOLE_COLOR_WARNING Color(255, 187, 28, 255)
+#define P2MM_DISCORD_CONSOLE_COLOR_NORMAL Color(0, 200, 255, 255) // Even Lighter Blue
+#define P2MM_DISCORD_CONSOLE_COLOR_WARNING Color(255, 150, 0, 255) // Orange
 
-#define CURMAPNAME STRING(g_pGlobals->mapname)
+#define CURMAPFILENAME STRING(g_pGlobals->mapname)
 #define MAX_PLAYERS g_pGlobals->maxClients
 
 // Used for autocomplete console commands.
@@ -89,9 +89,10 @@ typedef struct hudtextparms_s
 // Struct for map arrays.
 typedef struct
 {
-	const char* filename;
+	const char* mapfile;
 	const char* mapname;
 	int chapter;
+	const char* chaptername;
 } MapParams;
 
 MapParams* InGelocityMap();

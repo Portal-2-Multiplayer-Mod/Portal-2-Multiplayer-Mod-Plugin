@@ -1069,13 +1069,13 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 	switch (this->iCurGameIndex)
 	{
 	case (0):
-		if (CURMAPFILENAME.compare("mp_coop_community_hub"))
+		if (CURMAPFILENAME.compare("mp_coop_community_hub") == 0)
 		{
 			details = "Map: Community Hub";
 			smallImageKey = "coop";
 			smallImageText = "Community Hub";
 		}
-		else if (CURMAPFILENAME.find("sp_"))
+		else if (CURMAPFILENAME.find("sp_") != std::string::npos)
 		{
 			map = InP2CampaignMap();
 			if (!map) break;
@@ -1084,7 +1084,7 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 			smallImageKey = std::string("chapter" + std::to_string(map->chapter));
 			smallImageText = map->chaptername;
 		}
-		else if (CURMAPFILENAME.find("gelocity"))
+		else if (CURMAPFILENAME.find("gelocity") != std::string::npos)
 		{
 			map = InGelocityMap();
 			if (!map) break;
@@ -1093,7 +1093,7 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 			smallImageKey = "race";
 			smallImageText = map->mapname;
 		}
-		else if (CURMAPFILENAME.find("workshop"))
+		else if (CURMAPFILENAME.find("workshop") != std::string::npos)
 		{
 			details = details + CURMAPFILENAME.substr(CURMAPFILENAME.find_last_of("/") + 1);
 			smallImageKey = "workshop";
@@ -1116,7 +1116,7 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 	case (1):
 		if (CURMAPFILENAME.compare("mp_coop_community_hub") == 0) break;
 
-		if (CURMAPFILENAME.find("sp_"))
+		if (CURMAPFILENAME.find("sp_") != std::string::npos)
 			map = InMelCampaignMap(true);
 		else
 			map = InMelCampaignMap();
@@ -1561,7 +1561,6 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 // Purpose: Called when a player is "activated" in the server, meaning fully loaded, not fully connect which happens before that.
 // Called when game event "player_activate" is also called so this is used to call "GEClientActive".
 //---------------------------------------------------------------------------------
-
 void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 {
 	short userid = engineServer->GetPlayerUserId(pEntity);

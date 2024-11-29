@@ -331,9 +331,9 @@ std::vector<MapParams> gelocityMaps =
 // Returns 0 if not in a Gelocity map.
 MapParams* InGelocityMap()
 {
-	for (int i = 0; i < gelocityMaps.size(); i++)
+	for (size_t i = 0; i < gelocityMaps.size(); i++)
 	{
-		if (CURMAPFILENAME.compare(gelocityMaps[i].mapfile) == 0) return &gelocityMaps[i];
+		if (FStrEq(CURMAPFILENAME, gelocityMaps[i].mapfile)) return &gelocityMaps[i];
 	}
 	return NULL;
 }
@@ -471,16 +471,16 @@ MapParams* InP2CampaignMap(bool mpMaps)
 {
 	if (mpMaps)
 	{
-		for (int i = 0; i < mpCampaignMaps.size(); i++)
+		for (size_t i = 0; i < mpCampaignMaps.size(); i++)
 		{
-			if (CURMAPFILENAME.compare(mpCampaignMaps[i].mapfile) == 0) return &mpCampaignMaps[i];
+			if (FStrEq(CURMAPFILENAME, mpCampaignMaps[i].mapfile)) return &mpCampaignMaps[i];
 		}
 	}
 	else
 	{
-		for (int i = 0; i < spCampaignMaps.size(); i++)
+		for (size_t i = 0; i < spCampaignMaps.size(); i++)
 		{
-			if (CURMAPFILENAME.compare(spCampaignMaps[i].mapfile) == 0) return &spCampaignMaps[i];
+			if (FStrEq(CURMAPFILENAME, spCampaignMaps[i].mapfile)) return &spCampaignMaps[i];
 		}
 	}
 	return NULL;
@@ -546,16 +546,16 @@ MapParams* InMelCampaignMap(bool advanced)
 {
 	if (advanced)
 	{
-		for (int i = 0; i < melAdvancedCampaignMaps.size(); i++)
+		for (size_t i = 0; i < melAdvancedCampaignMaps.size(); i++)
 		{
-			if (CURMAPFILENAME.compare(melAdvancedCampaignMaps[i].mapfile) == 0) return &melAdvancedCampaignMaps[i];
+			if (FStrEq(CURMAPFILENAME, melAdvancedCampaignMaps[i].mapfile)) return &melAdvancedCampaignMaps[i];
 		}
 	}
 	else
 	{
-		for (int i = 0; i < melStoryCampaignMaps.size(); i++)
+		for (size_t i = 0; i < melStoryCampaignMaps.size(); i++)
 		{
-			if (CURMAPFILENAME.compare(melStoryCampaignMaps[i].mapfile) == 0) return &melStoryCampaignMaps[i];
+			if (FStrEq(CURMAPFILENAME, melStoryCampaignMaps[i].mapfile)) return &melStoryCampaignMaps[i];
 		}
 	}
 	return NULL;

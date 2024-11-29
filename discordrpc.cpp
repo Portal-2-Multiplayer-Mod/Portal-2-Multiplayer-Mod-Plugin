@@ -204,29 +204,29 @@ void CDiscordIntegration::SendWebHookEmbed(std::string title, std::string descri
 CDiscordIntegration::CDiscordIntegration()
 {
 	this->RPCRunning = false; // Flag bool for whether the RPC is running.
-	DiscordRichPresence* newRPC = new DiscordRichPresence;
-	newRPC->state = "";
-	newRPC->details = "Starting up...";
-	newRPC->startTimestamp = time(0);
-	newRPC->endTimestamp = 0;
-	newRPC->largeImageKey = "p2mmlogo";
-	newRPC->largeImageText = "Portal 2";
-	newRPC->smallImageKey = "";
-	newRPC->smallImageText = "";
-	newRPC->partyId = "";
-	newRPC->partySize = 0;
-	newRPC->partyMax = 0;
-	newRPC->matchSecret = "";
-	newRPC->joinSecret = "";
-	newRPC->spectateSecret = "";
-	newRPC->instance = 0;
-	this->RPC = newRPC;
+
+	this->RPC = new DiscordRichPresence;
+	this->RPC->state = "";
+	this->RPC->details = "Starting up...";
+	this->RPC->startTimestamp = time(0);
+	this->RPC->endTimestamp = 0;
+	this->RPC->largeImageKey = "p2mmlogo";
+	this->RPC->largeImageText = "Portal 2";
+	this->RPC->smallImageKey = "";
+	this->RPC->smallImageText = "";
+	this->RPC->partyId = "";
+	this->RPC->partySize = 0;
+	this->RPC->partyMax = 0;
+	this->RPC->matchSecret = "";
+	this->RPC->joinSecret = "";
+	this->RPC->spectateSecret = "";
+	this->RPC->instance = 0;
 }
 
 CDiscordIntegration::~CDiscordIntegration()
 {
-	delete RPC;
-	this->RPC = NULL;
+	delete this->RPC;
+	this->RPC = nullptr;
 }
 
 static void HandleDiscordReady(const DiscordUser* connectedUser)

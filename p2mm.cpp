@@ -423,7 +423,7 @@ void GelocityTournament(IConVar* var, const char* pOldValue, float flOldValue)
 	P2MMLog(0, false, "Gelocity tournament mode ConVar was changed from %i to %i!", (int)flOldValue, ((ConVar*)var)->GetBool());
 	P2MMLog(1, false, "Restarting map based on tournament mode change!");
 
-	engineClient->ExecuteClientCmd(std::string("changelevel " + CURMAPFILENAME).c_str());
+	engineClient->ExecuteClientCmd(std::string("changelevel " + std::string(CURMAPFILENAME)).c_str());
 }
 ConVar p2mm_gelocity_tournamentmode("p2mm_gelocity_tournamentmode", "0", FCVAR_NONE, "Turn on or off tournament mode.", true, 0, true, 1, GelocityTournament);
 
@@ -1057,83 +1057,77 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 	std::string changemapstr = std::string("The server has changed the map to: `" + std::string(CURMAPFILENAME) + "`");
 	g_pDiscordIntegration->SendWebHookEmbed("Server", changemapstr, EMBEDCOLOR_SERVER, false);
 
-	g_pDiscordIntegration->RPC->state = "Players: ";
-	g_pDiscordIntegration->RPC->partySize = CURPLAYERCOUNT();
-	int maxPlayers = MAX_PLAYERS;
-	g_pDiscordIntegration->RPC->partyMax = maxPlayers;
-
 	MapParams* map = NULL;
-	std::string details = "Map: ";
-	std::string smallImageKey = "";
-	std::string smallImageText = "";
+	char details[128] = "Map: ";
+	char smallImageKey[32] = { 0 };
+	char smallImageText[128] = { 0 };
 	switch (this->iCurGameIndex)
 	{
 	case (0):
-		if (CURMAPFILENAME.compare("mp_coop_community_hub") == 0)
+		if (FStrEq(CURMAPFILENAME, "mp_coop_community_hub"))
 		{
-			details = "Map: Community Hub";
-			smallImageKey = "coop";
-			smallImageText = "Community Hub";
+			V_strcat(details, "Community Hub", 128);
+			V_strcat(smallImageKey, "coop", 32);
+			V_strcat(smallImageText, "Community Hub", 128);
 		}
-		else if (CURMAPFILENAME.find("sp_") != std::string::npos)
+		else if (std::strstr(CURMAPFILENAME, "sp_"))
 		{
 			map = InP2CampaignMap();
 			if (!map) break;
 
-			details = details + std::string(map->mapname);
-			smallImageKey = std::string("chapter" + std::to_string(map->chapter));
-			smallImageText = map->chaptername;
+			V_strcat(details, map->mapname, 128);
+			V_snprintf(smallImageKey, 32, "chapter%i", map->chapter);
+			V_strcat(smallImageText, map->chaptername, 128);
 		}
-		else if (CURMAPFILENAME.find("gelocity") != std::string::npos)
+		else if (std::strstr(CURMAPFILENAME, "gelocity"))
 		{
 			map = InGelocityMap();
 			if (!map) break;
 
-			details = details + std::string(map->mapname);
-			smallImageKey = "race";
-			smallImageText = map->mapname;
+			V_strcat(details, map->mapname, 128);
+			V_strcat(smallImageKey, "race", 32);
+			V_strcat(smallImageText, map->mapname, 128);
 		}
-		else if (CURMAPFILENAME.find("workshop") != std::string::npos)
+		else if (std::strstr(CURMAPFILENAME, "workshop/"))
 		{
-			details = details + CURMAPFILENAME.substr(CURMAPFILENAME.find_last_of("/") + 1);
-			smallImageKey = "workshop";
-			smallImageText = "Workshop Map";
+			const char* lastForwardSlash = strrchr(CURMAPFILENAME, '/');
+			if (!lastForwardSlash) break;
+			V_strcpy(details, lastForwardSlash + 1);
+			V_strcat(smallImageKey, "workshop", 32);
+			V_strcat(smallImageText, "Workshop Map", 128);
 		}
 		else
 		{
 			map = InP2CampaignMap(true);
 			if (!map) break;
 
-			details = details + std::string(map->mapname);
-			smallImageKey = "coop";
-			smallImageText = map->chaptername;
+			V_strcat(details, map->mapname, 128);
+			V_strcat(smallImageKey, "coop", 32);
+			V_strcat(smallImageText, map->chaptername, 128);
 		}
-
-		g_pDiscordIntegration->RPC->details = details.c_str();
-		g_pDiscordIntegration->RPC->smallImageKey = smallImageKey.c_str();
-		g_pDiscordIntegration->RPC->smallImageText = smallImageText.c_str();
 		break;
 	case (1):
-		if (CURMAPFILENAME.compare("mp_coop_community_hub") == 0) break;
+		if (FStrEq(CURMAPFILENAME, "mp_coop_community_hub")) break;
 
-		if (CURMAPFILENAME.find("sp_") != std::string::npos)
+		if (std::strstr(CURMAPFILENAME, "sp_"))
 			map = InMelCampaignMap(true);
 		else
 			map = InMelCampaignMap();
 		if (!map) break;
 
-		details = details + std::string(map->mapname);
-		smallImageKey = std::string("melchapter" + std::to_string(map->chapter));
-		smallImageText = map->chaptername;
-
-		g_pDiscordIntegration->RPC->smallImageKey = smallImageKey.c_str();
-		g_pDiscordIntegration->RPC->smallImageText = smallImageText.c_str();
-		g_pDiscordIntegration->RPC->details = details.c_str();
+		V_strcat(details, map->mapname, 128);
+		V_snprintf(smallImageKey, 32, "melchapter%i", map->chapter);
+		V_strcat(smallImageText, map->chaptername, 128);
 		break;
 	default:
 		break;
 	}
-
+	g_pDiscordIntegration->RPC->state = "Players: ";
+	g_pDiscordIntegration->RPC->details = details;
+	g_pDiscordIntegration->RPC->smallImageKey = smallImageKey;
+	g_pDiscordIntegration->RPC->smallImageText = smallImageText;
+	g_pDiscordIntegration->RPC->partySize = CURPLAYERCOUNT();
+	g_pDiscordIntegration->RPC->partyMax = MAX_PLAYERS;
 	g_pDiscordIntegration->UpdateDiscordRPC();
 }
 
@@ -1604,8 +1598,7 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 	// Update Discord RPC
 	g_pDiscordIntegration->RPC->state = "Players: ";
 	g_pDiscordIntegration->RPC->partySize = CURPLAYERCOUNT();
-	int maxPlayers = MAX_PLAYERS;
-	g_pDiscordIntegration->RPC->partyMax = maxPlayers;
+	g_pDiscordIntegration->RPC->partyMax = MAX_PLAYERS;
 	g_pDiscordIntegration->UpdateDiscordRPC();
 	return;
 }

@@ -32,10 +32,8 @@ extern ConVar p2mm_discord_webhook;
 class CDiscordIntegration {
 public:
 	bool RPCRunning;
-	DiscordRichPresence* RPC;
 
 	CDiscordIntegration();
-	~CDiscordIntegration();
 
 	void SendWebHookEmbed(std::string title = "Unknown", std::string description = "*Insert Yapping Here*", int color = EMBEDCOLOR_PLAYER, bool hasFooter = true);
 	bool StartDiscordRPC();

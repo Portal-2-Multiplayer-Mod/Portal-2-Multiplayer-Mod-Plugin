@@ -198,11 +198,9 @@ void UTIL_ClientPrint(CBasePlayer* player, int msg_dest, const char* msg_name, c
 //---------------------------------------------------------------------------------
 void UTIL_HudMessage(CBasePlayer* pPlayer, const hudtextparms_t &textparms, const char* pMessage)
 {
-	static auto _HudMessage = reinterpret_cast<void(__cdecl*)(CBasePlayer*, const hudtextparms_t &, const char*)>(Memory::Scanner::Scan(SERVERDLL, "55 8B EC 83 EC 20 8D 4D ?? E8 ?? ?? ?? ?? 8B 45 ?? 8D 4D ?? 85 C0 74 ?? 50 E8 ?? ?? ?? ?? EB ?? E8 ?? ?? ?? ?? 56"));
+	static auto _HudMessage = reinterpret_cast<void (__cdecl*)(CBasePlayer*, const hudtextparms_t &, const char*)>(Memory::Scanner::Scan(SERVERDLL, "55 8B EC 83 EC 20 8D 4D ?? E8 ?? ?? ?? ?? 8B 45 ?? 8D 4D ?? 85 C0 74 ?? 50 E8 ?? ?? ?? ?? EB ?? E8 ?? ?? ?? ?? 56"));
 	_HudMessage(pPlayer, textparms, pMessage);
 }
-
-
 
 ///			 CBaseEntity Class Functions				\\\
 

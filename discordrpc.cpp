@@ -28,22 +28,21 @@ void WebhookCheck(IConVar* var, const char* pOldValue, float flOldValue)
 		}
 	}
 }
-ConVar p2mm_discord_webhook("p2mm_discord_webhook", "0", FCVAR_ARCHIVE | FCVAR_NOTIFY, "Enable or disable webhooks been the P2:MM Server and Discord.", true, 0, true, 1, WebhookCheck);
-ConVar p2mm_discord_webhook_url("p2mm_discord_webhook_url", "", FCVAR_ARCHIVE | FCVAR_HIDDEN, "Channel webhook URL to send messages to. Should be set in launcher, not here.");
-ConVar p2mm_discord_webhook_defaultfooter("p2mm_discord_webhook_defaultfooter", "1", FCVAR_ARCHIVE, "Enable or disable the default embed footer for webhooks.", true, 0, true, 1);
-ConVar p2mm_discord_webhook_customfooter("p2mm_discord_webhook_customfooter", "", FCVAR_ARCHIVE, "Set a custom embed footer for webhook messages.");
+ConVar p2mm_discord_webhook("p2mm_discord_webhooks", "0", FCVAR_ARCHIVE | FCVAR_NOTIFY, "Enable or disable webhooks been the P2:MM Server and Discord.", true, 0, true, 1, WebhookCheck);
+ConVar p2mm_discord_webhook_url("p2mm_discord_webhooks_url", "", FCVAR_ARCHIVE | FCVAR_HIDDEN, "Channel webhook URL to send messages to. Should be set in launcher, not here.");
+ConVar p2mm_discord_webhook_defaultfooter("p2mm_discord_webhooks_defaultfooter", "1", FCVAR_ARCHIVE, "Enable or disable the default embed footer for webhooks.", true, 0, true, 1);
+ConVar p2mm_discord_webhook_customfooter("p2mm_discord_webhooks_customfooter", "", FCVAR_ARCHIVE, "Set a custom embed footer for webhook messages.");
 
 void RPCState(IConVar* var, const char* pOldValue, float flOldValue)
 {
 	if (!g_P2MMServerPlugin.m_bPluginLoaded) return;
-	ConVar* pRPC = (ConVar*)var;
-	if (pRPC->GetBool() && !g_pDiscordIntegration->RPCRunning)
+	ConVar* cvRPC = (ConVar*)var;
+	if (cvRPC->GetBool() && !g_pDiscordIntegration->RPCRunning)
 		g_pDiscordIntegration->StartDiscordRPC();
-	if (!pRPC->GetBool() && g_pDiscordIntegration->RPCRunning)
+	if (!cvRPC->GetBool() && g_pDiscordIntegration->RPCRunning)
 		g_pDiscordIntegration->ShutdownDiscordRPC();
 }
 ConVar p2mm_discord_rpc("p2mm_discord_rpc", "1", FCVAR_ARCHIVE, "Enable or disable Discord RPC with P2:MM.", true, 0, true, 1, RPCState);
-ConVar p2mm_discord_rpc_appid("p2mm_discord_rpc_appid", "1201562647880015954", FCVAR_DEVELOPMENTONLY, "Application ID used for Discord RPC with P2:MM.");
 
 // Log Discord GameSDK logs to the console. This is mainly a developer mode only logging system and only the warning and error logs should be shown.
 void DiscordLog(int level, bool dev, const char* pMsgFormat, ...)
@@ -201,32 +200,26 @@ void CDiscordIntegration::SendWebHookEmbed(std::string title, std::string descri
 //// OLD API Documentation: https://github.com/discord/discord-api-docs/tree/legacy-gamesdk/docs/rich_presence
 ////-----------------------------------------------------------------------------
 
+static DiscordRichPresence RPC;
 CDiscordIntegration::CDiscordIntegration()
 {
 	this->RPCRunning = false; // Flag bool for whether the RPC is running.
 
-	this->RPC = new DiscordRichPresence;
-	this->RPC->state = "";
-	this->RPC->details = "Starting up...";
-	this->RPC->startTimestamp = time(0);
-	this->RPC->endTimestamp = 0;
-	this->RPC->largeImageKey = "p2mmlogo";
-	this->RPC->largeImageText = "Portal 2";
-	this->RPC->smallImageKey = "";
-	this->RPC->smallImageText = "";
-	this->RPC->partyId = "";
-	this->RPC->partySize = 0;
-	this->RPC->partyMax = 0;
-	this->RPC->matchSecret = "";
-	this->RPC->joinSecret = "";
-	this->RPC->spectateSecret = "";
-	this->RPC->instance = 0;
-}
-
-CDiscordIntegration::~CDiscordIntegration()
-{
-	delete this->RPC;
-	this->RPC = nullptr;
+	RPC.state = "";
+	RPC.details = "Starting up...";
+	RPC.startTimestamp = time(0);
+	RPC.endTimestamp = 0;
+	RPC.largeImageKey = "p2mmlogo";
+	RPC.largeImageText = "Portal 2";
+	RPC.smallImageKey = "wave";
+	RPC.smallImageText = "Welcome to P2:MM!";
+	RPC.partyId = "";
+	RPC.partySize = 0;
+	RPC.partyMax = 0;
+	RPC.matchSecret = "";
+	RPC.joinSecret = "";
+	RPC.spectateSecret = "";
+	RPC.instance = 0;
 }
 
 static void HandleDiscordReady(const DiscordUser* connectedUser)
@@ -269,24 +262,24 @@ bool CDiscordIntegration::StartDiscordRPC()
 {
 	DiscordLog(0, false, "Starting up Discord RPC!");
 
-	DiscordEventHandlers handlers;
-	memset(&handlers, 0, sizeof(handlers));
+	DiscordLog(0, true, "Setting Discord event handlers...");
+	DiscordEventHandlers* handlers = new DiscordEventHandlers;
+	handlers->ready = HandleDiscordReady;
+	handlers->disconnected = HandleDiscordDisconnected;
+	handlers->errored = HandleDiscordError;
+	handlers->joinGame = HandleDiscordJoin;
+	handlers->spectateGame = HandleDiscordSpectate;
+	handlers->joinRequest = HandleDiscordJoinRequest;
 
-	handlers.ready = HandleDiscordReady;
-	handlers.disconnected = HandleDiscordDisconnected;
-	handlers.errored = HandleDiscordError;
-	handlers.joinGame = HandleDiscordJoin;
-	handlers.spectateGame = HandleDiscordSpectate;
-	handlers.joinRequest = HandleDiscordJoinRequest;
-
+	DiscordLog(0, true, "Assosiating the plugin with the current Portal 2 branch game then initallizng RPC...");
 	char appid[255];
 	V_snprintf(appid, 255, "%d", engineServer->GetAppID());
-	Discord_Initialize(p2mm_discord_rpc_appid.GetString(), &handlers, 1, appid);
+	Discord_Initialize("1201562647880015954", handlers, 1, appid);
 
 	if (g_P2MMServerPlugin.iCurGameIndex == 1)
 	{
-		this->RPC->largeImageKey = "p2mmmellogo";
-		this->RPC->largeImageText = "Portal Stories: Mel";
+		RPC.largeImageKey = "p2mmmellogo";
+		RPC.largeImageText = "Portal Stories: Mel";
 	}
 	UpdateDiscordRPC();
 
@@ -309,36 +302,120 @@ void CDiscordIntegration::ShutdownDiscordRPC()
 
 void CDiscordIntegration::UpdateDiscordRPC()
 {
+	DiscordLog(0, true, "Updating Discord RPC!");
+
+	bool m_activeGame = true; // Add in sig for CHostState::m_activeGame
+	if (!m_activeGame)
+	{
+		RPC.details = "Main Menu";
+		RPC.partySize = 0;
+		RPC.partyMax = 0;
+		Discord_UpdatePresence(&RPC);
+		return;
+	}
+
+	MapParams* map = NULL;
+	char details[128] = "Map: ";
+	char smallImageKey[32] = { 0 };
+	char smallImageText[128] = { 0 };
+	switch (g_P2MMServerPlugin.iCurGameIndex)
+	{
+	case (0):
+		if (FStrEq(CURMAPFILENAME, "mp_coop_community_hub"))
+		{
+			V_strcat(details, "Community Hub", 128);
+			V_strcat(smallImageKey, "coop", 32);
+			V_strcat(smallImageText, "Community Hub", 128);
+		}
+		else if (std::strstr(CURMAPFILENAME, "sp_"))
+		{
+			map = InP2CampaignMap();
+			if (!map) break;
+
+			V_strcat(details, map->mapname, 128);
+			V_snprintf(smallImageKey, 32, "chapter%i", map->chapter);
+			V_strcat(smallImageText, map->chaptername, 128);
+		}
+		else if (std::strstr(CURMAPFILENAME, "gelocity"))
+		{
+			map = InGelocityMap();
+			if (!map) break;
+
+			V_strcat(details, map->mapname, 128);
+			V_strcat(smallImageKey, "race", 32);
+			V_strcat(smallImageText, map->mapname, 128);
+		}
+		else if (std::strstr(CURMAPFILENAME, "workshop/"))
+		{
+			const char* lastForwardSlash = strrchr(CURMAPFILENAME, '/');
+			if (!lastForwardSlash) break;
+			V_strcpy(details, lastForwardSlash + 1);
+			V_strcat(smallImageKey, "workshop", 32);
+			V_strcat(smallImageText, "Workshop Map", 128);
+		}
+		else
+		{
+			map = InP2CampaignMap(true);
+			if (!map) break;
+
+			V_strcat(details, map->mapname, 128);
+			V_strcat(smallImageKey, "coop", 32);
+			V_strcat(smallImageText, map->chaptername, 128);
+		}
+		break;
+	case (1):
+		if (FStrEq(CURMAPFILENAME, "mp_coop_community_hub")) break;
+
+		if (std::strstr(CURMAPFILENAME, "sp_"))
+			map = InMelCampaignMap(true);
+		else
+			map = InMelCampaignMap();
+		if (!map) break;
+
+		V_strcat(details, map->mapname, 128);
+		V_snprintf(smallImageKey, 32, "melchapter%i", map->chapter);
+		V_strcat(smallImageText, map->chaptername, 128);
+		break;
+	default:
+		break;
+	}
+	RPC.state = "Players: ";
+	RPC.details = details;
+	RPC.smallImageKey = smallImageKey;
+	RPC.smallImageText = smallImageText;
+	RPC.partySize = CURPLAYERCOUNT();
+	RPC.partyMax = MAX_PLAYERS;
+
 	DiscordLog(0, true, "Discord RPC Debug Spew:");
-	DiscordLog(0, true, "state: %s", g_pDiscordIntegration->RPC->state);
-	DiscordLog(0, true, "details: %s", g_pDiscordIntegration->RPC->details);
-	DiscordLog(0, true, "startTimestamp: %I64d", g_pDiscordIntegration->RPC->startTimestamp);
-	DiscordLog(0, true, "endTimestamp: %I64d", g_pDiscordIntegration->RPC->endTimestamp);
-	DiscordLog(0, true, "largeImageKey: %s", g_pDiscordIntegration->RPC->largeImageKey);
-	DiscordLog(0, true, "largeImageText: %s", g_pDiscordIntegration->RPC->largeImageText);
-	DiscordLog(0, true, "smallImageKey: %s", g_pDiscordIntegration->RPC->smallImageKey);
-	DiscordLog(0, true, "smallImageText: %s", g_pDiscordIntegration->RPC->smallImageText);
-	DiscordLog(0, true, "partyId: %s", g_pDiscordIntegration->RPC->partyId);
-	DiscordLog(0, true, "partySize: %i", g_pDiscordIntegration->RPC->partySize);
-	DiscordLog(0, true, "partyMax: %i", g_pDiscordIntegration->RPC->partyMax);
-	DiscordLog(0, true, "matchSecret: %s", g_pDiscordIntegration->RPC->matchSecret);
-	DiscordLog(0, true, "joinSecret: %s", g_pDiscordIntegration->RPC->joinSecret);
-	DiscordLog(0, true, "spectateSecret: %s", g_pDiscordIntegration->RPC->spectateSecret);
-	DiscordLog(0, true, "instance: %i", g_pDiscordIntegration->RPC->spectateSecret);
-	Discord_UpdatePresence(this->RPC);
+	DiscordLog(0, true, "state: %s",RPC.state);
+	DiscordLog(0, true, "details: %s", RPC.details);
+	DiscordLog(0, true, "startTimestamp: %I64d", RPC.startTimestamp);
+	DiscordLog(0, true, "endTimestamp: %I64d", RPC.endTimestamp);
+	DiscordLog(0, true, "largeImageKey: %s", RPC.largeImageKey);
+	DiscordLog(0, true, "largeImageText: %s", RPC.largeImageText);
+	DiscordLog(0, true, "smallImageKey: %s", RPC.smallImageKey);
+	DiscordLog(0, true, "smallImageText: %s", RPC.smallImageText);
+	DiscordLog(0, true, "partyId: %s", RPC.partyId);
+	DiscordLog(0, true, "partySize: %i", RPC.partySize);
+	DiscordLog(0, true, "partyMax: %i", RPC.partyMax);
+	DiscordLog(0, true, "matchSecret: %s", RPC.matchSecret);
+	DiscordLog(0, true, "joinSecret: %s", RPC.joinSecret);
+	DiscordLog(0, true, "spectateSecret: %s", RPC.spectateSecret);
+	DiscordLog(0, true, "instance: %i", RPC.spectateSecret);
+	Discord_UpdatePresence(&RPC);
 }
 
 //---------------------------------------------------------------------------------
 // Purpose: Discord RPC loop for updating presence and recieving and requests from the Discord Client.
 //---------------------------------------------------------------------------------
-// This is currently unused for the moment.
-void DiscordRPCLoop()
-{
-	if (!g_pGlobals)
-		return;
-
-#ifdef DISCORD_DISABLE_IO_THREAD
-	Discord_UpdateConnection();
-#endif
-	Discord_RunCallbacks();
-}
+// This is currently unuseds.
+//void DiscordRPCLoop()
+//{
+//	if (!g_pGlobals)
+//		return;
+//
+//#ifdef DISCORD_DISABLE_IO_THREAD
+//	Discord_UpdateConnection();
+//#endif
+//	Discord_RunCallbacks();
+//}

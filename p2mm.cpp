@@ -163,7 +163,6 @@ void updateMapsList() {
 
 		// Push the map string on to the list to display avaliable options for the command.
 		mapList.push_back(std::move(fixedRelativePath));
-		P2MMLog(0, true, mapList.back().c_str());
 	}
 }
 
@@ -211,14 +210,15 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 	}
 
 	// A check done by the menu to request to use the last recorded map in the p2mm_lastmap ConVar.
-	const char* requestedMap = args.Arg(1);
+	char requestedMap[256] = { 0 };
+	V_strcpy(requestedMap, args.Arg(1));
 	P2MMLog(0, true, "Requested Map: %s", requestedMap);
 	P2MMLog(0, true, "p2mm_lastmap: %s", p2mm_lastmap.GetString());
-	if (FSubStr(requestedMap, "P2MM_LASTMAP"))
+	if (FStrEq(requestedMap, "P2MM_LASTMAP"))
 	{
 		if (!engineServer->IsMapValid(p2mm_lastmap.GetString()))
 		{
-			// Running disconnect to make the error screen appear causes the music to stop, don't let that to happen, so here it is start it again.
+			// Running disconnect to make the error screen appear causes the music to stop, don't let that to happen, so here it is started it again.
 
 			// Get the current act so we can start the right main menu music
 			int iAct = ConVarRef("ui_lastact_played").GetInt();
@@ -235,7 +235,7 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 			updateMapsList();
 			return;
 		}
-		requestedMap = p2mm_lastmap.GetString();
+		V_strcpy(requestedMap, p2mm_lastmap.GetString());
 		P2MMLog(0, true, "P2MM_LASTMAP called! Running Last Map: \"%s\"", requestedMap);
 	}
 	p2mm_lastmap.SetValue(""); // Set last map ConVar to blank so it doesn't trigger level changes where we don't want it to trigger.
@@ -247,7 +247,7 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 		if (tempMapStr == map)
 		{
 			tempMapStr = std::string("workshop/" + tempMapStr);
-			requestedMap = tempMapStr.c_str();
+			V_strcpy(requestedMap, tempMapStr.c_str());
 		}
 	}
 
@@ -837,6 +837,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	// Discord RPC
 	P2MMLog(0, true, "Checking if Discord RPC should be started...");
 	if (p2mm_discord_rpc.GetBool() && !g_pDiscordIntegration->RPCRunning)
+		P2MMLog(0, true, "Discord RPC enabled! Starting!");
 		g_pDiscordIntegration->StartDiscordRPC();
 
 	// Add listener for all used game events
@@ -928,9 +929,9 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		this->m_bNoUnload = true;
 		return false;
 	}
-
-	g_pDiscordIntegration->RPC->details = "Main Menu";
+	
 	g_pDiscordIntegration->UpdateDiscordRPC();
+
 	P2MMLog(0, false, "Loaded plugin! Horray! :D");
 	m_bPluginLoaded = true;
 	return true;
@@ -949,14 +950,6 @@ void CP2MMServerPlugin::Unload(void)
 	}
 
 	P2MMLog(0, false, "Unloading Plugin...");
-
-	g_pDiscordIntegration->RPC->state = "See you around!";
-	g_pDiscordIntegration->RPC->details = "Shutting down...";
-	g_pDiscordIntegration->RPC->smallImageKey = "wave";
-	g_pDiscordIntegration->RPC->smallImageText = "See you around!";
-	g_pDiscordIntegration->RPC->partySize = 0;
-	g_pDiscordIntegration->RPC->partyMax = 0;
-	g_pDiscordIntegration->UpdateDiscordRPC();
 
 	P2MMLog(0, true, "Removing listeners for game events...");
 	gameeventmanager->RemoveListener(this);
@@ -1024,6 +1017,8 @@ void CP2MMServerPlugin::ServerActivate(edict_t* pEdictList, int edictCount, int 
 //---------------------------------------------------------------------------------
 void CP2MMServerPlugin::LevelInit(char const* pMapName)
 {
+	P2MMLog(0, true, "Level Init!");
+
 	// Dedicated server paint map patch
 	// Paint usage doesn't function naturally on dedicated servers, so this will help enable it again.
 	if (p2mm_ds_enable_paint.GetBool() && engineServer->IsDedicatedServer())
@@ -1057,77 +1052,7 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 	std::string changemapstr = std::string("The server has changed the map to: `" + std::string(CURMAPFILENAME) + "`");
 	g_pDiscordIntegration->SendWebHookEmbed("Server", changemapstr, EMBEDCOLOR_SERVER, false);
 
-	MapParams* map = NULL;
-	char details[128] = "Map: ";
-	char smallImageKey[32] = { 0 };
-	char smallImageText[128] = { 0 };
-	switch (this->iCurGameIndex)
-	{
-	case (0):
-		if (FStrEq(CURMAPFILENAME, "mp_coop_community_hub"))
-		{
-			V_strcat(details, "Community Hub", 128);
-			V_strcat(smallImageKey, "coop", 32);
-			V_strcat(smallImageText, "Community Hub", 128);
-		}
-		else if (std::strstr(CURMAPFILENAME, "sp_"))
-		{
-			map = InP2CampaignMap();
-			if (!map) break;
-
-			V_strcat(details, map->mapname, 128);
-			V_snprintf(smallImageKey, 32, "chapter%i", map->chapter);
-			V_strcat(smallImageText, map->chaptername, 128);
-		}
-		else if (std::strstr(CURMAPFILENAME, "gelocity"))
-		{
-			map = InGelocityMap();
-			if (!map) break;
-
-			V_strcat(details, map->mapname, 128);
-			V_strcat(smallImageKey, "race", 32);
-			V_strcat(smallImageText, map->mapname, 128);
-		}
-		else if (std::strstr(CURMAPFILENAME, "workshop/"))
-		{
-			const char* lastForwardSlash = strrchr(CURMAPFILENAME, '/');
-			if (!lastForwardSlash) break;
-			V_strcpy(details, lastForwardSlash + 1);
-			V_strcat(smallImageKey, "workshop", 32);
-			V_strcat(smallImageText, "Workshop Map", 128);
-		}
-		else
-		{
-			map = InP2CampaignMap(true);
-			if (!map) break;
-
-			V_strcat(details, map->mapname, 128);
-			V_strcat(smallImageKey, "coop", 32);
-			V_strcat(smallImageText, map->chaptername, 128);
-		}
-		break;
-	case (1):
-		if (FStrEq(CURMAPFILENAME, "mp_coop_community_hub")) break;
-
-		if (std::strstr(CURMAPFILENAME, "sp_"))
-			map = InMelCampaignMap(true);
-		else
-			map = InMelCampaignMap();
-		if (!map) break;
-
-		V_strcat(details, map->mapname, 128);
-		V_snprintf(smallImageKey, 32, "melchapter%i", map->chapter);
-		V_strcat(smallImageText, map->chaptername, 128);
-		break;
-	default:
-		break;
-	}
-	g_pDiscordIntegration->RPC->state = "Players: ";
-	g_pDiscordIntegration->RPC->details = details;
-	g_pDiscordIntegration->RPC->smallImageKey = smallImageKey;
-	g_pDiscordIntegration->RPC->smallImageText = smallImageText;
-	g_pDiscordIntegration->RPC->partySize = CURPLAYERCOUNT();
-	g_pDiscordIntegration->RPC->partyMax = MAX_PLAYERS;
+	// Update Discord RPC to update current map information.
 	g_pDiscordIntegration->UpdateDiscordRPC();
 }
 
@@ -1595,10 +1520,7 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 			g_pScriptVM->Call<short, int>(ge_func, NULL, false, NULL, userid, entindex);
 	}
 
-	// Update Discord RPC
-	g_pDiscordIntegration->RPC->state = "Players: ";
-	g_pDiscordIntegration->RPC->partySize = CURPLAYERCOUNT();
-	g_pDiscordIntegration->RPC->partyMax = MAX_PLAYERS;
+	// Update Discord RPC to update player count.
 	g_pDiscordIntegration->UpdateDiscordRPC();
 	return;
 }
@@ -1623,7 +1545,10 @@ void CP2MMServerPlugin::GameFrame(bool simulating)
 //---------------------------------------------------------------------------------
 void CP2MMServerPlugin::LevelShutdown(void)
 {
+	P2MMLog(0, true, "Level Shutdown!");
 	p2mm_loop.SetValue("0"); // REMOVE THIS at some point...
+	// Update Discord RPC to update the level information or to say the host is on the main menu.
+	g_pDiscordIntegration->UpdateDiscordRPC();
 }
 
 //---------------------------------------------------------------------------------

@@ -43,6 +43,7 @@ void        ClientPrint(int playerIndex, const char* msg);             | "Print 
 void        HudPrint(int playerIndex, const char* msg, Vector(float x, float y, int channel), int effect, float fxTime, Vector RGB1, float alpha1, Vector RGB2, float alpha2, Vector(float fadeinTime, float fadeoutTime, float holdTime));
                                                                        | "Print a message to the screen based on what the game_text entity does, with many values to set. See Valve Developer Commentary for the game_text entity to see what each field does. Vectors are in place for sets of RGB values. Specifying no playerIndex or 0 sends to all players. Supports printing localization strings but those that require formatting can't be formatted."
 int         GetMaxPlayers();                                           | "Self-explanatory."
+void        ShowScoreboard(int playerIndex, bool bEnable);             | "Enable or disable displaying the score board a player."
 ```
 
 ## Game Events Interfaced To Squirrel VScript Functions:

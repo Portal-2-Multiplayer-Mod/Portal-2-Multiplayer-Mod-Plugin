@@ -331,6 +331,15 @@ int GetMaxPlayers()
 	return MAX_PLAYERS;
 }
 
+//---------------------------------------------------------------------------------
+// Purpose: Enable or disable displaying the score board for a player.
+//---------------------------------------------------------------------------------
+void ShowScoreboard(int playerIndex, bool bEnable)
+{
+	CBasePlayer__ShowViewPortPanel(playerIndex, "scores", bEnable);
+}
+	
+
 void RegisterFuncsAndRun()
 {
 	g_pScriptVM = **Memory::Scanner::Scan<IScriptVM***>(SERVERDLL, "8B 1D ?? ?? ?? ?? 57 85 DB", 2);
@@ -378,6 +387,7 @@ void RegisterFuncsAndRun()
 													   "Vector is used to consolidate fadeinTime, fadeoutTime, and holdTime."
 	);
 	ScriptRegisterFunction		(g_pScriptVM, GetMaxPlayers, "Self-explanatory.");
+	ScriptRegisterFunction		(g_pScriptVM, ShowScoreboard, "Enable or disable displaying the score board for players.");
 
 	// Load up the main P2:MM VScript and set
 	g_pScriptVM->Run("IncludeScript(\"multiplayermod/p2mm\");");

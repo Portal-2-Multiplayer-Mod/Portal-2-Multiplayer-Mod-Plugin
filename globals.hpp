@@ -29,6 +29,7 @@
 // Stand in class definitions.
 class CBasePlayer;
 class CPortal_Player;
+class CBaseServer;
 
 // Color macros for game chat and console printing.
 #define P2MM_PLUGIN_CONSOLE_COLOR  Color(100, 192, 252, 255) // Light Blue

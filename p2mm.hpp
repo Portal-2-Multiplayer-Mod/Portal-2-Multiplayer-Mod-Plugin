@@ -54,10 +54,12 @@ public:
 	virtual int				GetCommandIndex() { return m_iClientCommandIndex; }
 
 	bool		m_bPluginLoaded;
-	int			iCurGameIndex;
+	int			m_iCurGameIndex;
 
 	bool		m_bSeenFirstRunPrompt;
 	bool		m_bFirstMapRan;
+
+	CBaseServer* sv; // Pointer to the server.
 
 private:
 	bool		m_bNoUnload;

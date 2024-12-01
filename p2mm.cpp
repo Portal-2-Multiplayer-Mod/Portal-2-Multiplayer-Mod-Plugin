@@ -5,9 +5,10 @@
 // Purpose: Portal 2: Multiplayer Mod server plugin
 // 
 //===========================================================================//
-
 #include "p2mm.hpp"
+
 #include "discordrpc.hpp"
+
 #include "minhook/include/MinHook.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -41,7 +42,7 @@ CP2MMServerPlugin g_P2MMServerPlugin;
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CP2MMServerPlugin, IServerPluginCallbacks, INTERFACEVERSION_ISERVERPLUGINCALLBACKS, g_P2MMServerPlugin);
 
 // List of game events the plugin interfaces used to load each one.
-static const char* gameevents[] =
+static const char* gameEventList[] =
 {
 	"portal_player_ping",
 	"portal_player_portaled",
@@ -58,7 +59,7 @@ static const char* gameevents[] =
 };
 
 // List of console commands that clients can't execute but the host can.
-static const char* forbiddenconcommands[] =
+static const char* forbiddenConCommands[] =
 {
 	"mp_earn_taunt",
 	"mp_mark_all_maps_complete",
@@ -81,7 +82,7 @@ static const char* forbiddenconcommands[] =
 };
 
 // List of client commands that need to be blocked from client execution, but can be executed by the host.
-static const char* forbiddenclientcommands[] =
+static const char* forbiddenClientCommands[] =
 {
 	"taunt_auto", // Apparently mp_earn_taunt calls this also to ClientCommand
 	"restart_level",
@@ -187,7 +188,6 @@ static int p2mm_startsession_CompletionFunc(const char* partial, char commands[C
 		if (V_strstr(map.c_str(), match))
 		{
 			V_snprintf(commands[numMatchedMaps++], COMMAND_COMPLETION_ITEM_LENGTH, "%s%s", concommand, map.c_str());
-			P2MMLog(0, true, map.c_str());
 		}
 	}
 
@@ -612,8 +612,9 @@ CP2MMServerPlugin::CP2MMServerPlugin()
 	// Store game vars
 	this->m_bSeenFirstRunPrompt = false;	// Flag is set true after CallFirstRunPrompt() is called in VScript.
 	this->m_bFirstMapRan = true;			// Checks if the game ran for the first time.
+	this->sv = nullptr;						// Pointer to the server.
 
-	// Store plugin Status
+	// Store plugin status
 	this->m_bPluginLoaded = false;
 	this->m_bNoUnload = false;				// If we fail to load, we don't want to run anything on Unload().
 
@@ -621,7 +622,7 @@ CP2MMServerPlugin::CP2MMServerPlugin()
 	// Helps when checking for specific game related things instead of getting the game directory everytime.
 	// Portal 2: 0
 	// Portal Stories: Mel: 1
-	this->iCurGameIndex = 0;
+	this->m_iCurGameIndex = 0;
 
 	m_nDebugID = EVENT_DEBUG_ID_INIT;
 	this->m_iClientCommandIndex = 0;
@@ -663,7 +664,7 @@ void __fastcall CSteam3Server__OnGSClientDenyHelper_hook(CSteam3Server* thisptr,
 const char* (__cdecl* GetBallBotModel_orig)(bool bLowRes);
 const char* __cdecl GetBallBotModel_hook(bool bLowRes)
 {
-	if (g_P2MMServerPlugin.iCurGameIndex == 1)
+	if (g_P2MMServerPlugin.m_iCurGameIndex == 1)
 		return "models/portal_stories/player/mel.mdl";
 
 	return GetBallBotModel_orig(bLowRes);
@@ -672,7 +673,7 @@ const char* __cdecl GetBallBotModel_hook(bool bLowRes)
 const char* (__cdecl* GetEggBotModel_orig)(bool bLowRes);
 const char* __cdecl GetEggBotModel_hook(bool bLowRes)
 {
-	if (g_P2MMServerPlugin.iCurGameIndex == 1)
+	if (g_P2MMServerPlugin.m_iCurGameIndex == 1)
 		return "models/player/chell/player.mdl";
 
 	return GetEggBotModel_orig(bLowRes);
@@ -681,7 +682,7 @@ const char* __cdecl GetEggBotModel_hook(bool bLowRes)
 const char* (__fastcall* CPortal_Player__GetPlayerModelName_orig)(CPortal_Player* thisptr);
 const char* __fastcall CPortal_Player__GetPlayerModelName_hook(CPortal_Player* thisptr)
 {
-	if (g_P2MMServerPlugin.iCurGameIndex == 1)
+	if (g_P2MMServerPlugin.m_iCurGameIndex == 1)
 	{
 		if (CBaseEntity__GetTeamNumber((CBasePlayer*)thisptr) == TEAM_BLUE)
 			return "models/portal_stories/player/mel.mdl";
@@ -740,13 +741,13 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 
 	// Determine which Portal 2 branch game we are running.
 	P2MMLog(0, true, "Determining which Portal 2 branch game is being run...");
-	this->iCurGameIndex = 0; // Portal 2
+	this->m_iCurGameIndex = 0; // Portal 2
 	if ((FStrEq(GetGameMainDir(), "portal_stories")))
-		this->iCurGameIndex = 1; // Portal Stories: Mel
+		this->m_iCurGameIndex = 1; // Portal Stories: Mel
 
 	if (p2mm_developer.GetBool())
 	{
-		switch (this->iCurGameIndex)
+		switch (this->m_iCurGameIndex)
 		{
 		case 0:
 			P2MMLog(0, true, "Currently running Portal 2.");
@@ -842,14 +843,15 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 
 	// Add listener for all used game events
 	P2MMLog(0, true, "Adding listeners for game events...");
-	for (const char* gameevent : gameevents)
+	for (const char* gameevent : gameEventList)
 	{
 		gameeventmanager->AddListener(this, gameevent, true);
 		P2MMLog(0, true, "Listener for game event \"%s\" has been added!", gameevent);
 	}
 
+	// Block ConCommands that clients shouldn't execute
 	P2MMLog(0, true, "Blocking console commands...");
-	for (const char* concommand : forbiddenconcommands)
+	for (const char* concommand : forbiddenConCommands)
 	{
 		ConCommandBase* commandbase = g_pCVar->FindCommandBase(concommand);
 		if (commandbase)
@@ -872,8 +874,11 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		// Max players -> 33
 		Memory::ReplacePattern("server", "83 C0 02 89 01", "83 C0 20 89 01");
 		Memory::ReplacePattern("engine", "85 C0 78 13 8B 17", "31 C0 04 21 8B 17");
-		static uintptr_t sv = *reinterpret_cast<uintptr_t*>(Memory::Scanner::Scan<void*>(ENGINEDLL, "74 0A B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B E5", 3));
-		*reinterpret_cast<int*>(sv + 0x228) = 33;
+		uintptr_t svPtr = *reinterpret_cast<uintptr_t*>(Memory::Scanner::Scan<void*>(ENGINEDLL, "74 0A B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B E5", 3));
+		*reinterpret_cast<int*>(svPtr + 0x228) = 33;
+
+		// Store pointer to the CBaseServer for global access.
+		this->sv = reinterpret_cast<CBaseServer*>(svPtr);
 
 		// Prevent disconnect by "STEAM validation rejected"
 		Memory::ReplacePattern("engine", "01 74 7D 8B", "01 EB 7D 8B");
@@ -954,6 +959,15 @@ void CP2MMServerPlugin::Unload(void)
 	P2MMLog(0, true, "Removing listeners for game events...");
 	gameeventmanager->RemoveListener(this);
 
+	// Unblock ConCommands that clients shouldn't execute
+	P2MMLog(0, true, "Unblocking console commands...");
+	for (const char* concommand : forbiddenConCommands)
+	{
+		ConCommandBase* commandbase = g_pCVar->FindCommandBase(concommand);
+		if (commandbase)
+			commandbase->AddFlags(FCVAR_GAMEDLL);
+	}
+
 	ConVar_Unregister();
 	P2MMLog(0, true, "Disconnecting tier libraries...");
 	DisconnectTier2Libraries();
@@ -972,8 +986,7 @@ void CP2MMServerPlugin::Unload(void)
 	// Max players -> 3
 	Memory::ReplacePattern("server", "83 C0 20 89 01", "83 C0 02 89 01");
 	Memory::ReplacePattern("engine", "31 C0 04 21 8B 17", "85 C0 78 13 8B 17");
-	static uintptr_t sv = *reinterpret_cast<uintptr_t*>(Memory::Scanner::Scan<void*>(ENGINEDLL, "74 0A B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B E5", 3));
-	*reinterpret_cast<int*>(sv + 0x228) = 2;
+	*reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(this->sv) + 0x228) = 2;
 
 	// Disconnect by "STEAM validation rejected"
 	Memory::ReplacePattern("engine", "01 EB 7D 8B", "01 74 7D 8B");
@@ -1099,7 +1112,7 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 	}
 
 	// Stop certain client commands from being excecated by clients and not the host
-	for (const char* badcc : forbiddenclientcommands)
+	for (const char* badcc : forbiddenClientCommands)
 	{
 		if (FSubStr(pcmd, "taunt_auto") || FSubStr(pcmd, "mp_earn_taunt"))
 			return PLUGIN_STOP;
@@ -1547,6 +1560,7 @@ void CP2MMServerPlugin::LevelShutdown(void)
 {
 	P2MMLog(0, true, "Level Shutdown!");
 	p2mm_loop.SetValue("0"); // REMOVE THIS at some point...
+	updateMapsList(); // Update the maps list for p2mm_startsession.
 	// Update Discord RPC to update the level information or to say the host is on the main menu.
 	g_pDiscordIntegration->UpdateDiscordRPC();
 }

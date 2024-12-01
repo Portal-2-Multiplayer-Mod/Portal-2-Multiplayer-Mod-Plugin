@@ -4,10 +4,11 @@
 // Purpose: Global functions & variables used repeatedly throughout the plugin
 // 
 //===========================================================================//
+#include "globals.hpp"
+
+#include "p2mm.hpp"
 
 #include <string>
-
-#include "globals.hpp"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -247,9 +248,9 @@ HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity)
 	return _GetScriptInstance(entity);
 }
 
-///			 CBasePlayer/CPortal_Player Class Functions				\\\
+///			 CBasePlayer Class Functions				\\\
 
-void CBasePlayer__ShowViewPortPanel(int playerIndex, const char* name, bool bShow = true, KeyValues* data = NULL)
+void CBasePlayer__ShowViewPortPanel(int playerIndex, const char* name, bool bShow, KeyValues* data)
 {
 	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
 	if (!pPlayer)
@@ -261,10 +262,13 @@ void CBasePlayer__ShowViewPortPanel(int playerIndex, const char* name, bool bSho
 	_ShowViewPortPanel(pPlayer, name, bShow, data);
 }
 
-CON_COMMAND(testscore, "testscore")
+CON_COMMAND_F(testscore, "testscore", FCVAR_HIDDEN)
 {
 	CBasePlayer__ShowViewPortPanel(V_atoi(args.Arg(1)), args.Arg(2));
 }
+
+
+///			 CPortal_Player Class Functions				\\\
 
 //---------------------------------------------------------------------------------
 // Purpose: Respawn the a player by their entity index.
@@ -487,56 +491,56 @@ MapParams* InP2CampaignMap(bool mpMaps)
 // Array of Portal Stories: Mel campaign maps.
 std::vector<MapParams> melStoryCampaignMaps =
 {
-	{"st_a1_tramride",      "Tram Ride",			1,	"1952"},
-	{"st_a1_mel_intro",     "Mel Intro",			1,	"1952"},
-	{"st_a1_lift",          "Lift",					1,	"1952"},
-	{"st_a1_garden",        "Garden",				1,	"1952"},
-	{"st_a2_garden_de",     "Destroyed Garden",		2,	"EXTENDED RELAXATION"},
-	{"st_a2_underbounce",   "Underbounce",			2,	"EXTENDED RELAXATION"},
-	{"st_a2_once_upon",     "Once Upon",			2,	"EXTENDED RELAXATION"},
-	{"st_a2_past_power",    "Past Power",			2,	"EXTENDED RELAXATION"},
-	{"st_a2_ramp",          "Ramp",					2,	"EXTENDED RELAXATION"},
-	{"st_a2_firestorm",     "Firestorm",			2,	"EXTENDED RELAXATION"},
-	{"st_a3_junkyard",      "Junkyard",				3,	"THE ASCENT"},
-	{"st_a3_concepts",      "Concepts",				3,	"THE ASCENT"},
-	{"st_a3_paint_fling",   "Paint Fling",			3,	"THE ASCENT"},
-	{"st_a3_faith_plate",   "Faith Plate",			3,	"THE ASCENT"},
-	{"st_a3_transition",    "Transition",			3,	"THE ASCENT"},
-	{"st_a4_overgrown",     "Overgrown",			4,	"ORGANIC COMPLICATIONS"},
-	{"st_a4_tb_over_goo",   "Funnel Over Goo",		4,	"ORGANIC COMPLICATIONS"},
-	{"st_a4_two_of_a_kind", "Two of a Kind",		4,	"ORGANIC COMPLICATIONS"},
-	{"st_a4_destroyed",     "Destroyed",			4,	"ORGANIC COMPLICATIONS"},
-	{"st_a4_factory",       "Factory",				4,	"ORGANIC COMPLICATIONS"},
-	{"st_a4_core_access",   "Core Access",			5,	"INTRUSION"},
-	{"st_a4_finale",        "Finale",				5,	"INTRUSION"},
-	{"st_a5_credits",		"Credits",				6,	"The End :D"}
+	{"st_a1_tramride",      "Tram Ride",		1,	"1952"},
+	{"st_a1_mel_intro",     "Mel Intro",		1,	"1952"},
+	{"st_a1_lift",          "Lift",				1,	"1952"},
+	{"st_a1_garden",        "Garden",			1,	"1952"},
+	{"st_a2_garden_de",     "Destroyed Garden",	2,	"EXTENDED RELAXATION"},
+	{"st_a2_underbounce",   "Underbounce",		2,	"EXTENDED RELAXATION"},
+	{"st_a2_once_upon",     "Once Upon",		2,	"EXTENDED RELAXATION"},
+	{"st_a2_past_power",    "Past Power",		2,	"EXTENDED RELAXATION"},
+	{"st_a2_ramp",          "Ramp",				2,	"EXTENDED RELAXATION"},
+	{"st_a2_firestorm",     "Firestorm",		2,	"EXTENDED RELAXATION"},
+	{"st_a3_junkyard",      "Junkyard",			3,	"THE ASCENT"},
+	{"st_a3_concepts",      "Concepts",			3,	"THE ASCENT"},
+	{"st_a3_paint_fling",   "Paint Fling",		3,	"THE ASCENT"},
+	{"st_a3_faith_plate",   "Faith Plate",		3,	"THE ASCENT"},
+	{"st_a3_transition",    "Transition",		3,	"THE ASCENT"},
+	{"st_a4_overgrown",     "Overgrown",		4,	"ORGANIC COMPLICATIONS"},
+	{"st_a4_tb_over_goo",   "Funnel Over Goo",	4,	"ORGANIC COMPLICATIONS"},
+	{"st_a4_two_of_a_kind", "Two of a Kind",	4,	"ORGANIC COMPLICATIONS"},
+	{"st_a4_destroyed",     "Destroyed",		4,	"ORGANIC COMPLICATIONS"},
+	{"st_a4_factory",       "Factory",			4,	"ORGANIC COMPLICATIONS"},
+	{"st_a4_core_access",   "Core Access",		5,	"INTRUSION"},
+	{"st_a4_finale",        "Finale",			5,	"INTRUSION"},
+	{"st_a5_credits",		"Credits",			6,	"The End :D"}
 };
 
 std::vector<MapParams> melAdvancedCampaignMaps =
 {
-	{"sp_a1_tramride",      "Tram Ride Advanced",			1,	"1952"},
-	{"sp_a1_mel_intro",     "Mel Intro Advanced",			1,	"1952"},
-	{"sp_a1_lift",          "Lift Advanced",				1,	"1952"},
-	{"sp_a1_garden",        "Garden Advanced",				1,	"1952"},
-	{"sp_a2_garden_de",     "Destroyed Garden Advanced",	2,	"EXTENDED RELAXATION"},
-	{"sp_a2_underbounce",   "Underbounce Advanced",			2,	"EXTENDED RELAXATION"},
-	{"sp_a2_once_upon",     "Once Upon Advanced",			2,	"EXTENDED RELAXATION"},
-	{"sp_a2_past_power",    "Past Power Advanced",			2,	"EXTENDED RELAXATION"},
-	{"sp_a2_ramp",          "Ramp Advanced",				2,	"EXTENDED RELAXATION"},
-	{"sp_a2_firestorm",     "Firestorm Advanced",			2,	"EXTENDED RELAXATION"},
-	{"sp_a3_junkyard",      "Junkyard Advanced",			3,	"THE ASCENT"},
-	{"sp_a3_concepts",      "Concepts Advanced",			3,	"THE ASCENT"},
-	{"sp_a3_paint_fling",   "Paint Fling Advanced",			3,	"THE ASCENT"},
-	{"sp_a3_faith_plate",   "Faith Plate Advanced",			3,	"THE ASCENT"},
-	{"sp_a3_transition",    "Transition Advanced",			3,	"THE ASCENT"},
-	{"sp_a4_overgrown",     "Overgrown Advanced",			4,	"ORGANIC COMPLICATIONS"},
-	{"sp_a4_tb_over_goo",   "Funnel Over Goo Advanced",		4,	"ORGANIC COMPLICATIONS"},
-	{"sp_a4_two_of_a_kind", "Two of a Kind Advanced",		4,	"ORGANIC COMPLICATIONS"},
-	{"sp_a4_destroyed",     "Destroyed Advanced",			4,	"ORGANIC COMPLICATIONS"},
-	{"sp_a4_factory",       "Factory Advanced",				4,	"ORGANIC COMPLICATIONS"},
-	{"sp_a4_core_access",   "Core Access Advanced",			5,	"INTRUSION"},
-	{"sp_a4_finale",        "Finale Advanced",				5,	"INTRUSION"},
-	{"sp_a5_credits",		"Credits Advanced",				6,	"The End :D"}
+	{"sp_a1_tramride",      "Tram Ride (Advanced)",			1,	"1952"},
+	{"sp_a1_mel_intro",     "Mel Intro (Advanced)",			1,	"1952"},
+	{"sp_a1_lift",          "Lift (Advanced)",				1,	"1952"},
+	{"sp_a1_garden",        "Garden (Advanced)",			1,	"1952"},
+	{"sp_a2_garden_de",     "Destroyed Garden (Advanced)",	2,	"EXTENDED RELAXATION"},
+	{"sp_a2_underbounce",   "Underbounce (Advanced)",		2,	"EXTENDED RELAXATION"},
+	{"sp_a2_once_upon",     "Once Upon (Advanced)",			2,	"EXTENDED RELAXATION"},
+	{"sp_a2_past_power",    "Past Power (Advanced)",		2,	"EXTENDED RELAXATION"},
+	{"sp_a2_ramp",          "Ramp (Advanced)",				2,	"EXTENDED RELAXATION"},
+	{"sp_a2_firestorm",     "Firestorm (Advanced)",			2,	"EXTENDED RELAXATION"},
+	{"sp_a3_junkyard",      "Junkyard (Advanced)",			3,	"THE ASCENT"},
+	{"sp_a3_concepts",      "Concepts (Advanced)",			3,	"THE ASCENT"},
+	{"sp_a3_paint_fling",   "Paint Fling (Advanced)",		3,	"THE ASCENT"},
+	{"sp_a3_faith_plate",   "Faith Plate (Advanced)",		3,	"THE ASCENT"},
+	{"sp_a3_transition",    "Transition (Advanced)",		3,	"THE ASCENT"},
+	{"sp_a4_overgrown",     "Overgrown (Advanced)",			4,	"ORGANIC COMPLICATIONS"},
+	{"sp_a4_tb_over_goo",   "Funnel Over Goo (Advanced)",	4,	"ORGANIC COMPLICATIONS"},
+	{"sp_a4_two_of_a_kind", "Two of a Kind (Advanced)",		4,	"ORGANIC COMPLICATIONS"},
+	{"sp_a4_destroyed",     "Destroyed (Advanced)",			4,	"ORGANIC COMPLICATIONS"},
+	{"sp_a4_factory",       "Factory (Advanced)",			4,	"ORGANIC COMPLICATIONS"},
+	{"sp_a4_core_access",   "Core Access (Advanced)",		5,	"INTRUSION"},
+	{"sp_a4_finale",        "Finale (Advanced)",			5,	"INTRUSION"},
+	{"sp_a5_credits",		"Credits (Advanced)",			6,	"The End :D"}
 };
 
 // Check to see which Mel map is being played.

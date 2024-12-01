@@ -147,6 +147,9 @@ int CBaseEntity__GetTeamNumber(CBasePlayer* pPlayer);
 HSCRIPT CBaseEntity__GetScriptScope(CBaseEntity* entity);
 HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity);
 
+// CBasePlayer functions
+void CBasePlayer__ShowViewPortPanel(int playerIndex, const char* name, bool bShow = true, KeyValues* data = NULL);
+
 // CPortal_Player functions
 void CPortal_Player__RespawnPlayer(int playerIndex);
 void CPortal_Player__SetFlashlightState(int playerIndex, bool enable);
@@ -258,13 +261,17 @@ inline HSCRIPT INDEXHANDLE(int iEdictNum) {
 	return entityHandle;
 }
 
-// Get the main game directory being used. Ex. portal2
+//---------------------------------------------------------------------------------
+// Purpose: Get the main game directory being used. Ex. portal2
+//---------------------------------------------------------------------------------
 inline const char* GetGameMainDir()
 {
 	return CommandLine()->ParmValue("-game", CommandLine()->ParmValue("-defaultgamedir", "portal2"));
 }
 
-// Get base game directory. Ex. Portal 2
+//---------------------------------------------------------------------------------
+// Purpose: Get base game directory. Ex. Portal 2
+//---------------------------------------------------------------------------------
 inline const char* GetGameBaseDir()
 {
 	char baseDir[MAX_PATH] = { 0 };

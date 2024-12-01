@@ -616,6 +616,7 @@ CP2MMServerPlugin::CP2MMServerPlugin()
 
 	// Store plugin status
 	this->m_bPluginLoaded = false;
+	this->m_bPluginUnloading = false;		// For Discord RPC.
 	this->m_bNoUnload = false;				// If we fail to load, we don't want to run anything on Unload().
 
 	// Current Portal 2 branch based game being run.
@@ -955,6 +956,8 @@ void CP2MMServerPlugin::Unload(void)
 	}
 
 	P2MMLog(0, false, "Unloading Plugin...");
+	this->m_bPluginUnloading = true;
+	g_pDiscordIntegration->UpdateDiscordRPC();
 
 	P2MMLog(0, true, "Removing listeners for game events...");
 	gameeventmanager->RemoveListener(this);

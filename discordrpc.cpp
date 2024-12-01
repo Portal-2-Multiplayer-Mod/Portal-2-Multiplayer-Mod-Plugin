@@ -4,45 +4,19 @@
 // Purpose: Discord RPC and Webhook Integration
 // 
 //===========================================================================//
-
 #include "discordrpc.hpp"
+
 #include "p2mm.hpp"
 
+#include "discord-rpc/include/discord_register.h"
+#include "discord-rpc/include/discord_rpc.h"
+#include "curl/curl.h"
+
 #include <iostream>
-#include <string>
+#include <thread>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
-
-// Discord integration ConVars
-void WebhookCheck(IConVar* var, const char* pOldValue, float flOldValue)
-{
-	// Make sure people know that the chat is being recorded if webhook is set
-	if (((ConVar*)var)->GetBool())
-	{
-		FOR_ALL_PLAYERS(i)
-		{
-			CBasePlayer* pPlayer = UTIL_PlayerByIndex(i);
-			if (pPlayer)
-				UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, "This lobby has Discord Webhook Intergration enabled! All of your ingame messages may be sent to a Discord channel.");
-		}
-	}
-}
-ConVar p2mm_discord_webhook("p2mm_discord_webhooks", "0", FCVAR_ARCHIVE | FCVAR_NOTIFY, "Enable or disable webhooks been the P2:MM Server and Discord.", true, 0, true, 1, WebhookCheck);
-ConVar p2mm_discord_webhook_url("p2mm_discord_webhooks_url", "", FCVAR_ARCHIVE | FCVAR_HIDDEN, "Channel webhook URL to send messages to. Should be set in launcher, not here.");
-ConVar p2mm_discord_webhook_defaultfooter("p2mm_discord_webhooks_defaultfooter", "1", FCVAR_ARCHIVE, "Enable or disable the default embed footer for webhooks.", true, 0, true, 1);
-ConVar p2mm_discord_webhook_customfooter("p2mm_discord_webhooks_customfooter", "", FCVAR_ARCHIVE, "Set a custom embed footer for webhook messages.");
-
-void RPCState(IConVar* var, const char* pOldValue, float flOldValue)
-{
-	if (!g_P2MMServerPlugin.m_bPluginLoaded) return;
-	ConVar* cvRPC = (ConVar*)var;
-	if (cvRPC->GetBool() && !g_pDiscordIntegration->RPCRunning)
-		g_pDiscordIntegration->StartDiscordRPC();
-	if (!cvRPC->GetBool() && g_pDiscordIntegration->RPCRunning)
-		g_pDiscordIntegration->ShutdownDiscordRPC();
-}
-ConVar p2mm_discord_rpc("p2mm_discord_rpc", "1", FCVAR_ARCHIVE, "Enable or disable Discord RPC with P2:MM.", true, 0, true, 1, RPCState);
 
 // Log Discord GameSDK logs to the console. This is mainly a developer mode only logging system and only the warning and error logs should be shown.
 void DiscordLog(int level, bool dev, const char* pMsgFormat, ...)
@@ -78,6 +52,24 @@ void DiscordLog(int level, bool dev, const char* pMsgFormat, ...)
 ////-----------------------------------------------------------------------------
 //// Discord Webhooks
 ////-----------------------------------------------------------------------------
+
+void WebhookCheck(IConVar* var, const char* pOldValue, float flOldValue)
+{
+	// Make sure people know that the chat is being recorded if webhook is set
+	if (((ConVar*)var)->GetBool())
+	{
+		FOR_ALL_PLAYERS(i)
+		{
+			CBasePlayer* pPlayer = UTIL_PlayerByIndex(i);
+			if (pPlayer)
+				UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, "This lobby has Discord Webhook Intergration enabled! All of your ingame messages may be sent to a Discord channel.");
+		}
+	}
+}
+ConVar p2mm_discord_webhook("p2mm_discord_webhooks", "0", FCVAR_ARCHIVE | FCVAR_NOTIFY, "Enable or disable webhooks been the P2:MM Server and Discord.", true, 0, true, 1, WebhookCheck);
+ConVar p2mm_discord_webhook_url("p2mm_discord_webhooks_url", "", FCVAR_ARCHIVE | FCVAR_HIDDEN, "Channel webhook URL to send messages to. Should be set in launcher, not here.");
+ConVar p2mm_discord_webhook_defaultfooter("p2mm_discord_webhooks_defaultfooter", "1", FCVAR_ARCHIVE, "Enable or disable the default embed footer for webhooks.", true, 0, true, 1);
+ConVar p2mm_discord_webhook_customfooter("p2mm_discord_webhooks_customfooter", "", FCVAR_ARCHIVE, "Set a custom embed footer for webhook messages.");
 
 // Parameters that are sent through to the Discord webhook
 struct WebHookParams
@@ -200,6 +192,17 @@ void CDiscordIntegration::SendWebHookEmbed(std::string title, std::string descri
 //// OLD API Documentation: https://github.com/discord/discord-api-docs/tree/legacy-gamesdk/docs/rich_presence
 ////-----------------------------------------------------------------------------
 
+void RPCState(IConVar* var, const char* pOldValue, float flOldValue)
+{
+	if (!g_P2MMServerPlugin.m_bPluginLoaded) return;
+	ConVar* cvRPC = (ConVar*)var;
+	if (cvRPC->GetBool() && !g_pDiscordIntegration->RPCRunning)
+		g_pDiscordIntegration->StartDiscordRPC();
+	if (!cvRPC->GetBool() && g_pDiscordIntegration->RPCRunning)
+		g_pDiscordIntegration->ShutdownDiscordRPC();
+}
+ConVar p2mm_discord_rpc("p2mm_discord_rpc", "1", FCVAR_ARCHIVE, "Enable or disable Discord RPC with P2:MM.", true, 0, true, 1, RPCState);
+
 static DiscordRichPresence RPC;
 CDiscordIntegration::CDiscordIntegration()
 {
@@ -276,7 +279,7 @@ bool CDiscordIntegration::StartDiscordRPC()
 	V_snprintf(appid, 255, "%d", engineServer->GetAppID());
 	Discord_Initialize("1201562647880015954", handlers, 1, appid);
 
-	if (g_P2MMServerPlugin.iCurGameIndex == 1)
+	if (g_P2MMServerPlugin.m_iCurGameIndex == 1)
 	{
 		RPC.largeImageKey = "p2mmmellogo";
 		RPC.largeImageText = "Portal Stories: Mel";
@@ -304,87 +307,106 @@ void CDiscordIntegration::UpdateDiscordRPC()
 {
 	DiscordLog(0, true, "Updating Discord RPC!");
 
-	bool m_activeGame = true; // Add in sig for CHostState::m_activeGame
-	if (!m_activeGame)
+	if (g_P2MMServerPlugin.m_bPluginUnloading)
 	{
-		RPC.details = "Main Menu";
+		RPC.state = "See you around!";
+		RPC.details = "Shutting down...";
+		RPC.smallImageKey = "wave";
+		RPC.smallImageText = "Welcome to P2:MM!";
 		RPC.partySize = 0;
 		RPC.partyMax = 0;
-		Discord_UpdatePresence(&RPC);
-		return;
+		RPC.instance = 0;
 	}
 
-	MapParams* map = NULL;
-	char details[128] = "Map: ";
-	char smallImageKey[32] = { 0 };
-	char smallImageText[128] = { 0 };
-	switch (g_P2MMServerPlugin.iCurGameIndex)
+	// Get CHostState::m_activeGame to check if a game session is running.
+	// Use HostState_IsGameShuttingDown to check if the game session is shutting down or has been shutdown.
+	bool m_activeGame = **Memory::Scanner::Scan<bool**>(ENGINEDLL, "C6 05 ?? ?? ?? ?? ?? C6 05 ?? ?? ?? ?? ?? 0F B6 96", 2);
+	bool bIsShuttingDown = reinterpret_cast<bool(__cdecl*)()>(Memory::Scanner::Scan<void*>(ENGINEDLL, "B8 05 00 00 00 39 05"))();
+	if (!m_activeGame || bIsShuttingDown)
 	{
-	case (0):
-		if (FStrEq(CURMAPFILENAME, "mp_coop_community_hub"))
-		{
-			V_strcat(details, "Community Hub", 128);
-			V_strcat(smallImageKey, "coop", 32);
-			V_strcat(smallImageText, "Community Hub", 128);
-		}
-		else if (std::strstr(CURMAPFILENAME, "sp_"))
-		{
-			map = InP2CampaignMap();
-			if (!map) break;
-
-			V_strcat(details, map->mapname, 128);
-			V_snprintf(smallImageKey, 32, "chapter%i", map->chapter);
-			V_strcat(smallImageText, map->chaptername, 128);
-		}
-		else if (std::strstr(CURMAPFILENAME, "gelocity"))
-		{
-			map = InGelocityMap();
-			if (!map) break;
-
-			V_strcat(details, map->mapname, 128);
-			V_strcat(smallImageKey, "race", 32);
-			V_strcat(smallImageText, map->mapname, 128);
-		}
-		else if (std::strstr(CURMAPFILENAME, "workshop/"))
-		{
-			const char* lastForwardSlash = strrchr(CURMAPFILENAME, '/');
-			if (!lastForwardSlash) break;
-			V_strcpy(details, lastForwardSlash + 1);
-			V_strcat(smallImageKey, "workshop", 32);
-			V_strcat(smallImageText, "Workshop Map", 128);
-		}
-		else
-		{
-			map = InP2CampaignMap(true);
-			if (!map) break;
-
-			V_strcat(details, map->mapname, 128);
-			V_strcat(smallImageKey, "coop", 32);
-			V_strcat(smallImageText, map->chaptername, 128);
-		}
-		break;
-	case (1):
-		if (FStrEq(CURMAPFILENAME, "mp_coop_community_hub")) break;
-
-		if (std::strstr(CURMAPFILENAME, "sp_"))
-			map = InMelCampaignMap(true);
-		else
-			map = InMelCampaignMap();
-		if (!map) break;
-
-		V_strcat(details, map->mapname, 128);
-		V_snprintf(smallImageKey, 32, "melchapter%i", map->chapter);
-		V_strcat(smallImageText, map->chaptername, 128);
-		break;
-	default:
-		break;
+		RPC.details = "Main Menu";
+		RPC.smallImageKey = "wave";
+		RPC.smallImageText = "Welcome to P2:MM!";
+		RPC.partySize = 0;
+		RPC.partyMax = 0;
+		RPC.instance = 0;
 	}
-	RPC.state = "Players: ";
-	RPC.details = details;
-	RPC.smallImageKey = smallImageKey;
-	RPC.smallImageText = smallImageText;
-	RPC.partySize = CURPLAYERCOUNT();
-	RPC.partyMax = MAX_PLAYERS;
+
+	if (m_activeGame && (!g_P2MMServerPlugin.m_bPluginUnloading || !bIsShuttingDown))
+	{
+		MapParams* map = NULL;
+		char details[128] = "Map: ";
+		char smallImageKey[32] = { 0 };
+		char smallImageText[128] = { 0 };
+		switch (g_P2MMServerPlugin.m_iCurGameIndex)
+		{
+		case (0):
+			if (FStrEq(CURMAPFILENAME, "mp_coop_community_hub"))
+			{
+				V_strcat(details, "Community Hub", 128);
+				V_strcat(smallImageKey, "coop", 32);
+				V_strcat(smallImageText, "Community Hub", 128);
+			}
+			else if (std::strstr(CURMAPFILENAME, "sp_"))
+			{
+				map = InP2CampaignMap();
+				if (!map) break;
+
+				V_strcat(details, map->mapname, 128);
+				V_snprintf(smallImageKey, 32, "chapter%i", map->chapter);
+				V_strcat(smallImageText, map->chaptername, 128);
+			}
+			else if (std::strstr(CURMAPFILENAME, "gelocity"))
+			{
+				map = InGelocityMap();
+				if (!map) break;
+
+				V_strcat(details, map->mapname, 128);
+				V_strcat(smallImageKey, "race", 32);
+				V_strcat(smallImageText, map->mapname, 128);
+			}
+			else if (std::strstr(CURMAPFILENAME, "workshop/"))
+			{
+				const char* lastForwardSlash = strrchr(CURMAPFILENAME, '/');
+				if (!lastForwardSlash) break;
+				V_strcpy(details, lastForwardSlash + 1);
+				V_strcat(smallImageKey, "workshop", 32);
+				V_strcat(smallImageText, "Workshop Map", 128);
+			}
+			else
+			{
+				map = InP2CampaignMap(true);
+				if (!map) break;
+
+				V_strcat(details, map->mapname, 128);
+				V_strcat(smallImageKey, "coop", 32);
+				V_strcat(smallImageText, map->chaptername, 128);
+			}
+			break;
+		case (1):
+			if (FStrEq(CURMAPFILENAME, "mp_coop_community_hub")) break;
+
+			if (std::strstr(CURMAPFILENAME, "sp_"))
+				map = InMelCampaignMap(true);
+			else
+				map = InMelCampaignMap();
+			if (!map) break;
+
+			V_strcat(details, map->mapname, 128);
+			V_snprintf(smallImageKey, 32, "melchapter%i", map->chapter);
+			V_strcat(smallImageText, map->chaptername, 128);
+			break;
+		default:
+			break;
+		}
+		RPC.state = "Players: ";
+		RPC.details = details;
+		RPC.smallImageKey = smallImageKey;
+		RPC.smallImageText = smallImageText;
+		RPC.partySize = CURPLAYERCOUNT();
+		RPC.partyMax = MAX_PLAYERS;
+		RPC.instance = 1;
+	}
 
 	DiscordLog(0, true, "Discord RPC Debug Spew:");
 	DiscordLog(0, true, "state: %s",RPC.state);
@@ -404,18 +426,3 @@ void CDiscordIntegration::UpdateDiscordRPC()
 	DiscordLog(0, true, "instance: %i", RPC.spectateSecret);
 	Discord_UpdatePresence(&RPC);
 }
-
-//---------------------------------------------------------------------------------
-// Purpose: Discord RPC loop for updating presence and recieving and requests from the Discord Client.
-//---------------------------------------------------------------------------------
-// This is currently unuseds.
-//void DiscordRPCLoop()
-//{
-//	if (!g_pGlobals)
-//		return;
-//
-//#ifdef DISCORD_DISABLE_IO_THREAD
-//	Discord_UpdateConnection();
-//#endif
-//	Discord_RunCallbacks();
-//}

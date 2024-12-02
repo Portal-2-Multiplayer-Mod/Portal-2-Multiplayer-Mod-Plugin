@@ -97,9 +97,9 @@ std::string DefaultFooter()
 // Thread sending a curl request to the specified Discord WebHook
 unsigned SendWebHook(void* webhookParams)
 {
-	if (p2mm_discord_webhook.GetBool())
+	if (p2mm_discord_webhook_url.GetBool())
 	{
-		P2MMLog(0, true, "Webhook for \"p2mm_discord_webhook_url\" has not been specified.");
+		P2MMLog(0, true, "Webhook for \"p2mm_discord_webhooks_url\" has not been specified.");
 		return 1;
 	}
 

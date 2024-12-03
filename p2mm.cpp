@@ -1039,11 +1039,6 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 	// Paint usage doesn't function naturally on dedicated servers, so this will help enable it again.
 	if (p2mm_ds_enable_paint.GetBool() && engineServer->IsDedicatedServer())
 	{
-		if (!p2mm_ds_enable_paint.GetBool())
-		{
-			return;
-		}
-
 		// Hook R_LoadWorldGeometry (gl_rmisc.cpp)
 		static auto R_LoadWorldGeometry =
 #ifdef _WIN32
@@ -1060,10 +1055,10 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 			engineServer->GetPaintmapDataRLE(paintData2);
 		}
 		else
-		{
-			P2MMLog(1, true, "Couldn't find R_LoadWorldGeometry! Paint will not work on this map load.");
-		}
+			P2MMLog(1, false, "Couldn't find R_LoadWorldGeometry! Paint will not work on this map load.");
 	}
+
+	if (!g_P2MMServerPlugin.m_bSeenFirstRunPrompt) return;
 
 	std::string changemapstr = std::string("The server has changed the map to: `" + std::string(CURMAPFILENAME) + "`");
 	g_pDiscordIntegration->SendWebHookEmbed("Server", changemapstr, EMBEDCOLOR_SERVER, false);

@@ -9,7 +9,7 @@
 #include "globals.hpp"
 #include "minhook/include/MinHook.h"
 
-#define P2MM_PLUGIN_VERSION "2.1.1" // Update this when a new version of the plugin is released
+#define P2MM_PLUGIN_VERSION "2.2.0" // Update this when a new version of the plugin is released
 #define P2MM_VERSION		"2.3.0" // Update this for whatever P2:MM version the plugin is released with
 
 //---------------------------------------------------------------------------------
@@ -53,12 +53,16 @@ public:
 
 	virtual int				GetCommandIndex() { return m_iClientCommandIndex; }
 
+	bool		m_bPluginLoaded;
+	bool		m_bPluginUnloading;
+	int			m_iCurGameIndex;
+
 	bool		m_bSeenFirstRunPrompt;
 	bool		m_bFirstMapRan;
 
-private:
+	CBaseServer* sv; // Pointer to the server.
 
-	bool		m_bPluginLoaded;
+private:
 	bool		m_bNoUnload;
 	
 	int			m_nDebugID;

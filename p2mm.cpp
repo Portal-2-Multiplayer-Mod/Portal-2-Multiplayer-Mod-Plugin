@@ -4,11 +4,12 @@
 // Maintainer: Orsell
 // Purpose: Portal 2: Multiplayer Mod server plugin
 // 
-// Note: This plugin was made in like 20 mins, but everything works.
-// 
 //===========================================================================//
-
 #include "p2mm.hpp"
+
+#include "discordrpc.hpp"
+
+#include "minhook/include/MinHook.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -23,11 +24,16 @@ IPlayerInfoManager* playerinfomanager = NULL; // Access interface functions for 
 IScriptVM* g_pScriptVM = NULL; // Access VScript interface.
 IServerTools* g_pServerTools = NULL; // Access to interface from engine to tools for manipulating entities.
 IGameEventManager2* gameeventmanager_ = NULL; // Access game events interface.
-IServerPluginHelpers* pluginHelpers = NULL; // Access interface for plugin helper functions.
+IServerPluginHelpers* g_pPluginHelpers = NULL; // Access interface for plugin helper functions.
 IFileSystem* g_pFileSystem = NULL; // Access interface for Valve's file system interface.
 #ifndef GAME_DLL
 #define gameeventmanager gameeventmanager_
 #endif
+
+//---------------------------------------------------------------------------------
+// Class declarations/creations
+//---------------------------------------------------------------------------------
+CDiscordIntegration* g_pDiscordIntegration = new CDiscordIntegration;
 
 //---------------------------------------------------------------------------------
 // The plugin is a static singleton that is exported as an interface
@@ -36,7 +42,7 @@ CP2MMServerPlugin g_P2MMServerPlugin;
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CP2MMServerPlugin, IServerPluginCallbacks, INTERFACEVERSION_ISERVERPLUGINCALLBACKS, g_P2MMServerPlugin);
 
 // List of game events the plugin interfaces used to load each one.
-static const char* gameevents[] =
+static const char* gameEventList[] =
 {
 	"portal_player_ping",
 	"portal_player_portaled",
@@ -53,7 +59,7 @@ static const char* gameevents[] =
 };
 
 // List of console commands that clients can't execute but the host can.
-static const char* forbiddenconcommands[] =
+static const char* forbiddenConCommands[] =
 {
 	"mp_earn_taunt",
 	"mp_mark_all_maps_complete",
@@ -76,7 +82,7 @@ static const char* forbiddenconcommands[] =
 };
 
 // List of client commands that need to be blocked from client execution, but can be executed by the host.
-static const char* forbiddenclientcommands[] =
+static const char* forbiddenClientCommands[] =
 {
 	"taunt_auto", // Apparently mp_earn_taunt calls this also to ClientCommand
 	"restart_level",
@@ -158,7 +164,6 @@ void updateMapsList() {
 
 		// Push the map string on to the list to display avaliable options for the command.
 		mapList.push_back(std::move(fixedRelativePath));
-		P2MMLog(0, true, mapList.back().c_str());
 	}
 }
 
@@ -183,7 +188,6 @@ static int p2mm_startsession_CompletionFunc(const char* partial, char commands[C
 		if (V_strstr(map.c_str(), match))
 		{
 			V_snprintf(commands[numMatchedMaps++], COMMAND_COMPLETION_ITEM_LENGTH, "%s%s", concommand, map.c_str());
-			P2MMLog(0, true, map.c_str());
 		}
 	}
 
@@ -206,14 +210,15 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 	}
 
 	// A check done by the menu to request to use the last recorded map in the p2mm_lastmap ConVar.
-	const char* requestedMap = args.Arg(1);
+	char requestedMap[256] = { 0 };
+	V_strcpy(requestedMap, args.Arg(1));
 	P2MMLog(0, true, "Requested Map: %s", requestedMap);
 	P2MMLog(0, true, "p2mm_lastmap: %s", p2mm_lastmap.GetString());
-	if (FSubStr(requestedMap, "P2MM_LASTMAP"))
+	if (FStrEq(requestedMap, "P2MM_LASTMAP"))
 	{
 		if (!engineServer->IsMapValid(p2mm_lastmap.GetString()))
 		{
-			// Running disconnect to make the error screen appear causes the music to stop, don't let that to happen, so here it is start it again.
+			// Running disconnect to make the error screen appear causes the music to stop, don't let that to happen, so here it is started it again.
 
 			// Get the current act so we can start the right main menu music
 			int iAct = ConVarRef("ui_lastact_played").GetInt();
@@ -230,7 +235,7 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 			updateMapsList();
 			return;
 		}
-		requestedMap = p2mm_lastmap.GetString();
+		V_strcpy(requestedMap, p2mm_lastmap.GetString());
 		P2MMLog(0, true, "P2MM_LASTMAP called! Running Last Map: \"%s\"", requestedMap);
 	}
 	p2mm_lastmap.SetValue(""); // Set last map ConVar to blank so it doesn't trigger level changes where we don't want it to trigger.
@@ -242,7 +247,7 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 		if (tempMapStr == map)
 		{
 			tempMapStr = std::string("workshop/" + tempMapStr);
-			requestedMap = tempMapStr.c_str();
+			V_strcpy(requestedMap, tempMapStr.c_str());
 		}
 	}
 
@@ -269,12 +274,18 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 		P2MMLog(0, true, "requestedMap: \"%s\"", requestedMap);
 		p2mm_lastmap.SetValue(requestedMap);
 		engineClient->ExecuteClientCmd(std::string(mapString + "mp_coop_community_hub").c_str());
+		
+		std::string initmapstr = std::string("Server has started with map: `" + std::string(requestedMap) + "`");
+		g_pDiscordIntegration->SendWebHookEmbed(std::string("Server"), initmapstr, EMBEDCOLOR_SERVER, false);
 	}
 	else
 	{
 		P2MMLog(0, true, "\"mp_coop\" found, multiplayer map being run. Full ExecuteClientCmd: \"%s\"", std::string(mapString + requestedMap).c_str());
 		P2MMLog(0, true, "requestedMap: \"%s\"", requestedMap);
 		engineClient->ExecuteClientCmd(std::string(mapString + requestedMap).c_str());
+
+		std::string initmapstr = std::string("Server has started with map: `" + std::string(requestedMap) + "`");
+		g_pDiscordIntegration->SendWebHookEmbed(std::string("Server"), initmapstr, EMBEDCOLOR_SERVER, false);
 	}
 }
 
@@ -310,7 +321,7 @@ CON_COMMAND(p2mm_respawnall, "Respawns all players.")
 
 bool m_ConVarConCommandsShown = false; // Bool to track if the hidden ConVars and ConCommands are showing.
 std::vector<ConCommandBase*> toggledCVCCs; // List of toggled ConVars and ConCommands with the FCVAR_DEVELOPMENTONLY and FCVAR_HIDDEN ConVar flags removed.
-CON_COMMAND(p2mm_toggle_dev_cc_cvars, "Toggle showing any ConVars and ConCommands that have the FCVAR_DEVELOPMENTONLY and FCVAR_HIDDEN ConVar flags.")
+CON_COMMAND_F(p2mm_toggle_dev_cc_cvars, "Toggle showing any ConVars and ConCommands that have the FCVAR_DEVELOPMENTONLY and FCVAR_HIDDEN ConVar flags.", FCVAR_HIDDEN)
 {
 	int iToggleCount = 0; // To tell the user how many ConVars and ConCommands where toggle to show or hide.
 
@@ -387,24 +398,17 @@ CON_COMMAND_F(p2mm_helloworld2, "Hello World 2: Electric Boogaloo!", FCVAR_HIDDE
 //---------------------------------------------------------------------------------
 // P2:MM Gelocity ConVars and ConCommands
 //---------------------------------------------------------------------------------
-// Array of the Gelocity map file paths to check if the current map is a gelocity map.
-const char* gelocityMaps[3] = { "workshop/596984281130013835/mp_coop_gelocity_1_v02", "workshop/594730048530814099/mp_coop_gelocity_2_v01", "workshop/613885499245125173/mp_coop_gelocity_3_v02" };
-
 ConVar p2mm_gelocity_laps_default("p2mm_gelocity_laps_default", "3", FCVAR_NONE, "Set the default amount of laps for a Gelocity race.", true, 1, true, 300);
 ConVar p2mm_gelocity_music_default("p2mm_gelocity_music_default", "0", FCVAR_NONE, "Set the default music track for a Gelocity race.", true, 0, true, 5);
 
 void GelocityTournament(IConVar* var, const char* pOldValue, float flOldValue)
 {
 	// Check if host is in a gelocity map.
-	for (int i = 0; i < 3; i++)
+	if (!InGelocityMap())
 	{
-		if (FStrEq(CURMAPNAME, gelocityMaps[i])) break;
-		if (i == 2)
-		{
-			P2MMLog(0, false, "Gelocity tournament mode ConVar was changed from %i to %i.", (int)flOldValue, ((ConVar*)var)->GetBool());
-			P2MMLog(1, false, "Mode will take effect when Gelocity map is loaded.");
-			return;
-		}
+		P2MMLog(0, false, "Gelocity tournament mode ConVar was changed from %i to %i.", (int)flOldValue, ((ConVar*)var)->GetBool());
+		P2MMLog(1, false, "Mode will take effect when Gelocity map is loaded.");
+		return;
 	}
 
 	// Check if the gelocity race is already going. Make sure to not mess with the race's laps.
@@ -419,25 +423,21 @@ void GelocityTournament(IConVar* var, const char* pOldValue, float flOldValue)
 	P2MMLog(0, false, "Gelocity tournament mode ConVar was changed from %i to %i!", (int)flOldValue, ((ConVar*)var)->GetBool());
 	P2MMLog(1, false, "Restarting map based on tournament mode change!");
 
-	engineClient->ExecuteClientCmd(std::string("changelevel " + std::string(CURMAPNAME)).c_str());
+	engineClient->ExecuteClientCmd(std::string("changelevel " + std::string(CURMAPFILENAME)).c_str());
 }
 ConVar p2mm_gelocity_tournamentmode("p2mm_gelocity_tournamentmode", "0", FCVAR_NONE, "Turn on or off tournament mode.", true, 0, true, 1, GelocityTournament);
 
 void GelocityButtons(IConVar* var, const char* pOldValue, float flOldValue)
 {
 	// Check if host is in a gelocity map.
-	for (int i = 0; i < 3; i++)
+	if (!InGelocityMap())
 	{
-		if (FStrEq(CURMAPNAME, gelocityMaps[i])) break;
-		if (i == 2)
-		{
-			if (!((ConVar*)var)->GetBool())
-				P2MMLog(0, false, "Unlocked buttons...");
-			else
-				P2MMLog(0, false, "Locked buttons...");
-			P2MMLog(1, false, "Mode will take effect when Gelocity map is loaded.");
-			return;
-		}
+		if (!((ConVar*)var)->GetBool())
+			P2MMLog(0, false, "Unlocked buttons...");
+		else
+			P2MMLog(0, false, "Locked buttons...");
+		P2MMLog(1, false, "Mode will take effect when Gelocity map is loaded.");
+		return;
 	}
 
 	// Lock or unlock the buttons.
@@ -467,14 +467,10 @@ ConVar p2mm_gelocity_lockbuttons("p2mm_gelocity_lockbuttons", "0", FCVAR_NONE, "
 CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race. Specify 0 or no argument to see current lap count.")
 {
 	// Check if host is in a gelocity map.
-	for (int i = 0; i < 3; i++)
+	if (!InGelocityMap())
 	{
-		if (FStrEq(CURMAPNAME, gelocityMaps[i])) break;
-		if (i == 2)
-		{
-			P2MMLog(1, false, "Not currently in a Gelocity map!");
-			return;
-		}
+		P2MMLog(1, false, "Not currently in a Gelocity map!");
+		return;
 	}
 
 	// Check if the gelocity race is already going. Make sure to not mess with the race's laps.
@@ -526,15 +522,11 @@ CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race. Specify 0 
 
 CON_COMMAND(p2mm_gelocity_music, "Set the music track for the Gelocity Race. 0-5 0 = No Music.")
 {
-	// Check if host is in a Gelocity map.
-	for (int i = 0; i < 3; i++)
+	// Check if host is in a gelocity map.
+	if (!InGelocityMap())
 	{
-		if (FStrEq(CURMAPNAME, gelocityMaps[i])) break;
-		if (i == 2)
-		{
-			P2MMLog(1, false, "Not currently in a Gelocity map!");
-			return;
-		}
+		P2MMLog(1, false, "Not currently in a Gelocity map!");
+		return;
 	}
 
 	// Check if the final lap has been triggered. LET THE INTENSE FINAL LAP MUSIC PLAY!
@@ -594,14 +586,10 @@ CON_COMMAND(p2mm_gelocity_music, "Set the music track for the Gelocity Race. 0-5
 CON_COMMAND(p2mm_gelocity_start, "Starts the Gelocity race.")
 {
 	// Check if host is in a gelocity map.
-	for (int i = 0; i < 3; i++)
+	if (!InGelocityMap())
 	{
-		if (FStrEq(CURMAPNAME, gelocityMaps[i])) break;
-		if (i == 2)
-		{
-			P2MMLog(1, false, "Not currently in a Gelocity map!");
-			return;
-		}
+		P2MMLog(1, false, "Not currently in a Gelocity map!");
+		return;
 	}
 
 	// Check if the gelocity race is already going. Make sure to not mess with the race's laps.
@@ -624,10 +612,18 @@ CP2MMServerPlugin::CP2MMServerPlugin()
 	// Store game vars
 	this->m_bSeenFirstRunPrompt = false;	// Flag is set true after CallFirstRunPrompt() is called in VScript.
 	this->m_bFirstMapRan = true;			// Checks if the game ran for the first time.
+	this->sv = nullptr;						// Pointer to the server.
 
-	// Store plugin Status
+	// Store plugin status
 	this->m_bPluginLoaded = false;
+	this->m_bPluginUnloading = false;		// For Discord RPC.
 	this->m_bNoUnload = false;				// If we fail to load, we don't want to run anything on Unload().
+
+	// Current Portal 2 branch based game being run.
+	// Helps when checking for specific game related things instead of getting the game directory everytime.
+	// Portal 2: 0
+	// Portal Stories: Mel: 1
+	this->m_iCurGameIndex = 0;
 
 	m_nDebugID = EVENT_DEBUG_ID_INIT;
 	this->m_iClientCommandIndex = 0;
@@ -669,7 +665,7 @@ void __fastcall CSteam3Server__OnGSClientDenyHelper_hook(CSteam3Server* thisptr,
 const char* (__cdecl* GetBallBotModel_orig)(bool bLowRes);
 const char* __cdecl GetBallBotModel_hook(bool bLowRes)
 {
-	if (FStrEq(GFunc::GetGameMainDir(), "portal_stories"))
+	if (g_P2MMServerPlugin.m_iCurGameIndex == 1)
 		return "models/portal_stories/player/mel.mdl";
 
 	return GetBallBotModel_orig(bLowRes);
@@ -678,15 +674,16 @@ const char* __cdecl GetBallBotModel_hook(bool bLowRes)
 const char* (__cdecl* GetEggBotModel_orig)(bool bLowRes);
 const char* __cdecl GetEggBotModel_hook(bool bLowRes)
 {
-	if (FStrEq(GFunc::GetGameMainDir(), "portal_stories"))
+	if (g_P2MMServerPlugin.m_iCurGameIndex == 1)
 		return "models/player/chell/player.mdl";
 
 	return GetEggBotModel_orig(bLowRes);
 }
 
 const char* (__fastcall* CPortal_Player__GetPlayerModelName_orig)(CPortal_Player* thisptr);
-const char* __fastcall CPortal_Player__GetPlayerModelName_hook(CPortal_Player* thisptr) {
-	if (FStrEq(GFunc::GetGameMainDir(), "portal_stories"))
+const char* __fastcall CPortal_Player__GetPlayerModelName_hook(CPortal_Player* thisptr)
+{
+	if (g_P2MMServerPlugin.m_iCurGameIndex == 1)
 	{
 		if (CBaseEntity__GetTeamNumber((CBasePlayer*)thisptr) == TEAM_BLUE)
 			return "models/portal_stories/player/mel.mdl";
@@ -736,12 +733,34 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 {
 	if (m_bPluginLoaded)
 	{
-		P2MMLog(1, false, "Already loaded!");
+		P2MMLog(1, false, "PLugin already loaded!");
 		m_bNoUnload = true;
 		return false;
 	}
 
 	P2MMLog(0, false, "Loading plugin...");
+
+	// Determine which Portal 2 branch game we are running.
+	P2MMLog(0, true, "Determining which Portal 2 branch game is being run...");
+	this->m_iCurGameIndex = 0; // Portal 2
+	if ((FStrEq(GetGameMainDir(), "portal_stories")))
+		this->m_iCurGameIndex = 1; // Portal Stories: Mel
+
+	if (p2mm_developer.GetBool())
+	{
+		switch (this->m_iCurGameIndex)
+		{
+		case 0:
+			P2MMLog(0, true, "Currently running Portal 2.");
+			break;
+		case 1:
+			P2MMLog(0, true, "Currently running Portal Stories: Mel.");
+			break;
+		default:
+			P2MMLog(0, true, "Currently running Portal 2.");
+			break;
+		}
+	}
 
 	P2MMLog(0, true, "Connecting tier libraries...");
 	ConnectTier1Libraries(&interfaceFactory, 1);
@@ -780,7 +799,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		this->m_bNoUnload = true;
 		return false;
 	}
-	
+
 	g_pServerTools = (IServerTools*)gameServerFactory(VSERVERTOOLS_INTERFACE_VERSION, 0);
 	if (!g_pServerTools)
 	{
@@ -797,10 +816,10 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 
-	pluginHelpers = (IServerPluginHelpers*)interfaceFactory(INTERFACEVERSION_ISERVERPLUGINHELPERS, 0);
-	if (!pluginHelpers)
+	g_pPluginHelpers = (IServerPluginHelpers*)interfaceFactory(INTERFACEVERSION_ISERVERPLUGINHELPERS, 0);
+	if (!g_pPluginHelpers)
 	{
-		P2MMLog(1, false, "Unable to load pluginHelpers!");
+		P2MMLog(1, false, "Unable to load g_pPluginHelpers!");
 		this->m_bNoUnload = true;
 		return false;
 	}
@@ -817,22 +836,27 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	MathLib_Init(2.2f, 2.2f, 0.0f, 2.0f);
 	ConVar_Register(0);
 
+	// Discord RPC
+	P2MMLog(0, true, "Checking if Discord RPC should be started...");
+	if (p2mm_discord_rpc.GetBool() && !g_pDiscordIntegration->RPCRunning)
+		P2MMLog(0, true, "Discord RPC enabled! Starting!");
+		g_pDiscordIntegration->StartDiscordRPC();
+
 	// Add listener for all used game events
 	P2MMLog(0, true, "Adding listeners for game events...");
-	for (const char* gameevent : gameevents)
+	for (const char* gameevent : gameEventList)
 	{
 		gameeventmanager->AddListener(this, gameevent, true);
 		P2MMLog(0, true, "Listener for game event \"%s\" has been added!", gameevent);
 	}
 
+	// Block ConCommands that clients shouldn't execute
 	P2MMLog(0, true, "Blocking console commands...");
-	for (const char* concommand : forbiddenconcommands)
+	for (const char* concommand : forbiddenConCommands)
 	{
 		ConCommandBase* commandbase = g_pCVar->FindCommandBase(concommand);
 		if (commandbase)
-		{
 			commandbase->RemoveFlags(FCVAR_GAMEDLL);
-		}
 	}
 	
 	// big ol' try catch because game has a TerminateProcess handler for exceptions...
@@ -851,8 +875,11 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		// Max players -> 33
 		Memory::ReplacePattern("server", "83 C0 02 89 01", "83 C0 20 89 01");
 		Memory::ReplacePattern("engine", "85 C0 78 13 8B 17", "31 C0 04 21 8B 17");
-		static uintptr_t sv = *reinterpret_cast<uintptr_t*>(Memory::Scanner::Scan<void*>(ENGINEDLL, "74 0A B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B E5", 3));
-		*reinterpret_cast<int*>(sv + 0x228) = 33;
+		uintptr_t svPtr = *reinterpret_cast<uintptr_t*>(Memory::Scanner::Scan<void*>(ENGINEDLL, "74 0A B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B E5", 3));
+		*reinterpret_cast<int*>(svPtr + 0x228) = 33;
+
+		// Store pointer to the CBaseServer for global access.
+		this->sv = reinterpret_cast<CBaseServer*>(svPtr);
 
 		// Prevent disconnect by "STEAM validation rejected"
 		Memory::ReplacePattern("engine", "01 74 7D 8B", "01 EB 7D 8B");
@@ -903,15 +930,16 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		);
 
 		MH_EnableHook(MH_ALL_HOOKS);
-
-		P2MMLog(0, false, "Loaded plugin! Hooray! :D");
-		m_bPluginLoaded = true;
 	} catch (const std::exception& ex) {
 		P2MMLog(0, false, "Failed to load plugin! :( Exception: \"%s\"", ex.what());
 		this->m_bNoUnload = true;
 		return false;
 	}
+	
+	g_pDiscordIntegration->UpdateDiscordRPC();
 
+	P2MMLog(0, false, "Loaded plugin! Horray! :D");
+	m_bPluginLoaded = true;
 	return true;
 }
 
@@ -928,9 +956,20 @@ void CP2MMServerPlugin::Unload(void)
 	}
 
 	P2MMLog(0, false, "Unloading Plugin...");
+	this->m_bPluginUnloading = true;
+	g_pDiscordIntegration->UpdateDiscordRPC();
 
 	P2MMLog(0, true, "Removing listeners for game events...");
 	gameeventmanager->RemoveListener(this);
+
+	// Unblock ConCommands that clients shouldn't execute
+	P2MMLog(0, true, "Unblocking console commands...");
+	for (const char* concommand : forbiddenConCommands)
+	{
+		ConCommandBase* commandbase = g_pCVar->FindCommandBase(concommand);
+		if (commandbase)
+			commandbase->AddFlags(FCVAR_GAMEDLL);
+	}
 
 	ConVar_Unregister();
 	P2MMLog(0, true, "Disconnecting tier libraries...");
@@ -950,8 +989,7 @@ void CP2MMServerPlugin::Unload(void)
 	// Max players -> 3
 	Memory::ReplacePattern("server", "83 C0 20 89 01", "83 C0 02 89 01");
 	Memory::ReplacePattern("engine", "31 C0 04 21 8B 17", "85 C0 78 13 8B 17");
-	static uintptr_t sv = *reinterpret_cast<uintptr_t*>(Memory::Scanner::Scan<void*>(ENGINEDLL, "74 0A B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B E5", 3));
-	*reinterpret_cast<int*>(sv + 0x228) = 2;
+	*reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(this->sv) + 0x228) = 2;
 
 	// Disconnect by "STEAM validation rejected"
 	Memory::ReplacePattern("engine", "01 EB 7D 8B", "01 74 7D 8B");
@@ -965,6 +1003,9 @@ void CP2MMServerPlugin::Unload(void)
 	P2MMLog(0, true, "Disconnecting hooked functions and uninitializing MinHook...");
 	MH_DisableHook(MH_ALL_HOOKS);
 	MH_Uninitialize();
+
+	if (p2mm_discord_rpc.GetBool() && g_pDiscordIntegration->RPCRunning)
+		g_pDiscordIntegration->ShutdownDiscordRPC();
 
 	m_bPluginLoaded = false;
 	P2MMLog(0, false, "Plugin unloaded! Goodbye!");
@@ -988,19 +1029,16 @@ void CP2MMServerPlugin::ServerActivate(edict_t* pEdictList, int edictCount, int 
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Called when a map has started loading. Does gel patching and Last Map System stuff.
+// Purpose: Called when a map has started loading.
 //---------------------------------------------------------------------------------
 void CP2MMServerPlugin::LevelInit(char const* pMapName)
 {
+	P2MMLog(0, true, "Level Init!");
+
 	// Dedicated server paint map patch
 	// Paint usage doesn't function naturally on dedicated servers, so this will help enable it again.
 	if (p2mm_ds_enable_paint.GetBool() && engineServer->IsDedicatedServer())
 	{
-		if (!p2mm_ds_enable_paint.GetBool())
-		{
-			return;
-		}
-
 		// Hook R_LoadWorldGeometry (gl_rmisc.cpp)
 		static auto R_LoadWorldGeometry =
 #ifdef _WIN32
@@ -1017,10 +1055,16 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 			engineServer->GetPaintmapDataRLE(paintData2);
 		}
 		else
-		{
-			P2MMLog(1, true, "Couldn't find R_LoadWorldGeometry! Paint will not work on this map load.");
-		}
+			P2MMLog(1, false, "Couldn't find R_LoadWorldGeometry! Paint will not work on this map load.");
 	}
+
+	if (!g_P2MMServerPlugin.m_bSeenFirstRunPrompt) return;
+
+	std::string changemapstr = std::string("The server has changed the map to: `" + std::string(CURMAPFILENAME) + "`");
+	g_pDiscordIntegration->SendWebHookEmbed("Server", changemapstr, EMBEDCOLOR_SERVER, false);
+
+	// Update Discord RPC to update current map information.
+	g_pDiscordIntegration->UpdateDiscordRPC();
 }
 
 //---------------------------------------------------------------------------------
@@ -1034,10 +1078,10 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 	bool spewinfo = p2mm_spewgameeventinfo.GetBool();
 	const char* pcmd = args[0];
 	const char* fargs = args.ArgS();
-	
+
 	short userid = engineServer->GetPlayerUserId(pEntity);
-	int entindex = GFunc::UserIDToPlayerIndex(userid);
-	const char* playername = GFunc::GetPlayerName(entindex);
+	int entindex = UserIDToPlayerIndex(userid);
+	const char* playername = GetPlayerName(entindex);
 
 	if (spewinfo)
 	{
@@ -1066,7 +1110,7 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 	}
 
 	// Stop certain client commands from being excecated by clients and not the host
-	for (const char* badcc : forbiddenclientcommands)
+	for (const char* badcc : forbiddenClientCommands)
 	{
 		if (FSubStr(pcmd, "taunt_auto") || FSubStr(pcmd, "mp_earn_taunt"))
 			return PLUGIN_STOP;
@@ -1106,7 +1150,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		float ping_x = event->GetFloat("ping_x");
 		float ping_y = event->GetFloat("ping_y");
 		float ping_z = event->GetFloat("ping_z");
-		int entindex = GFunc::UserIDToPlayerIndex(userid);
+		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{
@@ -1124,7 +1168,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			P2MMLog(0, true, "ping_z: %f", ping_z);
 			P2MMLog(0, true, "entindex: %i", entindex);
 		}
-		
+
 		return;
 	}
 	// Event called when a player goes through a portal, "portal_player_portaled" returns:
@@ -1136,7 +1180,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	{
 		short userid = event->GetInt("userid");
 		bool portal2 = event->GetString("text");
-		int entindex = GFunc::UserIDToPlayerIndex(userid);
+		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{
@@ -1152,7 +1196,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			P2MMLog(0, true, "portal2: %s", portal2 ? "true" : "false");
 			P2MMLog(0, true, "entindex: %i", entindex);
 		}
-		
+
 		return;
 	}
 	// Event called when a turret hits another turret, "turret_hit_turret" returns nothing.
@@ -1188,7 +1232,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	else if (FStrEq(event->GetName(), "player_landed"))
 	{
 		short userid = event->GetInt("userid");
-		int entindex = GFunc::UserIDToPlayerIndex(userid);
+		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{
@@ -1234,8 +1278,8 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	else if (FStrEq(event->GetName(), "player_death"))
 	{
 		short userid = event->GetInt("userid");
-		short attacker = event -> GetInt("attacker");
-		int entindex = GFunc::UserIDToPlayerIndex(userid);
+		short attacker = event->GetInt("attacker");
+		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{
@@ -1245,7 +1289,10 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			{
 				HSCRIPT playerHandle = INDEXHANDLE(entindex);
 				if (playerHandle)
+				{
 					g_pScriptVM->Call<HSCRIPT>(od_func, NULL, false, NULL, playerHandle);
+					g_pDiscordIntegration->SendWebHookEmbed(std::string(GetPlayerName(entindex) + std::string(" Died!")), "", EMBEDCOLOR_PLAYERDEATH);
+				}
 			}
 
 			// Handle VScript game event function
@@ -1253,7 +1300,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			if (ge_func)
 				g_pScriptVM->Call<short, short, int>(ge_func, NULL, false, NULL, userid, attacker, entindex);
 		}
-		
+
 		if (spewinfo)
 		{
 			P2MMLog(0, true, "userid: %i", userid);
@@ -1270,7 +1317,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	else if (FStrEq(event->GetName(), "player_spawn"))
 	{
 		short userid = event->GetInt("userid");
-		int entindex = GFunc::UserIDToPlayerIndex(userid);
+		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{
@@ -1311,14 +1358,17 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		const char* networkid = event->GetString("networkid");
 		const char* address = event->GetString("address");
 		bool bot = event->GetBool("bot");
-		int entindex = GFunc::UserIDToPlayerIndex(userid);
+		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerConnect");
 			if (ge_func)
+			{
 				g_pScriptVM->Call<const char*, int, short, const char*, const char*, const char*, bool, int>(ge_func, NULL, false, NULL, name, index, userid, xuid, networkid, address, bot, entindex);
+				g_pDiscordIntegration->SendWebHookEmbed(std::string(name + std::string(" Joinned!")), std::string(name + std::string(" joinned the server!")));
+			}
 		}
 
 		if (spewinfo)
@@ -1332,7 +1382,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			P2MMLog(0, true, "bot: %i", bot);
 			P2MMLog(0, true, "entindex: %i", entindex);
 		}
-		
+
 		return;
 	}
 	// Event called when a player changes their name, "player_info" returns:
@@ -1352,7 +1402,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		const char* networkid = event->GetString("networkid");
 		const char* address = event->GetString("address");
 		bool bot = event->GetBool("bot");
-		int entindex = GFunc::UserIDToPlayerIndex(userid);
+		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{
@@ -1372,7 +1422,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			P2MMLog(0, true, "bot: %i", bot);
 			P2MMLog(0, true, "entindex: %i", entindex);
 		}
-		
+
 		return;
 	}
 	// Event called when a player inputs a message into the chat, "player_say" returns:
@@ -1384,7 +1434,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	{
 		short userid = event->GetInt("userid");
 		const char* text = event->GetString("text");
-		int entindex = GFunc::UserIDToPlayerIndex(userid);
+		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
 		{
@@ -1393,9 +1443,31 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				// Handling chat commands
 				HSCRIPT cc_func = g_pScriptVM->LookupFunction("ChatCommands");
 				if (cc_func)
+				{
 					g_pScriptVM->Call<const char*, int>(cc_func, NULL, false, NULL, text, entindex);
+
+					std::string playerName = GetPlayerName(entindex);
+					std::string chatMsg = text;
+
+					P2MMLog(0, true, playerName.c_str());
+					P2MMLog(0, true, chatMsg.c_str());
+
+					// Replace any "\\" characters with "\\\\" so backslashes can exist but not break anything
+					size_t pos = 0;
+					while ((pos = playerName.find("\\", pos)) != std::string::npos) {
+						playerName.replace(pos, 1, std::string("\\\\"));
+						pos += std::string("\\\\").length();
+					}
+					pos = 0;
+					while ((pos = chatMsg.find("\\", pos)) != std::string::npos) {
+						chatMsg.replace(pos, 1, std::string("\\\\"));
+						pos += std::string("\\\\").length();
+					}
+
+					g_pDiscordIntegration->SendWebHookEmbed(playerName, chatMsg);
+				}
 			}
-			
+
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSay");
 			if (ge_func)
@@ -1408,7 +1480,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			P2MMLog(0, true, "text: %s", text);
 			P2MMLog(0, true, "entindex: %i", entindex);
 		}
-		
+
 		return;
 	}
 
@@ -1422,13 +1494,24 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 {
 	short userid = engineServer->GetPlayerUserId(pEntity);
-	int entindex = GFunc::UserIDToPlayerIndex(userid);
+	int entindex = UserIDToPlayerIndex(userid);
 
 	if (p2mm_spewgameeventinfo.GetBool())
 	{
 		P2MMLog(0, true, "ClientActive Called!");
 		P2MMLog(0, true, "userid: %i", userid);
 		P2MMLog(0, true, "entindex: %i", entindex);
+	}
+	
+	// Make sure people know that the chat is being recorded if webhook is set
+	if (p2mm_discord_webhook.GetBool())
+	{
+		CBasePlayer* pPlayer = UTIL_PlayerByIndex(entindex);
+		if (pPlayer)
+		{
+			P2MMLog(0, true, "Warning for enabled webhooks sent to player index %i.", entindex);
+			UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, "This lobby has Discord Webhook Intergration enabled. All of your ingame messages may be sent to a Discord channel.");
+		}
 	}
 
 	if (g_pScriptVM)
@@ -1448,6 +1531,8 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 			g_pScriptVM->Call<short, int>(ge_func, NULL, false, NULL, userid, entindex);
 	}
 
+	// Update Discord RPC to update player count.
+	g_pDiscordIntegration->UpdateDiscordRPC();
 	return;
 }
 
@@ -1471,7 +1556,11 @@ void CP2MMServerPlugin::GameFrame(bool simulating)
 //---------------------------------------------------------------------------------
 void CP2MMServerPlugin::LevelShutdown(void)
 {
+	P2MMLog(0, true, "Level Shutdown!");
 	p2mm_loop.SetValue("0"); // REMOVE THIS at some point...
+	updateMapsList(); // Update the maps list for p2mm_startsession.
+	// Update Discord RPC to update the level information or to say the host is on the main menu.
+	g_pDiscordIntegration->UpdateDiscordRPC();
 }
 
 //---------------------------------------------------------------------------------

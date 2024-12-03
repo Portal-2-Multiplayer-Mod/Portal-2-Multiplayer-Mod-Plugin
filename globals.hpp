@@ -29,24 +29,33 @@
 // Stand in class definitions.
 class CBasePlayer;
 class CPortal_Player;
+class CBaseServer;
 
 // Color macros for game chat and console printing.
 #define P2MM_PLUGIN_CONSOLE_COLOR  Color(100, 192, 252, 255) // Light Blue
 #define P2MM_VSCRIPT_CONSOLE_COLOR Color(110, 247, 76, 255)  // Light Green
+#define P2MM_DISCORD_CONSOLE_COLOR_NORMAL Color(0, 200, 255, 255) // Even Lighter Blue
+#define P2MM_DISCORD_CONSOLE_COLOR_WARNING Color(255, 150, 0, 255) // Orange
 
-#define CURMAPNAME STRING(g_pGlobals->mapname)
+#define CURMAPFILENAME STRING(g_pGlobals->mapname)
 #define MAX_PLAYERS g_pGlobals->maxClients
 
 // Used for autocomplete console commands.
 #define COMMAND_COMPLETION_MAXITEMS		64
 #define COMMAND_COMPLETION_ITEM_LENGTH	64
 
+// ClientPrint msg_dest macros.
+#define HUD_PRINTNOTIFY		1 // Works same as HUD_PRINTCONSOLE
+#define HUD_PRINTCONSOLE	2
+#define HUD_PRINTTALK		3
+#define HUD_PRINTCENTER		4
+
 // A macro to iterate through all ConVars and ConCommand in the game.
 // Thanks to Nanoman2525 for this.
 #define FOR_ALL_CONSOLE_COMMANDS(pCommandVarName) \
-    ConCommandBase *m_pConCommandList = *reinterpret_cast<ConCommandBase **>((uintptr_t)g_pCVar + 0x30); /* CCvar::m_pConCommandList */ \
-    for (ConCommandBase *pCommandVarName = m_pConCommandList; \
-	pCommandVarName; pCommandVarName = *reinterpret_cast<ConCommandBase **>(reinterpret_cast<uintptr_t>(pCommandVarName) + 0x04)) /* ConCommandBase::m_pNext (private variable) */
+    ConCommandBase* m_pConCommandList = *reinterpret_cast<ConCommandBase**>((uintptr_t)g_pCVar + 0x30); /* CCvar::m_pConCommandList */ \
+    for (ConCommandBase* pCommandVarName = m_pConCommandList; \
+	pCommandVarName; pCommandVarName = *reinterpret_cast<ConCommandBase**>(reinterpret_cast<uintptr_t>(pCommandVarName) + 0x04)) /* ConCommandBase::m_pNext (private variable) */
 
 // Macro to iterate through all players.
 #define FOR_ALL_PLAYERS(i) \
@@ -60,12 +69,6 @@ enum
 	TEAM_RED,  
 	TEAM_BLUE
 };
-
-// ClientPrint msg_dest macros.
-#define HUD_PRINTNOTIFY		1 // Works same as HUD_PRINTCONSOLE
-#define HUD_PRINTCONSOLE	2
-#define HUD_PRINTTALK		3
-#define HUD_PRINTCENTER		4
 
 // UTIL_HudMessage message parameters struct. Taken from utils.h.
 // See Valve Developer Community for game_text to see which field does what:
@@ -84,9 +87,21 @@ typedef struct hudtextparms_s
 	int			channel;
 } hudtextparms_t;
 
+// Struct for map arrays.
+typedef struct
+{
+	const char* mapfile;
+	const char* mapname;
+	int chapter;
+	const char* chaptername;
+} MapParams;
+
+MapParams* InGelocityMap();
+MapParams* InP2CampaignMap(bool mpMaps = false);
+MapParams* InMelCampaignMap(bool advanced = false);
 
 //---------------------------------------------------------------------------------
-// Any ConVars or CON_COMMANDS that need to be globally available.
+// Any ConVars or ConCommands that need to be globally available.
 //---------------------------------------------------------------------------------
 extern ConVar p2mm_developer;
 
@@ -100,36 +115,47 @@ extern IPlayerInfoManager* playerinfomanager;
 extern IScriptVM* g_pScriptVM;
 extern IServerTools* g_pServerTools;
 extern IGameEventManager2* gameeventmanager_;
-extern IServerPluginHelpers* pluginHelpers;
+extern IServerPluginHelpers* g_pPluginHelpers;
 extern IFileSystem* g_pFileSystem;
 
+// Logging function.
 void P2MMLog(int level, bool dev, const char* pMsgFormat, ...);
 
-namespace GFunc
-{
-	int					UserIDToPlayerIndex(int userid);
-	const char*			GetPlayerName(int playerIndex);
-	int					GetSteamID(int playerIndex);
-	int					GetConVarInt(const char* cvName);
-	const char*			GetConVarString(const char* cvName);
-	void				SetConVarInt(const char* cvName, int newValue);
-	void				SetConVarString(const char* cvName, const char* newValue);
-	inline const char*	GetGameMainDir();
-	inline const char*	GetGameBaseDir();
-}
+//---------------------------------------------------------------------------------
+// Misc UTIL functions.
+//---------------------------------------------------------------------------------
+int					UserIDToPlayerIndex(int userid);
+const char*			GetPlayerName(int playerIndex);
+int					GetSteamID(int playerIndex);
+int					GetConVarInt(const char* cvName);
+const char*			GetConVarString(const char* cvName);
+void				SetConVarInt(const char* cvName, int newValue);
+void				SetConVarString(const char* cvName, const char* newValue);
 
+//---------------------------------------------------------------------------------
+// Interfaced game functions.
+//---------------------------------------------------------------------------------
+// UTIL functions
 CBasePlayer* UTIL_PlayerByIndex(int playerIndex);
 void UTIL_ClientPrint(CBasePlayer* player, int msg_dest, const char* msg_name, const char* param1 = NULL, const char* param2 = NULL, const char* param3 = NULL, const char* param4 = NULL);
 void UTIL_HudMessage(CBasePlayer* pPlayer, const hudtextparms_t& textparms, const char* pMessage);
 
+// CBaseEntity functions
 void CBaseEntity__RemoveEntity(CBaseEntity* pEntity);
 int CBaseEntity__GetTeamNumber(CBasePlayer* pPlayer);
 HSCRIPT CBaseEntity__GetScriptScope(CBaseEntity* entity);
 HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity);
 
+// CBasePlayer functions
+void CBasePlayer__ShowViewPortPanel(int playerIndex, const char* name, bool bShow = true, KeyValues* data = NULL);
+
+// CPortal_Player functions
 void CPortal_Player__RespawnPlayer(int playerIndex);
 void CPortal_Player__SetFlashlightState(int playerIndex, bool enable);
 
+//---------------------------------------------------------------------------------
+// Player recipient filter.
+//---------------------------------------------------------------------------------
 class CFilter : public IRecipientFilter
 {
 public:
@@ -168,6 +194,19 @@ inline bool FStrEq(const char* sz1, const char* sz2)
 inline bool FSubStr(const char* sz1, const char* search)
 {
 	return (V_strstr(sz1, search));
+}
+
+// Get the current player count on the server
+inline int CURPLAYERCOUNT() {
+	int playerCount = 0;
+	FOR_ALL_PLAYERS(i)
+	{
+		if (UTIL_PlayerByIndex(i))
+		{
+			playerCount++;
+		}
+	}
+	return playerCount;
 }
 
 //---------------------------------------------------------------------------------
@@ -221,14 +260,18 @@ inline HSCRIPT INDEXHANDLE(int iEdictNum) {
 	return entityHandle;
 }
 
-// Get the main game directory being used. Ex. portal2
-inline const char* GFunc::GetGameMainDir()
+//---------------------------------------------------------------------------------
+// Purpose: Get the main game directory being used. Ex. portal2
+//---------------------------------------------------------------------------------
+inline const char* GetGameMainDir()
 {
 	return CommandLine()->ParmValue("-game", CommandLine()->ParmValue("-defaultgamedir", "portal2"));
 }
 
-// Get base game directory. Ex. Portal 2
-inline const char* GFunc::GetGameBaseDir()
+//---------------------------------------------------------------------------------
+// Purpose: Get base game directory. Ex. Portal 2
+//---------------------------------------------------------------------------------
+inline const char* GetGameBaseDir()
 {
 	char baseDir[MAX_PATH] = { 0 };
 	std::string fullGameDirectoryPath = engineClient->GetGameDirectory();
@@ -237,4 +280,22 @@ inline const char* GFunc::GetGameBaseDir()
 	std::string tempBaseDir = fullGameDirectoryPath.substr(secondSlash + 1, firstSlash - secondSlash - 1);
 	V_strcpy(baseDir, tempBaseDir.c_str());
 	return baseDir;
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Returns true if a game session is running. 
+//---------------------------------------------------------------------------------
+inline bool IsGameActive()
+{
+	bool m_activeGame = **Memory::Scanner::Scan<bool**>(ENGINEDLL, "C6 05 ?? ?? ?? ?? ?? C6 05 ?? ?? ?? ?? ?? 0F B6 96", 2);
+	return m_activeGame;
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Returns true if a game session is shutting down or has been shutdown.
+//---------------------------------------------------------------------------------
+inline bool IsGameShutdown()
+{
+	bool bIsGameShuttingDown = reinterpret_cast<bool(__cdecl*)()>(Memory::Scanner::Scan<void*>(ENGINEDLL, "B8 05 00 00 00 39 05"))();
+	return bIsGameShuttingDown;
 }

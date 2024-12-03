@@ -18,6 +18,8 @@ extern ConVar p2mm_lastmap;
 //---------------------------------------------------------------------------------
 static void printlP2MM(int level, bool dev, const char* pMsgFormat)
 {
+	if (dev && !p2mm_developer.GetBool()) return;
+
 	va_list argptr;
 	char szFormattedText[1024] = { 0 };
 	va_start(argptr, pMsgFormat);
@@ -26,8 +28,6 @@ static void printlP2MM(int level, bool dev, const char* pMsgFormat)
 
 	char completeMsg[1024];
 	V_snprintf(completeMsg, sizeof(completeMsg), "(P2:MM VSCRIPT): %s\n", szFormattedText);
-
-	if (dev && !p2mm_developer.GetBool()) return;
 
 	switch (level)
 	{
@@ -166,10 +166,10 @@ static bool FirstRunState(int state)
 static void CallFirstRunPrompt()
 {
 	// Don't display again once the first one is shown.
-	if (g_P2MMServerPlugin.m_bSeenFirstRunPrompt) 
-	{ 
+	if (g_P2MMServerPlugin.m_bSeenFirstRunPrompt)
+	{
 		P2MMLog(0, true, "First run prompt already shown...");
-		return; 
+		return;
 	}
 
 	P2MMLog(0, true, "DISPLAYING FIRST RUN PROMPT!");
@@ -180,7 +180,7 @@ static void CallFirstRunPrompt()
 	kv->SetWString("title", g_pLocalize->FindSafe("#P2MM_FirstRunPrompt_t"));
 	//kv->SetString("title", "Welcome to the Portal 2: Multiplayer Mod!");
 	kv->SetWString("msg", g_pLocalize->FindSafe("#P2MM_FirstRunPrompt_d"));
-	/*kv->SetString("msg", 
+	/*kv->SetString("msg",
 		"Welcome to the Portal 2: Multiplayer Mod!\n\n"
 		"Input '!help' into chat to see a full list of chat commands you can use!\n"
 		"Hope you enjoy the mod! - Portal 2: Multiplayer Mod Team\n\n"
@@ -190,9 +190,9 @@ static void CallFirstRunPrompt()
 
 	// CreateMessage prompts can only be seen when the pause menu is up, so pause the game.
 	engineClient->ExecuteClientCmd("gameui_activate");
-	pluginHelpers->CreateMessage(INDEXENT(1), DIALOG_TEXT, kv, &g_P2MMServerPlugin);
+	g_pPluginHelpers->CreateMessage(INDEXENT(1), DIALOG_TEXT, kv, &g_P2MMServerPlugin);
 	kv->deleteThis();
-	
+
 	// Set the plugin variable flag that the host seen the prompt to true so its not reshown.
 	g_P2MMServerPlugin.m_bSeenFirstRunPrompt = true;
 }
@@ -331,6 +331,15 @@ int GetMaxPlayers()
 	return MAX_PLAYERS;
 }
 
+//---------------------------------------------------------------------------------
+// Purpose: Enable or disable displaying the score board for a player.
+//---------------------------------------------------------------------------------
+void ShowScoreboard(int playerIndex, bool bEnable)
+{
+	CBasePlayer__ShowViewPortPanel(playerIndex, "scores", bEnable);
+}
+	
+
 void RegisterFuncsAndRun()
 {
 	g_pScriptVM = **Memory::Scanner::Scan<IScriptVM***>(SERVERDLL, "8B 1D ?? ?? ?? ?? 57 85 DB", 2);
@@ -341,9 +350,9 @@ void RegisterFuncsAndRun()
 	}
 
 	ScriptRegisterFunction	   (g_pScriptVM, printlP2MM, "Logging for the P2MM VScript. The log message must be passed as a string or it will error.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetPlayerName, "GetPlayerName", "Gets player username by their entity index.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetSteamID, "GetSteamID", "Gets the account ID component of player SteamID by the player's entity index.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::UserIDToPlayerIndex, "UserIDToPlayerIndex", "Get the player's entity index by their userid.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GetPlayerName, "GetPlayerName", "Gets player username by their entity index.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GetSteamID, "GetSteamID", "Gets the account ID component of player SteamID by the player's entity index.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, UserIDToPlayerIndex, "UserIDToPlayerIndex", "Get the player's entity index by their userid.");
 	ScriptRegisterFunction	   (g_pScriptVM, IsMapValid, "Returns true is the supplied string is a available map to load and run.");
 	ScriptRegisterFunction	   (g_pScriptVM, GetDeveloperLevelP2MM, "Returns the value of ConVar p2mm_developer.");
 	ScriptRegisterFunction	   (g_pScriptVM, SetPhysTypeConVar, "Sets 'player_held_object_use_view_model' to the supplied integer value.");
@@ -351,15 +360,15 @@ void RegisterFuncsAndRun()
 	ScriptRegisterFunction	   (g_pScriptVM, IsDedicatedServer, "Returns true if this is a dedicated server.");
 	ScriptRegisterFunction	   (g_pScriptVM, InitializeEntity, "Initializes an entity. Note: Not all entities will work even after being initialized with this function.");
 	ScriptRegisterFunction	   (g_pScriptVM, SendToChat, "Sends a raw message to the chat HUD. Specifying no playerIndex or 0 sends to all players. Supports printing localization strings but those that require formatting can't be formatted.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetGameMainDir, "GetGameMainDir", "Returns the game directory. Ex. portal2");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetGameBaseDir, "GetGameBaseDir", "Get the main game directory being used. Ex. Portal 2");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GetGameMainDir, "GetGameMainDir", "Returns the game directory. Ex. portal2");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GetGameBaseDir, "GetGameBaseDir", "Get the main game directory being used. Ex. Portal 2");
 	ScriptRegisterFunction	   (g_pScriptVM, GetLastMap, "Returns the last map recorded by the launcher's Last Map system.");
 	ScriptRegisterFunction	   (g_pScriptVM, FirstRunState, "Get or set the state of whether the first map was run or not. Set false/true = 0/1 | -1 to get state.");
 	ScriptRegisterFunction	   (g_pScriptVM, CallFirstRunPrompt, "Shows the first run prompt if enabled in config.nut.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetConVarInt, "GetConVarInt", "Get the integer value of a ConVar.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::GetConVarString, "GetConVarString", "Get the string value of a ConVar.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::SetConVarInt, "SetConVarInt", "Set the integer value of a ConVar.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GFunc::SetConVarString, "SetConVarString", "Set the string value of a ConVar.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GetConVarInt, "GetConVarInt", "Get the integer value of a ConVar.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, GetConVarString, "GetConVarString", "Get the string value of a ConVar.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, SetConVarInt, "SetConVarInt", "Set the integer value of a ConVar.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, SetConVarString, "SetConVarString", "Set the string value of a ConVar.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, INDEXHANDLE, "UTIL_PlayerByIndex", "Takes the player's entity index and returns the player's script handle.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, CPortal_Player__RespawnPlayer, "RespawnPlayer", "Respawn the a player by their entity index.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, CPortal_Player__SetFlashlightState, "SetFlashlightState", "Set the flashlight for a player on or off.");
@@ -378,6 +387,7 @@ void RegisterFuncsAndRun()
 													   "Vector is used to consolidate fadeinTime, fadeoutTime, and holdTime."
 	);
 	ScriptRegisterFunction		(g_pScriptVM, GetMaxPlayers, "Self-explanatory.");
+	ScriptRegisterFunction		(g_pScriptVM, ShowScoreboard, "Enable or disable displaying the score board for players.");
 
 	// Load up the main P2:MM VScript and set
 	g_pScriptVM->Run("IncludeScript(\"multiplayermod/p2mm\");");

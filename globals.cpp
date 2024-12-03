@@ -203,6 +203,7 @@ void UTIL_HudMessage(CBasePlayer* pPlayer, const hudtextparms_t &textparms, cons
 	_HudMessage(pPlayer, textparms, pMessage);
 }
 
+
 ///			 CBaseEntity Class Functions				\\\
 
 //---------------------------------------------------------------------------------
@@ -247,6 +248,7 @@ HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity)
 
 	return _GetScriptInstance(entity);
 }
+
 
 ///			 CBasePlayer Class Functions				\\\
 
@@ -307,18 +309,8 @@ void CPortal_Player__SetFlashlightState(int playerIndex, bool enable)
 		reinterpret_cast<void(__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 53 56 8B 75 08 8B D9 8B 83"))((CBaseEntity*)pPlayer, EF_DIMLIGHT);
 }
 
-///			 CBaseServer Class Functions			\\\
 
-//---------------------------------------------------------------------------------
-// Purpose: Returns if there is a active server running.
-//---------------------------------------------------------------------------------
-//void CBaseServer__IsActive()
-//{
-//	return reinterpret_cast<void(__cdecl*)()
-//}
-
-//33 C0 83 79 ?? ?? 0F 9D C0
-
+///			 Campaign Map Arrays & Functions			\\\	
 
 // Array of the Gelocity maps
 std::vector<MapParams> gelocityMaps =

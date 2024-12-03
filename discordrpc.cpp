@@ -318,11 +318,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 		RPC.instance = 0;
 	}
 
-	// Get CHostState::m_activeGame to check if a game session is running.
-	// Use HostState_IsGameShuttingDown to check if the game session is shutting down or has been shutdown.
-	bool m_activeGame = **Memory::Scanner::Scan<bool**>(ENGINEDLL, "C6 05 ?? ?? ?? ?? ?? C6 05 ?? ?? ?? ?? ?? 0F B6 96", 2);
-	bool bIsShuttingDown = reinterpret_cast<bool(__cdecl*)()>(Memory::Scanner::Scan<void*>(ENGINEDLL, "B8 05 00 00 00 39 05"))();
-	if (!m_activeGame || bIsShuttingDown)
+	if (!IsGameActive() || IsGameShutdown())
 	{
 		RPC.details = "Main Menu";
 		RPC.smallImageKey = "wave";
@@ -332,7 +328,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 		RPC.instance = 0;
 	}
 
-	if (m_activeGame && (!g_P2MMServerPlugin.m_bPluginUnloading || !bIsShuttingDown))
+	if (IsGameActive() && (!g_P2MMServerPlugin.m_bPluginUnloading || !IsGameShutdown()))
 	{
 		MapParams* map = NULL;
 		char details[128] = "Map: ";

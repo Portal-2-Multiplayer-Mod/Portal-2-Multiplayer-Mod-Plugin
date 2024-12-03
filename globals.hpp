@@ -44,6 +44,12 @@ class CBaseServer;
 #define COMMAND_COMPLETION_MAXITEMS		64
 #define COMMAND_COMPLETION_ITEM_LENGTH	64
 
+// ClientPrint msg_dest macros.
+#define HUD_PRINTNOTIFY		1 // Works same as HUD_PRINTCONSOLE
+#define HUD_PRINTCONSOLE	2
+#define HUD_PRINTTALK		3
+#define HUD_PRINTCENTER		4
+
 // A macro to iterate through all ConVars and ConCommand in the game.
 // Thanks to Nanoman2525 for this.
 #define FOR_ALL_CONSOLE_COMMANDS(pCommandVarName) \
@@ -63,12 +69,6 @@ enum
 	TEAM_RED,  
 	TEAM_BLUE
 };
-
-// ClientPrint msg_dest macros.
-#define HUD_PRINTNOTIFY		1 // Works same as HUD_PRINTCONSOLE
-#define HUD_PRINTCONSOLE	2
-#define HUD_PRINTTALK		3
-#define HUD_PRINTCENTER		4
 
 // UTIL_HudMessage message parameters struct. Taken from utils.h.
 // See Valve Developer Community for game_text to see which field does what:
@@ -122,7 +122,7 @@ extern IFileSystem* g_pFileSystem;
 void P2MMLog(int level, bool dev, const char* pMsgFormat, ...);
 
 //---------------------------------------------------------------------------------
-// Interfaced game functions.
+// Misc UTIL functions.
 //---------------------------------------------------------------------------------
 int					UserIDToPlayerIndex(int userid);
 const char*			GetPlayerName(int playerIndex);
@@ -131,8 +131,6 @@ int					GetConVarInt(const char* cvName);
 const char*			GetConVarString(const char* cvName);
 void				SetConVarInt(const char* cvName, int newValue);
 void				SetConVarString(const char* cvName, const char* newValue);
-inline const char*	GetGameMainDir();
-inline const char*	GetGameBaseDir();
 
 //---------------------------------------------------------------------------------
 // Interfaced game functions.
@@ -282,4 +280,22 @@ inline const char* GetGameBaseDir()
 	std::string tempBaseDir = fullGameDirectoryPath.substr(secondSlash + 1, firstSlash - secondSlash - 1);
 	V_strcpy(baseDir, tempBaseDir.c_str());
 	return baseDir;
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Returns true if a game session is running. 
+//---------------------------------------------------------------------------------
+inline bool IsGameActive()
+{
+	bool m_activeGame = **Memory::Scanner::Scan<bool**>(ENGINEDLL, "C6 05 ?? ?? ?? ?? ?? C6 05 ?? ?? ?? ?? ?? 0F B6 96", 2);
+	return m_activeGame;
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Returns true if a game session is shutting down or has been shutdown.
+//---------------------------------------------------------------------------------
+inline bool IsGameShutdown()
+{
+	bool bIsGameShuttingDown = reinterpret_cast<bool(__cdecl*)()>(Memory::Scanner::Scan<void*>(ENGINEDLL, "B8 05 00 00 00 39 05"))();
+	return bIsGameShuttingDown;
 }

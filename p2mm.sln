@@ -9,12 +9,15 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Portal 2|Win32 = Portal 2|Win32
 		Portal Stories Mel|Win32 = Portal Stories Mel|Win32
+		Vanilla|Win32 = Vanilla|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{531796FA-476D-47F1-84FA-CD3613D68536}.Portal 2|Win32.ActiveCfg = Portal 2|Win32
 		{531796FA-476D-47F1-84FA-CD3613D68536}.Portal 2|Win32.Build.0 = Portal 2|Win32
 		{531796FA-476D-47F1-84FA-CD3613D68536}.Portal Stories Mel|Win32.ActiveCfg = Portal Stories Mel|Win32
 		{531796FA-476D-47F1-84FA-CD3613D68536}.Portal Stories Mel|Win32.Build.0 = Portal Stories Mel|Win32
+		{531796FA-476D-47F1-84FA-CD3613D68536}.Vanilla|Win32.ActiveCfg = Vanilla|Win32
+		{531796FA-476D-47F1-84FA-CD3613D68536}.Vanilla|Win32.Build.0 = Vanilla|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

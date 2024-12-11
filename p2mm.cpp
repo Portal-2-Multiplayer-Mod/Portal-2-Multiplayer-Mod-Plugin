@@ -15,7 +15,7 @@
 #include "tier0/memdbgon.h"
 
 extern ConVar p2mm_discord_rpc;
-extern ConVar p2mm_discord_webhook;
+extern ConVar p2mm_discord_webhooks;
 
 //---------------------------------------------------------------------------------
 // Interfaces from the engine
@@ -1507,7 +1507,7 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 	}
 	
 	// Make sure people know that the chat is being recorded if webhook is set
-	if (p2mm_discord_webhook.GetBool())
+	if (p2mm_discord_webhooks.GetBool())
 	{
 		CBasePlayer* pPlayer = UTIL_PlayerByIndex(entindex);
 		if (pPlayer)

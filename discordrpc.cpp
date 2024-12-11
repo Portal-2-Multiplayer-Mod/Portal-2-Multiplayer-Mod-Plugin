@@ -66,10 +66,10 @@ void WebhookCheck(IConVar* var, const char* pOldValue, float flOldValue)
 		}
 	}
 }
-ConVar p2mm_discord_webhook("p2mm_discord_webhooks", "0", FCVAR_ARCHIVE | FCVAR_NOTIFY, "Enable or disable webhooks been the P2:MM Server and Discord.", true, 0, true, 1, WebhookCheck);
-ConVar p2mm_discord_webhook_url("p2mm_discord_webhooks_url", "", FCVAR_ARCHIVE | FCVAR_HIDDEN, "Channel webhook URL to send messages to. Should be set in launcher, not here.");
-ConVar p2mm_discord_webhook_defaultfooter("p2mm_discord_webhooks_defaultfooter", "1", FCVAR_ARCHIVE, "Enable or disable the default embed footer for webhooks.", true, 0, true, 1);
-ConVar p2mm_discord_webhook_customfooter("p2mm_discord_webhooks_customfooter", "", FCVAR_ARCHIVE, "Set a custom embed footer for webhook messages.");
+ConVar p2mm_discord_webhooks("p2mm_discord_webhooks", "0", FCVAR_ARCHIVE | FCVAR_NOTIFY, "Enable or disable webhooks been the P2:MM Server and Discord.", true, 0, true, 1, WebhookCheck);
+ConVar p2mm_discord_webhooks_url("p2mm_discord_webhooks_url", "", FCVAR_ARCHIVE | FCVAR_HIDDEN, "Channel webhook URL to send messages to. Should be set in launcher, not here.");
+ConVar p2mm_discord_webhooks_defaultfooter("p2mm_discord_webhooks_defaultfooter", "1", FCVAR_ARCHIVE, "Enable or disable the default embed footer for webhooks.", true, 0, true, 1);
+ConVar p2mm_discord_webhooks_customfooter("p2mm_discord_webhooks_customfooter", "", FCVAR_ARCHIVE, "Set a custom embed footer for webhook messages.");
 
 // Parameters that are sent through to the Discord webhook
 struct WebHookParams
@@ -97,7 +97,7 @@ std::string DefaultFooter()
 // Thread sending a curl request to the specified Discord WebHook
 unsigned SendWebHook(void* webhookParams)
 {
-	if (p2mm_discord_webhook_url.GetBool())
+	if (p2mm_discord_webhooks.GetBool())
 	{
 		P2MMLog(0, true, "Webhook for \"p2mm_discord_webhooks_url\" has not been specified.");
 		return 1;
@@ -112,7 +112,7 @@ unsigned SendWebHook(void* webhookParams)
 		return 1;
 	}
 
-	curl_easy_setopt(curl, CURLOPT_URL, p2mm_discord_webhook_url.GetString());
+	curl_easy_setopt(curl, CURLOPT_URL, p2mm_discord_webhooks_url.GetString());
 	curl_easy_setopt(curl, CURLOPT_POST, 1L);
 
 	// Create the JSON payload
@@ -158,6 +158,8 @@ unsigned SendWebHook(void* webhookParams)
 // Send a embed message to Discord via a webhook
 void CDiscordIntegration::SendWebHookEmbed(std::string title, std::string description, int color, bool hasFooter)
 {
+	if (!p2mm_discord_webhooks.GetBool()) return;
+
 	// Allocate memory for the parameters
 	WebHookParams* webhookParams = new WebHookParams;
 	webhookParams->title = title;	
@@ -166,13 +168,13 @@ void CDiscordIntegration::SendWebHookEmbed(std::string title, std::string descri
 	webhookParams->footer = "";
 
 	// Set the footer to the default footer if enabled
-	if (p2mm_discord_webhook_defaultfooter.GetBool() && hasFooter)
+	if (p2mm_discord_webhooks_defaultfooter.GetBool() && hasFooter)
 	{
 		webhookParams->footer = DefaultFooter();
 	}
-	else if (!p2mm_discord_webhook_defaultfooter.GetBool() && hasFooter)
+	else if (!p2mm_discord_webhooks_defaultfooter.GetBool() && hasFooter)
 	{
-		webhookParams->footer = std::string(p2mm_discord_webhook_customfooter.GetString());
+		webhookParams->footer = std::string(p2mm_discord_webhooks_customfooter.GetString());
 	}
 
 	P2MMLog(0, true, "Embed webhookParams:");

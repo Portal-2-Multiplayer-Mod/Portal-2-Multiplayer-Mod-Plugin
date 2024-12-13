@@ -333,6 +333,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 	if (IsGameActive() && (!g_P2MMServerPlugin.m_bPluginUnloading || !IsGameShutdown()))
 	{
 		MapParams* map = NULL;
+		char state[128] = { 0 };
 		char details[128] = "Map: ";
 		char smallImageKey[32] = { 0 };
 		char smallImageText[128] = { 0 };
@@ -397,7 +398,9 @@ void CDiscordIntegration::UpdateDiscordRPC()
 		default:
 			break;
 		}
-		RPC.state = "Players: ";
+		V_snprintf(state, 128, "(%i Bots) Players: ", GetBotCount());
+
+		RPC.state = state;
 		RPC.details = details;
 		RPC.smallImageKey = smallImageKey;
 		RPC.smallImageText = smallImageText;

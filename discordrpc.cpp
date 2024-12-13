@@ -92,7 +92,7 @@ std::string DefaultFooter()
 
 	if (GetBotCount() == 1)
 		footer = std::string("Players: ") + curplayercount + "/" + maxplayercount + std::string(" (1 Bot) || Current Map : ") + CURMAPFILENAME;
-	else if (GetBotCount())
+	else if (GetBotCount() > 1)
 		footer = std::string("Players: ") + curplayercount + "/" + maxplayercount + std::string(" (") + std::to_string(GetBotCount()) + std::string(" Bots) || Current Map : ") + CURMAPFILENAME;
 		
 
@@ -144,10 +144,18 @@ unsigned SendWebHook(void* webhookParams)
 	CURLcode curlCode = curl_easy_perform(curl);
 
 	// Perform the request and check for errors
-	if (curlCode != CURLE_OK)
-		P2MMLog(1, false, "Failed to send curl request! Error Code: %i", curlCode);
-	else
+	switch (curlCode)
+	{
+	case (CURLE_OK):
 		P2MMLog(0, true, "Sent webhook curl request!");
+		break;
+	case (CURLE_URL_MALFORMAT):
+		P2MMLog(0, false, "An invalid URL was supplied for p2mm_discord_webhook_url! Please check that it has been entered correctly.");
+		break;
+	default:
+		P2MMLog(1, false, "Failed to send curl request! Error Code: %i", curlCode);
+		break;
+	}
 
 	// Cleanup curl request
 	curl_slist_free_all(headers);
@@ -406,7 +414,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 
 		if (GetBotCount() == 1) 
 			V_strcat(state, "(1 Bot) Players: ", 128);
-		else if (GetBotCount() > 0) 
+		else if (GetBotCount() > 1) 
 			V_snprintf(state, 128, "(%i Bots) Players: ", GetBotCount());
 		else 
 			V_strcat(state, "Players: ", 128);

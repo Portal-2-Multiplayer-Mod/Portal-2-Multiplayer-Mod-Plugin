@@ -87,16 +87,10 @@ const char* GetPlayerName(int playerIndex)
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Returns true if player is a Bot.
+// Purpose: Returns true if player is a bot.
 //---------------------------------------------------------------------------------
 bool IsBot(int playerIndex)
 {
-	if (playerIndex <= 0 || playerIndex > MAX_PLAYERS)
-	{
-		P2MMLog(0, true, "Invalid index passed to IsBot: %i!", playerIndex);
-		return false;
-	}
-
 	player_info_t playerInfo;
 	if (!engineServer->GetPlayerInfo(playerIndex, &playerInfo))
 	{
@@ -108,7 +102,7 @@ bool IsBot(int playerIndex)
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Get the number of Bots in the server.
+// Purpose: Get the number of bots in the server.
 //---------------------------------------------------------------------------------
 int GetBotCount()
 {

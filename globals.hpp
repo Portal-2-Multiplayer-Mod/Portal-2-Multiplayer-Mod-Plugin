@@ -131,6 +131,8 @@ int					GetConVarInt(const char* cvName);
 const char*			GetConVarString(const char* cvName);
 void				SetConVarInt(const char* cvName, int newValue);
 void				SetConVarString(const char* cvName, const char* newValue);
+bool				IsBot(int playerIndex);
+int					GetBotCount();
 
 //---------------------------------------------------------------------------------
 // Interfaced game functions.
@@ -199,7 +201,7 @@ inline bool FSubStr(const char* sz1, const char* search)
 // Get the current player count on the server
 inline int CURPLAYERCOUNT() {
 	int playerCount = 0;
-	for (int i = 1; i < MAX_PLAYERS; i++)
+	for (int i = 1; i <= MAX_PLAYERS; i++)
 	{
 		if (UTIL_PlayerByIndex(i))
 		{

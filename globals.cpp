@@ -87,6 +87,40 @@ const char* GetPlayerName(int playerIndex)
 }
 
 //---------------------------------------------------------------------------------
+// Purpose: Returns true if player is a Bot.
+//---------------------------------------------------------------------------------
+bool IsBot(int playerIndex)
+{
+	if (playerIndex <= 0 || playerIndex > MAX_PLAYERS)
+	{
+		P2MMLog(0, true, "Invalid index passed to IsBot: %i!", playerIndex);
+		return false;
+	}
+
+	player_info_t playerInfo;
+	if (!engineServer->GetPlayerInfo(playerIndex, &playerInfo))
+	{
+		P2MMLog(0, true, "Couldn't retrieve playerinfo of player index \"%i\" in IsBot!", playerIndex);
+		return false;
+	}
+
+	return playerInfo.fakeplayer;
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Get the number of Bots in the server.
+//---------------------------------------------------------------------------------
+int GetBotCount()
+{
+	int b = 0;
+	FOR_ALL_PLAYERS(i)
+	{
+		if (IsBot(i)) b++;
+	}
+	return b;
+}
+
+//---------------------------------------------------------------------------------
 // Purpose: Gets the account ID component of player SteamID by the player's entity index.
 //---------------------------------------------------------------------------------
 int GetSteamID(int playerIndex)

@@ -88,8 +88,13 @@ std::string DefaultFooter()
 
 	std::string curplayercount = std::to_string(CURPLAYERCOUNT());
 	std::string maxplayercount = std::to_string(MAX_PLAYERS);
-
 	std::string footer = std::string("Players: ") + curplayercount + "/" + maxplayercount + std::string(" || Current Map: ") + CURMAPFILENAME;
+
+	if (GetBotCount() == 1)
+		footer = std::string("Players: ") + curplayercount + "/" + maxplayercount + std::string(" (1 Bot) || Current Map : ") + CURMAPFILENAME;
+	else if (GetBotCount())
+		footer = std::string("Players: ") + curplayercount + "/" + maxplayercount + std::string(" (") + std::to_string(GetBotCount()) + std::string(" Bots) || Current Map : ") + CURMAPFILENAME;
+		
 
 	return footer;
 }
@@ -97,7 +102,7 @@ std::string DefaultFooter()
 // Thread sending a curl request to the specified Discord WebHook
 unsigned SendWebHook(void* webhookParams)
 {
-	if (p2mm_discord_webhooks.GetBool())
+	if (FStrEq(p2mm_discord_webhooks_url.GetString(), ""))
 	{
 		P2MMLog(0, true, "Webhook for \"p2mm_discord_webhooks_url\" has not been specified.");
 		return 1;
@@ -398,7 +403,13 @@ void CDiscordIntegration::UpdateDiscordRPC()
 		default:
 			break;
 		}
-		V_snprintf(state, 128, "(%i Bots) Players: ", GetBotCount());
+
+		if (GetBotCount() == 1) 
+			V_strcat(state, "(1 Bot) Players: ", 128);
+		else if (GetBotCount() > 0) 
+			V_snprintf(state, 128, "(%i Bots) Players: ", GetBotCount());
+		else 
+			V_strcat(state, "Players: ", 128);
 
 		RPC.state = state;
 		RPC.details = details;

@@ -57,9 +57,9 @@ class CBaseServer;
     for (ConCommandBase* pCommandVarName = m_pConCommandList; \
 	pCommandVarName; pCommandVarName = *reinterpret_cast<ConCommandBase**>(reinterpret_cast<uintptr_t>(pCommandVarName) + 0x04)) /* ConCommandBase::m_pNext (private variable) */
 
-// Macro to iterate through all players.
+// Macro to iterate through all players on the server.
 #define FOR_ALL_PLAYERS(i) \
-	for (int i = 1; i < MAX_PLAYERS; i++)
+	for (int i = 1; i <= CURPLAYERCOUNT(); i++)
 
 // Player team enum.
 enum
@@ -199,7 +199,7 @@ inline bool FSubStr(const char* sz1, const char* search)
 // Get the current player count on the server
 inline int CURPLAYERCOUNT() {
 	int playerCount = 0;
-	FOR_ALL_PLAYERS(i)
+	for (int i = 1; i < MAX_PLAYERS; i++)
 	{
 		if (UTIL_PlayerByIndex(i))
 		{

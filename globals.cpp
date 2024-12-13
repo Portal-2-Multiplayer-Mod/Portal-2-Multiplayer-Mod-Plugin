@@ -76,14 +76,14 @@ const char* GetPlayerName(int playerIndex)
 		return "";
 	}
 
-	player_info_t playerinfo;
-	if (!engineServer->GetPlayerInfo(playerIndex, &playerinfo))
+	player_info_t playerInfo;
+	if (!engineServer->GetPlayerInfo(playerIndex, &playerInfo))
 	{
-		P2MMLog(0, true, "Couldn't retrieve playerinfo of player index \"%i\" in GetPlayerName!", playerIndex);
+		P2MMLog(0, true, "Couldn't retrieve playerInfo of player index \"%i\" in GetPlayerName!", playerIndex);
 		return "";
 	}
 
-	return playerinfo.name;
+	return playerInfo.name;
 }
 
 //---------------------------------------------------------------------------------
@@ -98,8 +98,8 @@ int GetSteamID(int playerIndex)
 	if (!pEdict)
 		return -1;
 
-	player_info_t playerinfo;
-	if (!engineServer->GetPlayerInfo(playerIndex, &playerinfo))
+	player_info_t playerInfo;
+	if (!engineServer->GetPlayerInfo(playerIndex, &playerInfo))
 		return -1;
 
 	const CSteamID* pSteamID = engineServer->GetClientSteamID(pEdict);

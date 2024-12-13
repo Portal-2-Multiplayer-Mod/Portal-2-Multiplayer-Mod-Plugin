@@ -118,8 +118,8 @@ static void SendToChat(int playerIndex, const char* msg)
 	{
 		FOR_ALL_PLAYERS(i)
 		{
-			player_info_t playerinfo;
-			if (engineServer->GetPlayerInfo(i, &playerinfo))
+			player_info_t playerInfo;
+			if (engineServer->GetPlayerInfo(i, &playerInfo))
 			{
 				CBasePlayer* pPlayer = UTIL_PlayerByIndex(i);
 				if (pPlayer) 
@@ -210,8 +210,8 @@ void ConsolePrint(int playerIndex, const char* msg)
 	{
 		FOR_ALL_PLAYERS(i)
 		{
-			player_info_t playerinfo;
-			if (engineServer->GetPlayerInfo(i, &playerinfo))
+			player_info_t playerInfo;
+			if (engineServer->GetPlayerInfo(i, &playerInfo))
 			{
 				CBasePlayer* pPlayer = UTIL_PlayerByIndex(i);
 				if (pPlayer)
@@ -247,8 +247,8 @@ void ClientPrint(int playerIndex, const char* msg)
 	{
 		FOR_ALL_PLAYERS(i)
 		{
-			player_info_t playerinfo;
-			if (engineServer->GetPlayerInfo(i, &playerinfo))
+			player_info_t playerInfo;
+			if (engineServer->GetPlayerInfo(i, &playerInfo))
 			{
 				CBasePlayer* pPlayer = UTIL_PlayerByIndex(i);
 				if (pPlayer)

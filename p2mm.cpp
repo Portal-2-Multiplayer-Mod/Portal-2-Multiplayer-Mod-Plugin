@@ -316,8 +316,8 @@ CON_COMMAND(p2mm_respawnall, "Respawns all players.")
 {
 	FOR_ALL_PLAYERS(i)
 	{
-		player_info_t playerinfo;
-		if (engineServer->GetPlayerInfo(i, &playerinfo))
+		player_info_t playerInfo;
+		if (engineServer->GetPlayerInfo(i, &playerInfo))
 			CPortal_Player__RespawnPlayer(i);
 	}
 }

@@ -176,7 +176,7 @@ static void CallFirstRunPrompt()
 
 	// Put together KeyValues to pass to CreateMessage.
 	KeyValues* kv = new KeyValues("firstrunprompt");
-	kv->SetInt("level", 0);
+	kv->SetInt("level", 1);
 	kv->SetWString("title", g_pLocalize->FindSafe("#P2MM_FirstRunPrompt_t"));
 	//kv->SetString("title", "Welcome to the Portal 2: Multiplayer Mod!");
 	kv->SetWString("msg", g_pLocalize->FindSafe("#P2MM_FirstRunPrompt_d"));

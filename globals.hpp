@@ -204,9 +204,7 @@ inline int CURPLAYERCOUNT() {
 	for (int i = 1; i <= MAX_PLAYERS; i++)
 	{
 		if (UTIL_PlayerByIndex(i))
-		{
 			playerCount++;
-		}
 	}
 	return playerCount;
 }

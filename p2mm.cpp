@@ -20,17 +20,17 @@ extern ConVar p2mm_discord_webhooks;
 //---------------------------------------------------------------------------------
 // Interfaces from the engine
 //---------------------------------------------------------------------------------
-IVEngineServer* engineServer = NULL; // Access engine server functions (messaging clients, loading content, making entities, running commands, etc).
-IVEngineClient* engineClient = NULL; // Access engine client functions.
-CGlobalVars* g_pGlobals = NULL; // Access global variables shared between the engine and games dlls.
-IPlayerInfoManager* playerinfomanager = NULL; // Access interface functions for players.
-IScriptVM* g_pScriptVM = NULL; // Access VScript interface.
-IServerTools* g_pServerTools = NULL; // Access to interface from engine to tools for manipulating entities.
-IGameEventManager2* gameeventmanager_ = NULL; // Access game events interface.
-IServerPluginHelpers* g_pPluginHelpers = NULL; // Access interface for plugin helper functions.
-IFileSystem* g_pFileSystem = NULL; // Access interface for Valve's file system interface.
+IVEngineServer*			engineServer = NULL; // Access engine server functions (messaging clients, loading content, making entities, running commands, etc).
+IVEngineClient*			engineClient = NULL; // Access engine client functions.
+CGlobalVars*			g_pGlobals = NULL; // Access global variables shared between the engine and games dlls.
+IPlayerInfoManager*		g_pPlayerInfoManager = NULL; // Access interface functions for players.
+IScriptVM*				g_pScriptVM = NULL; // Access VScript interface.
+IServerTools*			g_pServerTools = NULL; // Access to interface from engine to tools for manipulating entities.
+IGameEventManager2*		g_pGameEventManager_ = NULL; // Access game events interface.
+IServerPluginHelpers*	g_pPluginHelpers = NULL; // Access interface for plugin helper functions.
+IFileSystem*			g_pFileSystem = NULL; // Access interface for Valve's file system interface.
 #ifndef GAME_DLL
-#define gameeventmanager gameeventmanager_
+#define g_pGameEventManager g_pGameEventManager_
 #endif
 
 //---------------------------------------------------------------------------------
@@ -787,10 +787,10 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 
-	playerinfomanager = (IPlayerInfoManager*)gameServerFactory(INTERFACEVERSION_PLAYERINFOMANAGER, 0);
-	if (!playerinfomanager)
+	g_pPlayerInfoManager = (IPlayerInfoManager*)gameServerFactory(INTERFACEVERSION_PLAYERINFOMANAGER, 0);
+	if (!g_pPlayerInfoManager)
 	{
-		P2MMLog(1, false, "Unable to load playerinfomanager!");
+		P2MMLog(1, false, "Unable to load g_pPlayerInfoManager!");
 		this->m_bNoUnload = true;
 		return false;
 	}
@@ -811,10 +811,10 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 
-	gameeventmanager = (IGameEventManager2*)interfaceFactory(INTERFACEVERSION_GAMEEVENTSMANAGER2, 0);
-	if (!gameeventmanager)
+	g_pGameEventManager = (IGameEventManager2*)interfaceFactory(INTERFACEVERSION_GAMEEVENTSMANAGER2, 0);
+	if (!g_pGameEventManager)
 	{
-		P2MMLog(1, false, "Unable to load gameeventmanager!");
+		P2MMLog(1, false, "Unable to load g_pGameEventManager!");
 		this->m_bNoUnload = true;
 		return false;
 	}
@@ -835,7 +835,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 
-	g_pGlobals = playerinfomanager->GetGlobalVars();
+	g_pGlobals = g_pPlayerInfoManager->GetGlobalVars();
 	MathLib_Init(2.2f, 2.2f, 0.0f, 2.0f);
 	ConVar_Register(0);
 
@@ -849,7 +849,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	P2MMLog(0, true, "Adding listeners for game events...");
 	for (const char* gameevent : gameEventList)
 	{
-		gameeventmanager->AddListener(this, gameevent, true);
+		g_pGameEventManager->AddListener(this, gameevent, true);
 		P2MMLog(0, true, "Listener for game event \"%s\" has been added!", gameevent);
 	}
 
@@ -963,7 +963,7 @@ void CP2MMServerPlugin::Unload(void)
 	g_pDiscordIntegration->UpdateDiscordRPC();
 
 	P2MMLog(0, true, "Removing listeners for game events...");
-	gameeventmanager->RemoveListener(this);
+	g_pGameEventManager->RemoveListener(this);
 
 	// Unblock ConCommands that clients shouldn't execute
 	P2MMLog(0, true, "Unblocking console commands...");

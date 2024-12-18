@@ -104,7 +104,7 @@ unsigned SendWebHook(void* webhookParams)
 {
 	if (FStrEq(p2mm_discord_webhooks_url.GetString(), ""))
 	{
-		P2MMLog(0, true, "Webhook for \"p2mm_discord_webhooks_url\" has not been specified.");
+		P2MMLog(0, false, "Webhook for \"p2mm_discord_webhooks_url\" has not been specified.");
 		return 1;
 	}
 

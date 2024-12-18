@@ -66,10 +66,10 @@ void WebhookCheck(IConVar* var, const char* pOldValue, float flOldValue)
 		}
 	}
 }
-ConVar p2mm_discord_webhooks("p2mm_discord_webhooks", "0", FCVAR_ARCHIVE | FCVAR_NOTIFY, "Enable or disable webhooks been the P2:MM Server and Discord.", true, 0, true, 1, WebhookCheck);
-ConVar p2mm_discord_webhooks_url("p2mm_discord_webhooks_url", "", FCVAR_ARCHIVE | FCVAR_HIDDEN, "Channel webhook URL to send messages to. Should be set in launcher, not here.");
-ConVar p2mm_discord_webhooks_defaultfooter("p2mm_discord_webhooks_defaultfooter", "1", FCVAR_ARCHIVE, "Enable or disable the default embed footer for webhooks.", true, 0, true, 1);
-ConVar p2mm_discord_webhooks_customfooter("p2mm_discord_webhooks_customfooter", "", FCVAR_ARCHIVE, "Set a custom embed footer for webhook messages.");
+ConVar p2mm_discord_webhooks("p2mm_discord_webhooks", "0", FCVAR_NOTIFY, "Enable or disable webhooks been the P2:MM Server and Discord.", true, 0, true, 1, WebhookCheck);
+ConVar p2mm_discord_webhooks_url("p2mm_discord_webhooks_url", "", FCVAR_HIDDEN, "Channel webhook URL to send messages to. Should be set in launcher, not here.");
+ConVar p2mm_discord_webhooks_defaultfooter("p2mm_discord_webhooks_defaultfooter", "1", FCVAR_NONE, "Enable or disable the default embed footer for webhooks.", true, 0, true, 1);
+ConVar p2mm_discord_webhooks_customfooter("p2mm_discord_webhooks_customfooter", "", FCVAR_NONE, "Set a custom embed footer for webhook messages.");
 
 // Parameters that are sent through to the Discord webhook
 struct WebHookParams
@@ -216,7 +216,7 @@ void RPCState(IConVar* var, const char* pOldValue, float flOldValue)
 	if (!cvRPC->GetBool() && g_pDiscordIntegration->RPCRunning)
 		g_pDiscordIntegration->ShutdownDiscordRPC();
 }
-ConVar p2mm_discord_rpc("p2mm_discord_rpc", "1", FCVAR_ARCHIVE, "Enable or disable Discord RPC with P2:MM.", true, 0, true, 1, RPCState);
+ConVar p2mm_discord_rpc("p2mm_discord_rpc", "1", FCVAR_NONE, "Enable or disable Discord RPC with P2:MM.", true, 0, true, 1, RPCState);
 
 static DiscordRichPresence RPC;
 CDiscordIntegration::CDiscordIntegration()

@@ -20,15 +20,15 @@ extern ConVar p2mm_discord_webhooks;
 //---------------------------------------------------------------------------------
 // Interfaces from the engine
 //---------------------------------------------------------------------------------
-IVEngineServer*			engineServer = NULL; // Access engine server functions (messaging clients, loading content, making entities, running commands, etc).
-IVEngineClient*			engineClient = NULL; // Access engine client functions.
-CGlobalVars*			g_pGlobals = NULL; // Access global variables shared between the engine and games dlls.
-IPlayerInfoManager*		g_pPlayerInfoManager = NULL; // Access interface functions for players.
-IScriptVM*				g_pScriptVM = NULL; // Access VScript interface.
-IServerTools*			g_pServerTools = NULL; // Access to interface from engine to tools for manipulating entities.
-IGameEventManager2*		g_pGameEventManager_ = NULL; // Access game events interface.
-IServerPluginHelpers*	g_pPluginHelpers = NULL; // Access interface for plugin helper functions.
-IFileSystem*			g_pFileSystem = NULL; // Access interface for Valve's file system interface.
+IVEngineServer* engineServer = NULL; // Access engine server functions (messaging clients, loading content, making entities, running commands, etc).
+IVEngineClient* engineClient = NULL; // Access engine client functions.
+CGlobalVars* g_pGlobals = NULL; // Access global variables shared between the engine and games dlls.
+IPlayerInfoManager* g_pPlayerInfoManager = NULL; // Access interface functions for players.
+IScriptVM* g_pScriptVM = NULL; // Access VScript interface.
+IServerTools* g_pServerTools = NULL; // Access to interface from engine to tools for manipulating entities.
+IGameEventManager2* g_pGameEventManager_ = NULL; // Access game events interface.
+IServerPluginHelpers* g_pPluginHelpers = NULL; // Access interface for plugin helper functions.
+IFileSystem* g_pFileSystem = NULL; // Access interface for Valve's file system interface.
 #ifndef GAME_DLL
 #define g_pGameEventManager g_pGameEventManager_
 #endif
@@ -134,10 +134,10 @@ ConVar p2mm_spewgameeventinfo("p2mm_spewgameeventinfo", "0", FCVAR_NONE, "Log in
 //---------------------------------------------------------------------------------
 // P2:MM ConCommands
 //---------------------------------------------------------------------------------
-std::vector<std::string> mapList; // List of maps for the p2mm_startsession command auto complete.
-std::vector<std::string> workshopMapList; // List of all workshop map for the p2mm_startsession auto complete.
+std::vector<std::string> mapList; // List of maps for the p2mm_map command auto complete.
+std::vector<std::string> workshopMapList; // List of all workshop map for the p2mm_map auto complete.
 
-// Update the map list avaliable to p2mm_startsession by scanning for all map files in SearchPath.
+// Update the map list avaliable to p2mm_map by scanning for all map files in SearchPath.
 void updateMapsList() {
 	mapList.clear();
 	CUtlVector<CUtlString> outList;
@@ -170,8 +170,8 @@ void updateMapsList() {
 	}
 }
 
-// Autocomplete for p2mm_startsession.
-static int p2mm_startsession_CompletionFunc(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH])
+// Autocomplete for p2mm_map.
+static int p2mm_map_CompletionFunc(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH])
 {
 	// If the map list is empty, generate it.
 	if (mapList.empty()) {
@@ -179,7 +179,7 @@ static int p2mm_startsession_CompletionFunc(const char* partial, char commands[C
 	}
 
 	// Assemble together the current state of the inputted command.
-	const char* concommand = "p2mm_startsession ";
+	const char* concommand = "p2mm_map ";
 	const char* match = (V_strstr(partial, concommand) == partial) ? partial + V_strlen(concommand) : partial;
 
 	// Go through the map list searching for matches with the assembled inputted command.
@@ -197,7 +197,7 @@ static int p2mm_startsession_CompletionFunc(const char* partial, char commands[C
 	return numMatchedMaps;
 }
 
-CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a requested map.", FCVAR_NONE, p2mm_startsession_CompletionFunc)
+CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested map.", FCVAR_NONE, p2mm_map_CompletionFunc)
 {
 	// If the map list is empty, generate it.
 	if (mapList.empty()) {
@@ -207,7 +207,7 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 	// Make sure the CON_COMMAND was executed correctly.
 	if (args.ArgC() < 2 || FStrEq(args.Arg(1), ""))
 	{
-		P2MMLog(1, false, "p2mm_startsession called incorrectly! Usage: \"p2mm_startsession (map to start)\"");
+		P2MMLog(1, false, "p2mm_map called incorrectly! Usage: \"p2mm_map (map to start)\"");
 		updateMapsList();
 		return;
 	}
@@ -232,7 +232,7 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 			char completePVCmd[sizeof("playvol \"#music/mainmenu/portal2_background0%d\" 0.35") + sizeof(iAct)] = { 0 };
 			V_snprintf(completePVCmd, sizeof(completePVCmd), "playvol \"#music/mainmenu/portal2_background0%i\" 0.35", iAct);
 
-			P2MMLog(1, false, "p2mm_startsession was called with P2MM_LASTMAP, but p2mm_lastmap is empty or invalid!");
+			P2MMLog(1, false, "p2mm_map was called with P2MM_LASTMAP, but p2mm_lastmap is empty or invalid!");
 			engineClient->ExecuteClientCmd("disconnect \"There is no last map recorded or the map doesn't exist! Please start a play session with the other options first.\"");
 			engineClient->ExecuteClientCmd(completePVCmd);
 			updateMapsList();
@@ -257,7 +257,7 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 	// Check if the supplied map is a valid map.
 	if (!engineServer->IsMapValid(requestedMap))
 	{
-		P2MMLog(1, false, "p2mm_startsession was given a non-valid map or one that doesn't exist! \"%s\"", requestedMap);
+		P2MMLog(1, false, "p2mm_map was given a non-valid map or one that doesn't exist! \"%s\"", requestedMap);
 		updateMapsList();
 		return;
 	}
@@ -277,7 +277,7 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 		P2MMLog(0, true, "requestedMap: \"%s\"", requestedMap);
 		p2mm_lastmap.SetValue(requestedMap);
 		engineClient->ExecuteClientCmd(std::string(mapString + "mp_coop_community_hub").c_str());
-		
+
 		std::string initmapstr = std::string("Server has started with map: `" + std::string(requestedMap) + "`");
 		g_pDiscordIntegration->SendWebHookEmbed(std::string("Server"), initmapstr, EMBEDCOLOR_SERVER, false);
 	}
@@ -292,12 +292,12 @@ CON_COMMAND_F_COMPLETION(p2mm_startsession, "Starts up a P2:MM session with a re
 	}
 }
 
-CON_COMMAND(p2mm_updatemaplist, "Manually updates the list of available maps that can be loaded with p2mm_startsession.")
+CON_COMMAND(p2mm_updatemaplist, "Manually updates the list of available maps that can be loaded with p2mm_map.")
 {
 	updateMapsList();
 }
 
-CON_COMMAND(p2mm_maplist, "Lists available maps that can be loaded with p2mm_startsession.")
+CON_COMMAND(p2mm_maplist, "Lists available maps that can be loaded with p2mm_map.")
 {
 	P2MMLog(0, false, "AVALIABLE MAPS:");
 	P2MMLog(0, false, "----------------------------------------");
@@ -651,7 +651,7 @@ const char* CP2MMServerPlugin::GetPluginDescription(void)
 // NoSteamLogon stop hook.
 class CSteam3Server;
 class CBaseClient;
-void (__fastcall* CSteam3Server__OnGSClientDenyHelper_orig)(CSteam3Server* thisptr, void* edx, CBaseClient* cl, void* eDenyReason, const char* pchOptionalText);
+void(__fastcall* CSteam3Server__OnGSClientDenyHelper_orig)(CSteam3Server* thisptr, void* edx, CBaseClient* cl, void* eDenyReason, const char* pchOptionalText);
 void __fastcall CSteam3Server__OnGSClientDenyHelper_hook(CSteam3Server* thisptr, void* edx, CBaseClient* cl, void* eDenyReason, const char* pchOptionalText)
 {
 	// If we the game attempts to disconnect with "No Steam Logon", here we just tell it no.
@@ -698,7 +698,7 @@ const char* __fastcall CPortal_Player__GetPlayerModelName_hook(CPortal_Player* t
 
 // For hooking onto the function that is called before a player respawns to skip the delay
 // that is usual there and instead force a instant respawn of the player.
-void (__fastcall* CPortal_Player__PlayerDeathThink_orig)(CPortal_Player* thisptr);
+void(__fastcall* CPortal_Player__PlayerDeathThink_orig)(CPortal_Player* thisptr);
 void __fastcall CPortal_Player__PlayerDeathThink_hook(CPortal_Player* thisptr)
 {
 	if (p2mm_instant_respawn.GetBool())
@@ -709,7 +709,7 @@ void __fastcall CPortal_Player__PlayerDeathThink_hook(CPortal_Player* thisptr)
 	CPortal_Player__PlayerDeathThink_orig(thisptr);
 }
 
-void (__cdecl* respawn_orig)(CBaseEntity* pEdict, bool fCopyCorpse);
+void(__cdecl* respawn_orig)(CBaseEntity* pEdict, bool fCopyCorpse);
 void __cdecl respawn_hook(CBaseEntity* pEdict, bool fCopyCorpse)
 {
 	respawn_orig(pEdict, fCopyCorpse);
@@ -826,7 +826,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		this->m_bNoUnload = true;
 		return false;
 	}
-	 
+
 	g_pFileSystem = (IFileSystem*)interfaceFactory(FILESYSTEM_INTERFACE_VERSION, 0);
 	if (!g_pFileSystem)
 	{
@@ -861,7 +861,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		if (commandbase)
 			commandbase->RemoveFlags(FCVAR_GAMEDLL);
 	}
-	
+
 	// big ol' try catch because game has a TerminateProcess handler for exceptions...
 	// why this wasn't here is mystifying, - 10/2024 NULLderef
 	try {
@@ -904,8 +904,11 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		MH_Initialize();
 
 		// NoSteamLogon disconnect hook patch.
-		MH_CreateHook((LPVOID)Memory::Scanner::Scan<void*>(ENGINEDLL, "55 8B EC 83 EC 08 53 56 57 8B F1 E8 ?? ?? ?? ?? 8B"), &CSteam3Server__OnGSClientDenyHelper_hook, (void**)&CSteam3Server__OnGSClientDenyHelper_orig);
-	
+		MH_CreateHook(
+			(LPVOID)Memory::Scanner::Scan<void*>(ENGINEDLL, "55 8B EC 83 EC 08 53 56 57 8B F1 E8 ?? ?? ?? ?? 8B"),
+			&CSteam3Server__OnGSClientDenyHelper_hook, (void**)&CSteam3Server__OnGSClientDenyHelper_orig
+		);
+
 		// Hook onto the function which defines what Atlas's and PBody's models are.
 		MH_CreateHook(
 			Memory::Rel32(Memory::Scanner::Scan(SERVERDLL, "E8 ?? ?? ?? ?? 83 C4 40 50", 1)),
@@ -928,7 +931,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 
 		// "respawn" function hook for getting a VScript "game event" call out of it.
 		MH_CreateHook(
-			Memory::Scanner::Scan(SERVERDLL,"55 8B EC A1 ?? ?? ?? ?? 80 78 ?? ?? 75 ?? 80 78"),
+			Memory::Scanner::Scan(SERVERDLL, "55 8B EC A1 ?? ?? ?? ?? 80 78 ?? ?? 75 ?? 80 78"),
 			&respawn_hook, (void**)&respawn_orig
 		);
 
@@ -938,7 +941,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		this->m_bNoUnload = true;
 		return false;
 	}
-	
+
 	g_pDiscordIntegration->UpdateDiscordRPC();
 
 	P2MMLog(0, false, "Loaded plugin! Horray! :D");
@@ -1508,7 +1511,7 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 		P2MMLog(0, true, "userid: %i", userid);
 		P2MMLog(0, true, "entindex: %i", entindex);
 	}
-	
+
 	// Make sure people know that the chat is being recorded if webhook is set
 	if (p2mm_discord_webhooks.GetBool())
 	{
@@ -1564,7 +1567,7 @@ void CP2MMServerPlugin::LevelShutdown(void)
 {
 	P2MMLog(0, true, "Level Shutdown!");
 	p2mm_loop.SetValue("0"); // REMOVE THIS at some point...
-	updateMapsList(); // Update the maps list for p2mm_startsession.
+	updateMapsList(); // Update the maps list for p2mm_map.
 	// Update Discord RPC to update the level information or to say the host is on the main menu.
 	g_pDiscordIntegration->UpdateDiscordRPC();
 }

@@ -87,34 +87,6 @@ const char* GetPlayerName(int playerIndex)
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Returns true if player is a bot.
-//---------------------------------------------------------------------------------
-bool IsBot(int playerIndex)
-{
-	player_info_t playerInfo;
-	if (!engineServer->GetPlayerInfo(playerIndex, &playerInfo))
-	{
-		P2MMLog(0, true, "Couldn't retrieve playerinfo of player index \"%i\" in IsBot!", playerIndex);
-		return false;
-	}
-
-	return playerInfo.fakeplayer;
-}
-
-//---------------------------------------------------------------------------------
-// Purpose: Get the number of bots in the server.
-//---------------------------------------------------------------------------------
-int GetBotCount()
-{
-	int b = 0;
-	FOR_ALL_PLAYERS(i)
-	{
-		if (IsBot(i)) b++;
-	}
-	return b;
-}
-
-//---------------------------------------------------------------------------------
 // Purpose: Gets the account ID component of player SteamID by the player's entity index.
 //---------------------------------------------------------------------------------
 int GetSteamID(int playerIndex)
@@ -195,6 +167,34 @@ void SetConVarString(const char* cvName, const char* newValue)
 	}
 	pVar->SetValue(newValue);
 	return;
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Returns true if player is a bot.
+//---------------------------------------------------------------------------------
+bool IsBot(int playerIndex)
+{
+	player_info_t playerInfo;
+	if (!engineServer->GetPlayerInfo(playerIndex, &playerInfo))
+	{
+		P2MMLog(0, true, "Couldn't retrieve playerinfo of player index \"%i\" in IsBot!", playerIndex);
+		return false;
+	}
+
+	return playerInfo.fakeplayer;
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Get the number of bots in the server.
+//---------------------------------------------------------------------------------
+int GetBotCount()
+{
+	int b = 0;
+	FOR_ALL_PLAYERS(i)
+	{
+		if (IsBot(i)) b++;
+	}
+	return b;
 }
 
 
@@ -332,9 +332,9 @@ void CPortal_Player__SetFlashlightState(int playerIndex, bool enable)
 	}
 	
 	if (enable)
-		reinterpret_cast<void(__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 53 8B D9 8B 83 A8"))((CBaseEntity*)pPlayer, EF_DIMLIGHT);
+		reinterpret_cast<void (__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 53 8B D9 8B 83 A8"))(( CBaseEntity*)pPlayer, EF_DIMLIGHT);
 	else
-		reinterpret_cast<void(__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 53 56 8B 75 08 8B D9 8B 83"))((CBaseEntity*)pPlayer, EF_DIMLIGHT);
+		reinterpret_cast<void (__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 53 56 8B 75 08 8B D9 8B 83"))((CBaseEntity*)pPlayer, EF_DIMLIGHT);
 }
 
 

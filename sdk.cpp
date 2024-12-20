@@ -7,9 +7,92 @@
 #include "sdk.hpp"
 
 #include "scanner.hpp"
+#include "p2mm.hpp"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+
+extern ConVar p2mm_instant_respawn;
+
+// NoSteamLogon stop hook.
+void (__fastcall* CSteam3Server__OnGSClientDenyHelper_orig)(CSteam3Server* thisptr, void* edx, CBaseClient* cl, void* eDenyReason, const char* pchOptionalText);
+void __fastcall CSteam3Server__OnGSClientDenyHelper_hook(CSteam3Server* thisptr, void* edx, CBaseClient* cl, void* eDenyReason, const char* pchOptionalText)
+{
+	// If we the game attempts to disconnect with "No Steam Logon", here we just tell it no.
+	if ((int)eDenyReason == 0xC)
+		return;
+
+	CSteam3Server__OnGSClientDenyHelper_orig(thisptr, edx, cl, eDenyReason, pchOptionalText);
+}
+
+// Bottom three hooks are for being able to change the starting models to something different.
+// First two are for changing what model is returned when precaching however...
+// Last one is for actually specifying the right model as the MSVC compiler inlined the returns
+// of the original functions of these first two hooks. Thanks MSVC for making this hard. :D
+const char* (__cdecl* GetBallBotModel_orig)(bool bLowRes);
+const char* __cdecl GetBallBotModel_hook(bool bLowRes)
+{
+	if (g_P2MMServerPlugin.m_iCurGameIndex == 1)
+		return "models/portal_stories/player/mel.mdl";
+
+	return GetBallBotModel_orig(bLowRes);
+}
+
+const char* (__cdecl* GetEggBotModel_orig)(bool bLowRes);
+const char* __cdecl GetEggBotModel_hook(bool bLowRes)
+{
+	if (g_P2MMServerPlugin.m_iCurGameIndex == 1)
+		return "models/player/chell/player.mdl";
+
+	return GetEggBotModel_orig(bLowRes);
+}
+
+const char* (__fastcall* CPortal_Player__GetPlayerModelName_orig)(CPortal_Player* thisptr);
+const char* __fastcall CPortal_Player__GetPlayerModelName_hook(CPortal_Player* thisptr)
+{
+	if (g_P2MMServerPlugin.m_iCurGameIndex == 1)
+	{
+		if (CBaseEntity__GetTeamNumber((CBasePlayer*)thisptr) == TEAM_BLUE)
+			return "models/portal_stories/player/mel.mdl";
+		else
+			return "models/player/chell/player.mdl";
+	}
+	return CPortal_Player__GetPlayerModelName_orig(thisptr);
+}
+
+// For hooking onto the function that is called before a player respawns to skip the delay
+// that is usual there and instead force a instant respawn of the player.
+void (__fastcall* CPortal_Player__PlayerDeathThink_orig)(CPortal_Player* thisptr);
+void __fastcall CPortal_Player__PlayerDeathThink_hook(CPortal_Player* thisptr)
+{
+	if (p2mm_instant_respawn.GetBool())
+	{
+		CPortal_Player__RespawnPlayer(ENTINDEX((CBaseEntity*)thisptr));
+		return;
+	}
+	CPortal_Player__PlayerDeathThink_orig(thisptr);
+}
+
+// Used to get a VScript game event call.
+void (__cdecl* respawn_orig)(CBaseEntity* pEdict, bool fCopyCorpse);
+void __cdecl respawn_hook(CBaseEntity* pEdict, bool fCopyCorpse)
+{
+	respawn_orig(pEdict, fCopyCorpse);
+
+	if (g_pScriptVM)
+	{
+		// Handling OnRespawn VScript event
+		HSCRIPT or_func = g_pScriptVM->LookupFunction("OnRespawn");
+		if (or_func)
+			g_pScriptVM->Call<HSCRIPT>(or_func, NULL, false, NULL, INDEXHANDLE(ENTINDEX(pEdict)));
+
+		// Handle VScript game event function
+		HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerRespawn");
+		if (ge_func)
+			g_pScriptVM->Call<HSCRIPT>(ge_func, NULL, false, NULL, INDEXHANDLE(ENTINDEX(pEdict)));
+	}
+}
+
 
 ///			 Interfaced UTIL Functions			\\\
 

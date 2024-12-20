@@ -22,6 +22,29 @@ typedef struct
 	int			channel;
 } HudMessageParams;
 
+//---------------------------------------------------------------------------------
+// Hooked game functions.
+//---------------------------------------------------------------------------------
+// NoSteamLogon Stop Hook.
+extern void (__fastcall* CSteam3Server__OnGSClientDenyHelper_orig)(CSteam3Server* thisptr, void* edx, CBaseClient* cl, void* eDenyReason, const char* pchOptionalText);
+void __fastcall CSteam3Server__OnGSClientDenyHelper_hook(CSteam3Server* thisptr, void* edx, CBaseClient* cl, void* eDenyReason, const char* pchOptionalText);
+
+// Model Replacement Hooks.
+extern const char* (__cdecl* GetBallBotModel_orig)(bool bLowRes);
+const char* GetBallBotModel_hook(bool bLowRes);
+
+extern const char* (__cdecl* GetEggBotModel_orig)(bool bLowRes);
+const char* GetEggBotModel_hook(bool bLowRes);
+
+extern const char* (__fastcall* CPortal_Player__GetPlayerModelName_orig)(CPortal_Player* thisptr);
+const char* __fastcall CPortal_Player__GetPlayerModelName_hook(CPortal_Player* thisptr);
+
+// Respawn Hooks.
+extern void (__fastcall* CPortal_Player__PlayerDeathThink_orig)(CPortal_Player* thisptr);
+void __fastcall CPortal_Player__PlayerDeathThink_hook(CPortal_Player* thisptr);
+
+extern void (__cdecl* respawn_orig)(CBaseEntity* pEdict, bool fCopyCorpse);
+void __cdecl respawn_hook(CBaseEntity* pEdict, bool fCopyCorpse);
 
 //---------------------------------------------------------------------------------
 // Interfaced game functions.

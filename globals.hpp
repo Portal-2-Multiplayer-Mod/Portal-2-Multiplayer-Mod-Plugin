@@ -31,6 +31,8 @@ class CBasePlayer;
 class CPortal_Player;
 class CBaseServer;
 class CBaseEntity;
+class CSteam3Server;
+class CBaseClient;
 
 // Color macros for game chat and console printing.
 #define P2MM_PLUGIN_CONSOLE_COLOR  Color(100, 192, 252, 255) // Light Blue
@@ -83,11 +85,6 @@ typedef struct
 MapParams* InGelocityMap();
 MapParams* InP2CampaignMap(bool mpMaps = false);
 MapParams* InMelCampaignMap(bool advanced = false);
-
-//---------------------------------------------------------------------------------
-// Any ConVars or ConCommands that need to be globally available.
-//---------------------------------------------------------------------------------
-extern ConVar p2mm_developer;
 
 //---------------------------------------------------------------------------------
 // Interfaces from the engine.

@@ -70,3 +70,4 @@ private:
 };
 
 extern CP2MMServerPlugin g_P2MMServerPlugin;
+extern ConVar p2mm_developer;

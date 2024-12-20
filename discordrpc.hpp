@@ -6,7 +6,7 @@
 //===========================================================================//
 #pragma once
 
-#include "globals.hpp"
+#include <string>
 
 // Discord Embed Color Codes
 #define EMBEDCOLOR_PLAYER 61297 // Light Green

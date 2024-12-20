@@ -6,8 +6,8 @@
 //===========================================================================//
 #include "discordrpc.hpp"
 
-#include "p2mm.hpp"
 #include "sdk.hpp"
+#include "p2mm.hpp"
 
 #include "discord-rpc/include/discord_register.h"
 #include "discord-rpc/include/discord_rpc.h"

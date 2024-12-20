@@ -280,7 +280,7 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 		engineClient->ExecuteClientCmd(std::string(mapString + "mp_coop_community_hub").c_str());
 
 		std::string initmapstr = std::string("Server has started with map: `" + std::string(requestedMap) + "`");
-		g_pDiscordIntegration->SendWebHookEmbed(std::string("Server"), initmapstr, EMBEDCOLOR_SERVER, false);
+		g_pDiscordIntegration->SendWebHookEmbed("Server", initmapstr, EMBEDCOLOR_SERVER, false);
 	}
 	else
 	{
@@ -289,7 +289,7 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 		engineClient->ExecuteClientCmd(std::string(mapString + requestedMap).c_str());
 
 		std::string initmapstr = std::string("Server has started with map: `" + std::string(requestedMap) + "`");
-		g_pDiscordIntegration->SendWebHookEmbed(std::string("Server"), initmapstr, EMBEDCOLOR_SERVER, false);
+		g_pDiscordIntegration->SendWebHookEmbed("Server", initmapstr, EMBEDCOLOR_SERVER, false);
 	}
 }
 
@@ -369,7 +369,7 @@ CON_COMMAND_F(p2mm_helloworld, "Hello World!", FCVAR_HIDDEN)
 
 CON_COMMAND_F(p2mm_helloworld2, "Hello World 2: Electric Boogaloo!", FCVAR_HIDDEN)
 {
-	hudtextparms_t helloWorldParams;
+	HudMessageParams helloWorldParams;
 	color32 RGB1 = { 0, 255, 100, 255 };
 	color32 RGB2 = { 0, 50, 255, 255 };
 	helloWorldParams.x = -1.f;
@@ -503,7 +503,7 @@ CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race. Specify 0 
 	}
 
 	g_pScriptVM->Run(std::string("iGameLaps <- " + std::string(args.Arg(1))).c_str(), false);
-	hudtextparms_s lapMessage;
+	HudMessageParams lapMessage;
 	lapMessage.x = -1;
 	lapMessage.y = 0.2f;
 	lapMessage.effect = 0;
@@ -557,7 +557,7 @@ CON_COMMAND(p2mm_gelocity_music, "Set the music track for the Gelocity Race. 0-5
 	}
 
 	g_pScriptVM->Run(std::string("iMusicTrack <- " + std::to_string(V_atoi(args.Arg(1))) + "; EntFire(\"counter_music\", \"SetValue\", iMusicTrack.tostring());").c_str(), false);
-	hudtextparms_s musicMessage;
+	HudMessageParams musicMessage;
 	musicMessage.x = -1;
 	musicMessage.y = 0.2f;
 	musicMessage.effect = 0;

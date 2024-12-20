@@ -8,22 +8,20 @@
 
 #include "globals.hpp"
 
-// UTIL_HudMessage message parameters struct. Taken from utils.h.
+// UTIL_HudMessage message parameters struct. Based on the one from util.h.
 // See Valve Developer Community for game_text to see which field does what:
 // https://developer.valvesoftware.com/wiki/Game_text
-typedef struct hudtextparms_s
+typedef struct
 {
-	float		x;
-	float		y;
+	float		x, y;
 	int			effect;
 	byte		r1, g1, b1, a1;
 	byte		r2, g2, b2, a2;
-	float		fadeinTime;
-	float		fadeoutTime;
-	float		holdTime;
+	float		fadeinTime, fadeoutTime, holdTime;
 	float		fxTime;
 	int			channel;
-} hudtextparms_t;
+} HudMessageParams;
+
 
 //---------------------------------------------------------------------------------
 // Interfaced game functions.
@@ -31,7 +29,7 @@ typedef struct hudtextparms_s
 // UTIL functions
 CBasePlayer* UTIL_PlayerByIndex(int playerIndex);
 void UTIL_ClientPrint(CBasePlayer* player, int msg_dest, const char* msg_name, const char* param1 = nullptr, const char* param2 = nullptr, const char* param3 = nullptr, const char* param4 = nullptr);
-void UTIL_HudMessage(CBasePlayer* pPlayer, const hudtextparms_t& textparms, const char* pMessage);
+void UTIL_HudMessage(CBasePlayer* pPlayer, const HudMessageParams& textparms, const char* pMessage);
 
 // CBaseEntity functions
 void CBaseEntity__RemoveEntity(CBaseEntity* pEntity);

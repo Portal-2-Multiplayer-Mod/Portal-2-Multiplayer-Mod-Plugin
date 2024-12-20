@@ -291,7 +291,7 @@ void HudPrint
 {
 	if (!msg) return;
 
-	hudtextparms_t hudTextParams;
+	HudMessageParams hudTextParams;
 	hudTextParams.x = posChannel.x;
 	hudTextParams.y = posChannel.y;
 	hudTextParams.channel = posChannel.z;

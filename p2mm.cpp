@@ -856,6 +856,11 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 			Memory::Scanner::Scan(SERVERDLL, "55 8B EC A1 ?? ?? ?? ?? 80 78 ?? ?? 75 ?? 80 78"),
 			&respawn_hook, (void**)&respawn_orig
 		);
+		
+		MH_CreateHook(
+			Memory::Scanner::Scan(SERVERDLL, "8B 15 ?? ?? ?? ?? 8B 4A ?? 33 C0"),
+			&UTIL_GetLocalPlayer, (void**)&UTIL_GetLocalPlayer_orig
+		);
 
 		MH_EnableHook(MH_ALL_HOOKS);
 	} catch (const std::exception& ex) {

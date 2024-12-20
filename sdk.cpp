@@ -93,6 +93,15 @@ void __cdecl respawn_hook(CBaseEntity* pEdict, bool fCopyCorpse)
 	}
 }
 
+// Fix UTIL_GetLocalPlayer() so Portal 2 can work on dedicated servers.
+CBasePlayer* (__cdecl* UTIL_GetLocalPlayer_orig)();
+CBasePlayer* __cdecl UTIL_GetLocalPlayer()
+{
+	if (engineServer->IsDedicatedServer())
+		return NULL;
+	return UTIL_GetLocalPlayer_orig();
+}
+
 
 ///			 Interfaced UTIL Functions			\\\
 

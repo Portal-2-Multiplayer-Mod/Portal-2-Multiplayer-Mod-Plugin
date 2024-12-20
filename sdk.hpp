@@ -46,6 +46,10 @@ void __fastcall CPortal_Player__PlayerDeathThink_hook(CPortal_Player* thisptr);
 extern void (__cdecl* respawn_orig)(CBaseEntity* pEdict, bool fCopyCorpse);
 void __cdecl respawn_hook(CBaseEntity* pEdict, bool fCopyCorpse);
 
+// UTIL_GetLocalPlayer Dedicated Server Fix Hook.
+extern CBasePlayer* (__cdecl* UTIL_GetLocalPlayer_orig)();
+CBasePlayer* __cdecl UTIL_GetLocalPlayer();
+
 //---------------------------------------------------------------------------------
 // Interfaced game functions.
 //---------------------------------------------------------------------------------

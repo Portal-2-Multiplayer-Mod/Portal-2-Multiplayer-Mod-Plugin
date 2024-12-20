@@ -5,9 +5,9 @@
 // Purpose: Portal 2: Multiplayer Mod server plugin
 // 
 //===========================================================================//
+#pragma once
 
 #include "globals.hpp"
-#include "minhook/include/MinHook.h"
 
 #define P2MM_PLUGIN_VERSION "2.2.0" // Update this when a new version of the plugin is released
 #define P2MM_VERSION		"2.3.0" // Update this for whatever P2:MM version the plugin is released with

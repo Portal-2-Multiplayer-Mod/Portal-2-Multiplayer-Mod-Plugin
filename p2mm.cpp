@@ -8,6 +8,7 @@
 #include "p2mm.hpp"
 
 #include "discordrpc.hpp"
+#include "sdk.hpp"
 
 #include "minhook/include/MinHook.h"
 

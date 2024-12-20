@@ -4,6 +4,7 @@
 // Purpose: Discord RPC and Webhook Integration
 // 
 //===========================================================================//
+#pragma once
 
 #include "globals.hpp"
 

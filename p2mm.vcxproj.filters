@@ -6,6 +6,7 @@
     <ClCompile Include="p2mm.cpp" />
     <ClCompile Include="scanner.cpp" />
     <ClCompile Include="vscript.cpp" />
+    <ClCompile Include="sdk.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="discordrpc.hpp" />
@@ -18,6 +19,7 @@
     <ClInclude Include="discord-rpc\include\discord_rpc.h">
       <Filter>Discord-RPC</Filter>
     </ClInclude>
+    <ClInclude Include="sdk.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Discord-RPC">

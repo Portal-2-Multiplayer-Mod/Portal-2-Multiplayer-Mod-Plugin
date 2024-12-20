@@ -4,8 +4,10 @@
 // Purpose: Portal 2: Multiplayer Mod server plugin
 // 
 //===========================================================================//
+#pragma once
 
 #include "p2mm.hpp"
+#include "sdk.hpp"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"

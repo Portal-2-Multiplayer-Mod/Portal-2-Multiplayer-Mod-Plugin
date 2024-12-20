@@ -4,6 +4,7 @@
 // Purpose: Global functions & variables used repeatedly throughout the plugin
 // 
 //===========================================================================//
+#pragma once
 
 #include "eiface.h"
 #include "cdll_int.h"
@@ -20,16 +21,16 @@
 #include "scanner.hpp"
 
 #ifdef _WIN32
-#pragma once
 #include <Windows.h>
 #endif
 
 #include <sstream>
 
-// Stand in class definitions.
+// Stand in class definitions aka gaslighing the compiler.
 class CBasePlayer;
 class CPortal_Player;
 class CBaseServer;
+class CBaseEntity;
 
 // Color macros for game chat and console printing.
 #define P2MM_PLUGIN_CONSOLE_COLOR  Color(100, 192, 252, 255) // Light Blue
@@ -70,23 +71,6 @@ enum
 	TEAM_BLUE
 };
 
-// UTIL_HudMessage message parameters struct. Taken from utils.h.
-// See Valve Developer Community for game_text to see which field does what:
-// https://developer.valvesoftware.com/wiki/Game_text
-typedef struct hudtextparms_s
-{
-	float		x;
-	float		y;
-	int			effect;
-	byte		r1, g1, b1, a1;
-	byte		r2, g2, b2, a2;
-	float		fadeinTime;
-	float		fadeoutTime;
-	float		holdTime;
-	float		fxTime;
-	int			channel;
-} hudtextparms_t;
-
 // Struct for map arrays.
 typedef struct
 {
@@ -122,7 +106,7 @@ extern IFileSystem*				g_pFileSystem;
 void P2MMLog(int level, bool dev, const char* pMsgFormat, ...);
 
 //---------------------------------------------------------------------------------
-// Misc UTIL functions.
+// UTIL functions.
 //---------------------------------------------------------------------------------
 int					UserIDToPlayerIndex(int userid);
 const char*			GetPlayerName(int playerIndex);
@@ -133,27 +117,8 @@ void				SetConVarInt(const char* cvName, int newValue);
 void				SetConVarString(const char* cvName, const char* newValue);
 bool				IsBot(int playerIndex);
 int					GetBotCount();
-
-//---------------------------------------------------------------------------------
-// Interfaced game functions.
-//---------------------------------------------------------------------------------
-// UTIL functions
-CBasePlayer* UTIL_PlayerByIndex(int playerIndex);
-void UTIL_ClientPrint(CBasePlayer* player, int msg_dest, const char* msg_name, const char* param1 = NULL, const char* param2 = NULL, const char* param3 = NULL, const char* param4 = NULL);
-void UTIL_HudMessage(CBasePlayer* pPlayer, const hudtextparms_t& textparms, const char* pMessage);
-
-// CBaseEntity functions
-void CBaseEntity__RemoveEntity(CBaseEntity* pEntity);
-int CBaseEntity__GetTeamNumber(CBasePlayer* pPlayer);
-HSCRIPT CBaseEntity__GetScriptScope(CBaseEntity* entity);
-HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity);
-
-// CBasePlayer functions
-void CBasePlayer__ShowViewPortPanel(int playerIndex, const char* name, bool bShow = true, KeyValues* data = NULL);
-
-// CPortal_Player functions
-void CPortal_Player__RespawnPlayer(int playerIndex);
-void CPortal_Player__SetFlashlightState(int playerIndex, bool enable);
+int					CURPLAYERCOUNT();
+HSCRIPT				INDEXHANDLE(int iEdictNum);
 
 //---------------------------------------------------------------------------------
 // Player recipient filter.
@@ -198,17 +163,6 @@ inline bool FSubStr(const char* sz1, const char* search)
 	return (V_strstr(sz1, search));
 }
 
-// Get the current player count on the server
-inline int CURPLAYERCOUNT() {
-	int playerCount = 0;
-	for (int i = 1; i <= MAX_PLAYERS; i++)
-	{
-		if (UTIL_PlayerByIndex(i))
-			playerCount++;
-	}
-	return playerCount;
-}
-
 //---------------------------------------------------------------------------------
 // Purpose: Entity edict to entity index. Taken from utils.h.
 //---------------------------------------------------------------------------------
@@ -244,20 +198,6 @@ inline edict_t* INDEXENT(int iEdictNum)
 		return pEdict;
 	}
 	return NULL;
-}
-
-//---------------------------------------------------------------------------------
-// Purpose: Entity index to script handle.
-//---------------------------------------------------------------------------------
-inline HSCRIPT INDEXHANDLE(int iEdictNum) {
-	edict_t* pEdict = INDEXENT(iEdictNum);
-	if (!pEdict->GetUnknown())
-		return NULL;
-	CBaseEntity* pBaseEntity = pEdict->GetUnknown()->GetBaseEntity();
-	if (!pBaseEntity)
-		return NULL;
-	HSCRIPT entityHandle = CBaseEntity__GetScriptInstance(pBaseEntity);
-	return entityHandle;
 }
 
 //---------------------------------------------------------------------------------

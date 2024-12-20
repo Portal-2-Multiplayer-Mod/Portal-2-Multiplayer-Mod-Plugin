@@ -4,6 +4,7 @@
 // Purpose: Portal 2: Multiplayer Mod server plugin memory scanner
 // 
 //===========================================================================//
+#pragma once
 
 #ifndef SCANNER_HPP
 #define SCANNER_HPP
@@ -11,6 +12,9 @@
 #define SERVERDLL Memory::Modules::Get("server")
 #define ENGINEDLL Memory::Modules::Get("engine")
 #define CLIENTDLL Memory::Modules::Get("client")
+#define MATCHMAKINGDLL Memory::Modules::Get("matchmaking")
+
+#include "minhook/include/MinHook.h"
 
 #include <span>
 #include <string>

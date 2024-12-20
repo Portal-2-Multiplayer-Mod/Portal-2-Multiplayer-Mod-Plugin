@@ -280,6 +280,7 @@
     <ClCompile Include="globals.cpp" />
     <ClCompile Include="p2mm.cpp" />
     <ClCompile Include="scanner.cpp" />
+    <ClCompile Include="sdk.cpp" />
     <ClCompile Include="vscript.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -289,6 +290,7 @@
     <ClInclude Include="globals.hpp" />
     <ClInclude Include="p2mm.hpp" />
     <ClInclude Include="scanner.hpp" />
+    <ClInclude Include="sdk.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

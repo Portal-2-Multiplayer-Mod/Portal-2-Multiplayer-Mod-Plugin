@@ -1377,7 +1377,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			if (ge_func)
 			{
 				g_pScriptVM->Call<const char*, int, short, const char*, const char*, const char*, bool, int>(ge_func, NULL, false, NULL, name, index, userid, xuid, networkid, address, bot, entindex);
-				g_pDiscordIntegration->SendWebHookEmbed(std::string(name + std::string(" Joinned!")), std::string(name + std::string(" joinned the server!")));
+				g_pDiscordIntegration->SendWebHookEmbed(std::string(name + std::string(" Joined!")), std::string(name + std::string(" joined the server!")));
 			}
 		}
 
@@ -1473,8 +1473,8 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 						chatMsg.replace(pos, 1, std::string("\\\\"));
 						pos += std::string("\\\\").length();
 					}
-
-					g_pDiscordIntegration->SendWebHookEmbed(playerName, chatMsg);
+					if (!chatMsg.starts_with("!"))
+						g_pDiscordIntegration->SendWebHookEmbed(playerName, chatMsg);
 				}
 			}
 

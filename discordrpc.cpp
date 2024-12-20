@@ -105,7 +105,7 @@ unsigned SendWebHook(void* webhookParams)
 {
 	if (FStrEq(p2mm_discord_webhooks_url.GetString(), ""))
 	{
-		P2MMLog(0, false, "Webhook for \"p2mm_discord_webhooks_url\" has not been specified.");
+		DiscordLog(1, false, "Webhook for \"p2mm_discord_webhooks_url\" has not been specified.");
 		return 1;
 	}
 
@@ -114,7 +114,7 @@ unsigned SendWebHook(void* webhookParams)
 
 	if (!curl)
 	{
-		P2MMLog(1, false, "Failed to initalize curl request!");
+		DiscordLog(1, false, "Failed to initalize curl request!");
 		return 1;
 	}
 
@@ -132,7 +132,7 @@ unsigned SendWebHook(void* webhookParams)
 		params->footer + "\" }}], \"attachments\": [] }"
 	);
 
-	P2MMLog(0, true, std::string("jsonPayload: " + jsonPayload).c_str());
+	DiscordLog(0, true, std::string("jsonPayload: " + jsonPayload).c_str());
 
 	// Set the POST data
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonPayload);
@@ -148,13 +148,13 @@ unsigned SendWebHook(void* webhookParams)
 	switch (curlCode)
 	{
 	case (CURLE_OK):
-		P2MMLog(0, true, "Sent webhook curl request!");
+		DiscordLog(0, true, "Sent webhook curl request!");
 		break;
 	case (CURLE_URL_MALFORMAT):
-		P2MMLog(0, false, "An invalid URL was supplied for p2mm_discord_webhook_url! Please check that it has been entered correctly.");
+		DiscordLog(1, false, "An invalid URL was supplied for p2mm_discord_webhook_url! Please check that it has been entered correctly.");
 		break;
 	default:
-		P2MMLog(1, false, "Failed to send curl request! Error Code: %i", curlCode);
+		DiscordLog(1, false, "Failed to send curl request! Error Code: %i", curlCode);
 		break;
 	}
 
@@ -191,11 +191,11 @@ void CDiscordIntegration::SendWebHookEmbed(std::string title, std::string descri
 		webhookParams->footer = std::string(p2mm_discord_webhooks_customfooter.GetString());
 	}
 
-	P2MMLog(0, true, "Embed webhookParams:");
-	P2MMLog(0, true, std::string("title: " + title).c_str());
-	P2MMLog(0, true, std::string("description: " + description).c_str());
-	P2MMLog(0, true, std::string("color: " + std::to_string(color)).c_str());
-	P2MMLog(0, true, std::string("footer: " + webhookParams->footer).c_str());
+	DiscordLog(0, true, "Embed webhookParams:");
+	DiscordLog(0, true, std::string("title: " + title).c_str());
+	DiscordLog(0, true, std::string("description: " + description).c_str());
+	DiscordLog(0, true, std::string("color: " + std::to_string(color)).c_str());
+	DiscordLog(0, true, std::string("footer: " + webhookParams->footer).c_str());
 
 	// Send the curl request in a seperate thread
 	CreateSimpleThread(SendWebHook, webhookParams);

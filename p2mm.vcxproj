@@ -276,6 +276,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="commands.cpp" />
     <ClCompile Include="discordrpc.cpp" />
     <ClCompile Include="globals.cpp" />
     <ClCompile Include="p2mm.cpp" />
@@ -284,6 +285,7 @@
     <ClCompile Include="vscript.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="commands.hpp" />
     <ClInclude Include="discord-rpc\include\discord_register.h" />
     <ClInclude Include="discord-rpc\include\discord_rpc.h" />
     <ClInclude Include="discordrpc.hpp" />

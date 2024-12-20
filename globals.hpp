@@ -20,13 +20,7 @@
 
 #include "scanner.hpp"
 
-#ifdef _WIN32
-#include <Windows.h>
-#endif
-
-#include <sstream>
-
-// Stand in class definitions aka gaslighing the compiler.
+// Stand in class definitions, AKA gaslighing the compiler.
 class CBasePlayer;
 class CPortal_Player;
 class CBaseServer;

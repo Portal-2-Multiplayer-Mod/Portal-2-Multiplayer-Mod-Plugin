@@ -8,11 +8,10 @@
 
 #include "scanner.hpp"
 #include "p2mm.hpp"
+#include "commands.hpp"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
-
-extern ConVar p2mm_instant_respawn;
 
 // NoSteamLogon stop hook.
 void (__fastcall* CSteam3Server__OnGSClientDenyHelper_orig)(CSteam3Server* thisptr, void* edx, CBaseClient* cl, void* eDenyReason, const char* pchOptionalText);
@@ -65,7 +64,7 @@ const char* __fastcall CPortal_Player__GetPlayerModelName_hook(CPortal_Player* t
 void (__fastcall* CPortal_Player__PlayerDeathThink_orig)(CPortal_Player* thisptr);
 void __fastcall CPortal_Player__PlayerDeathThink_hook(CPortal_Player* thisptr)
 {
-	if (p2mm_instant_respawn.GetBool())
+	if (p2mm_instantrespawn.GetBool())
 	{
 		CPortal_Player__RespawnPlayer(ENTINDEX((CBaseEntity*)thisptr));
 		return;

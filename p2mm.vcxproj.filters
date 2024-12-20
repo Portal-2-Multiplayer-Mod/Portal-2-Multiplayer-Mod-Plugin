@@ -7,6 +7,7 @@
     <ClCompile Include="scanner.cpp" />
     <ClCompile Include="vscript.cpp" />
     <ClCompile Include="sdk.cpp" />
+    <ClCompile Include="commands.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="discordrpc.hpp" />
@@ -20,6 +21,7 @@
       <Filter>Discord-RPC</Filter>
     </ClInclude>
     <ClInclude Include="sdk.hpp" />
+    <ClInclude Include="commands.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Discord-RPC">

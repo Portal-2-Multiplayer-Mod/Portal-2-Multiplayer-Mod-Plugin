@@ -31,7 +31,7 @@ class CBaseClient;
 // Color macros for game chat and console printing.
 #define P2MM_PLUGIN_CONSOLE_COLOR  Color(100, 192, 252, 255) // Light Blue
 #define P2MM_VSCRIPT_CONSOLE_COLOR Color(110, 247, 76, 255)  // Light Green
-#define P2MM_DISCORD_CONSOLE_COLOR_NORMAL Color(0, 200, 255, 255) // Even Lighter Blue
+#define P2MM_DISCORD_CONSOLE_COLOR_NORMAL Color(59, 239, 230, 255) // Even Lighter Blue
 #define P2MM_DISCORD_CONSOLE_COLOR_WARNING Color(255, 150, 0, 255) // Orange
 
 #define CURMAPFILENAME STRING(g_pGlobals->mapname)

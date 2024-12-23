@@ -70,3 +70,9 @@ void CBasePlayer__ShowViewPortPanel(int playerIndex, const char* name, bool bSho
 // CPortal_Player functions
 void CPortal_Player__RespawnPlayer(int playerIndex);
 void CPortal_Player__SetFlashlightState(int playerIndex, bool enable);
+
+// CBaseServer functions
+IClient* CBaseServer__GetClient(int playerIndex);
+
+// CGameClient functionsS
+bool CGameClient__ExecuteStringCommand(IClient* client, const char* pCommandString);

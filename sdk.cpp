@@ -240,3 +240,35 @@ void CPortal_Player__SetFlashlightState(int playerIndex, bool enable)
 	else
 		reinterpret_cast<void(__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 53 56 8B 75 08 8B D9 8B 83"))((CBaseEntity*)pPlayer, EF_DIMLIGHT);
 }
+
+///			 CBaseServer Class Functions				\\\
+
+//---------------------------------------------------------------------------------
+// Purpose: Get IClient player class from the server.
+//---------------------------------------------------------------------------------
+IClient* CBaseServer__GetClient(int playerIndex)
+{
+	if (!UTIL_PlayerByIndex(playerIndex)) return nullptr;
+
+	static auto _GetClient = reinterpret_cast<IClient * (__thiscall*)(CBaseServer*, int)>(Memory::Scanner::Scan(ENGINEDLL, "55 8B EC 8B 81 ?? ?? ?? ?? 8B 4D ?? 8B 04 88"));
+	return _GetClient(g_P2MMServerPlugin.sv, playerIndex);
+}
+
+///			 CGameClient Class Functions				\\\
+
+//---------------------------------------------------------------------------------
+// Purpose: Get IClient player class from the server.
+//---------------------------------------------------------------------------------
+bool CGameClient__ExecuteStringCommand(IClient* client, const char* pCommandString)
+{
+	if (!client) return false;
+
+	static auto _ExecuteStringCommand = reinterpret_cast<bool(__thiscall*)(IClient*, const char*)>(Memory::Scanner::Scan(ENGINEDLL, "55 8B EC 81 EC 08 05 00 00 56 8B 75"));
+	return _ExecuteStringCommand(client, pCommandString);
+}
+
+CON_COMMAND(p2mm_kill, "p2mm_execute")
+{
+	IClient* target = CBaseServer__GetClient(V_atoi(args.Arg(1)));
+	CGameClient__ExecuteStringCommand(target, "disconnect \"You have been banned. >:(\"");
+}

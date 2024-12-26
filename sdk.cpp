@@ -110,7 +110,7 @@ CBasePlayer* __cdecl UTIL_GetLocalPlayer()
 CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
 {
 #ifdef _WIN32
-	static auto _PlayerByIndex = reinterpret_cast<CBasePlayer * (__cdecl*)(int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 8B 4D 08 33 C0 85 C9 7E 30"));
+	static auto _PlayerByIndex = reinterpret_cast<CBasePlayer* (__cdecl*)(int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 8B 4D 08 33 C0 85 C9 7E 30"));
 	return _PlayerByIndex(playerIndex);
 #else // Linux support TODO
 	return NULL;
@@ -122,7 +122,7 @@ CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
 //---------------------------------------------------------------------------------
 void UTIL_ClientPrint(CBasePlayer* player, int msg_dest, const char* msg_name, const char* param1, const char* param2, const char* param3, const char* param4)
 {
-	static auto _ClientPrint = reinterpret_cast<void(__cdecl*)(CBasePlayer*, int, const char*, const char*, const char*, const char*, const char*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 83 EC 20 56 8B 75 08 85 F6 74 4C"));
+	static auto _ClientPrint = reinterpret_cast<void (__cdecl*)(CBasePlayer*, int, const char*, const char*, const char*, const char*, const char*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 83 EC 20 56 8B 75 08 85 F6 74 4C"));
 	_ClientPrint(player, msg_dest, msg_name, param1, param2, param3, param4);
 }
 
@@ -131,10 +131,27 @@ void UTIL_ClientPrint(CBasePlayer* player, int msg_dest, const char* msg_name, c
 //---------------------------------------------------------------------------------
 void UTIL_HudMessage(CBasePlayer* pPlayer, const HudMessageParams& textparms, const char* pMessage)
 {
-	static auto _HudMessage = reinterpret_cast<void(__cdecl*)(CBasePlayer*, const HudMessageParams&, const char*)>(Memory::Scanner::Scan(SERVERDLL, "55 8B EC 83 EC 20 8D 4D ?? E8 ?? ?? ?? ?? 8B 45 ?? 8D 4D ?? 85 C0 74 ?? 50 E8 ?? ?? ?? ?? EB ?? E8 ?? ?? ?? ?? 56"));
+	static auto _HudMessage = reinterpret_cast<void (__cdecl*)(CBasePlayer*, const HudMessageParams&, const char*)>(Memory::Scanner::Scan(SERVERDLL, "55 8B EC 83 EC 20 8D 4D ?? E8 ?? ?? ?? ?? 8B 45 ?? 8D 4D ?? 85 C0 74 ?? 50 E8 ?? ?? ?? ?? EB ?? E8 ?? ?? ?? ?? 56"));
 	_HudMessage(pPlayer, textparms, pMessage);
 }
 
+//---------------------------------------------------------------------------------
+// Purpose: Get the CBasePlayer of the player who executed the ConVar or ConCommand.
+//---------------------------------------------------------------------------------
+CBasePlayer* UTIL_GetCommandClient()
+{
+	static auto _GetCommandClient = reinterpret_cast<CBasePlayer* (__cdecl*)()>(Memory::Scanner::Scan(SERVERDLL, "A1 ?? ?? ?? ?? 40 85 C0"));
+	return _GetCommandClient();
+}
+
+//---------------------------------------------------------------------------------
+// Purpose: Get the client index of the player who executed the ConVar or ConCommand. This is not the player's entity index which is 1 more.
+//---------------------------------------------------------------------------------
+int UTIL_GetCommandClientIndex()
+{
+	static auto _GetCommandClientIndex = reinterpret_cast<int (__cdecl*)()>(Memory::Scanner::Scan(SERVERDLL, "A1 ?? ?? ?? ?? 40 C3"));
+	return _GetCommandClientIndex();
+}
 
 ///			 CBaseEntity Class Functions				\\\
 
@@ -143,7 +160,8 @@ void UTIL_HudMessage(CBasePlayer* pPlayer, const HudMessageParams& textparms, co
 //---------------------------------------------------------------------------------
 void CBaseEntity__RemoveEntity(CBaseEntity* pEntity)
 {
-	reinterpret_cast<void(__cdecl*)(void*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 57 8B 7D 08 85 FF 74 72"))(reinterpret_cast<IServerEntity*>(pEntity)->GetNetworkable());
+	static auto _RemoveEntity = reinterpret_cast<void (__cdecl*)(void*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 57 8B 7D 08 85 FF 74 72"));
+	_RemoveEntity((reinterpret_cast<IServerEntity*>(pEntity)->GetNetworkable()));
 }
 
 //---------------------------------------------------------------------------------

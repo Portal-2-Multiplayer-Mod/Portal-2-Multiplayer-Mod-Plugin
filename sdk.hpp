@@ -47,6 +47,7 @@ extern void (__cdecl* respawn_orig)(CBaseEntity* pEdict, bool fCopyCorpse);
 void __cdecl respawn_hook(CBaseEntity* pEdict, bool fCopyCorpse);
 
 // UTIL_GetLocalPlayer Dedicated Server Fix Hook.
+// Hook does follow naming convention so it can be used like a function.
 extern CBasePlayer* (__cdecl* UTIL_GetLocalPlayer_orig)();
 CBasePlayer* __cdecl UTIL_GetLocalPlayer();
 
@@ -57,6 +58,8 @@ CBasePlayer* __cdecl UTIL_GetLocalPlayer();
 CBasePlayer* UTIL_PlayerByIndex(int playerIndex);
 void UTIL_ClientPrint(CBasePlayer* player, int msg_dest, const char* msg_name, const char* param1 = nullptr, const char* param2 = nullptr, const char* param3 = nullptr, const char* param4 = nullptr);
 void UTIL_HudMessage(CBasePlayer* pPlayer, const HudMessageParams& textparms, const char* pMessage);
+CBasePlayer* UTIL_GetCommandClient();
+int UTIL_GetCommandClientIndex();
 
 // CBaseEntity functions
 void CBaseEntity__RemoveEntity(CBaseEntity* pEntity);
@@ -74,5 +77,5 @@ void CPortal_Player__SetFlashlightState(int playerIndex, bool enable);
 // CBaseServer functions
 IClient* CBaseServer__GetClient(int playerIndex);
 
-// CGameClient functionsS
+// CGameClient functions
 bool CGameClient__ExecuteStringCommand(IClient* client, const char* pCommandString);

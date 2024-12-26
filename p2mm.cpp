@@ -555,6 +555,12 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 		}
 	}
 
+	if (FSubStr(pCmd, "removeplayeroperation"))
+	{
+		RemovePlayerOperation(args[1], V_atoi(args[2]));
+		return PLUGIN_STOP;
+	}
+
 	return PLUGIN_CONTINUE;
 }
 
@@ -997,6 +1003,41 @@ void CP2MMServerPlugin::LevelShutdown(void)
 	g_pDiscordIntegration->UpdateDiscordRPC();
 }
 
+PLUGIN_RESULT CP2MMServerPlugin::ClientConnect(bool* bAllowConnect, edict_t* pEntity, const char* pszName, const char* pszAddress, char* reject, int maxrejectlen)
+{
+	P2MMLog(0, true, "Player Joinned! playerInfo:");
+	player_info_t playerInfo;
+	engineServer->GetPlayerInfo(1,			&playerInfo);
+	P2MMLog(0, true, "xuid: %llu",			playerInfo.xuid);
+	P2MMLog(0, true, "name: %s",			playerInfo.name);
+	P2MMLog(0, true, "userID: %i",			playerInfo.userID);
+	P2MMLog(0, true, "guid: %s",			playerInfo.guid);
+	P2MMLog(0, true, "friendsID: %lu",		playerInfo.friendsID);
+	P2MMLog(0, true, "friendsName: %s",		playerInfo.friendsName);
+	P2MMLog(0, true, "fakeplayer: %i",		playerInfo.fakeplayer);
+	P2MMLog(0, true, "ishltv: %i",			playerInfo.ishltv);
+	P2MMLog(0, true, "isreplay: %i",		playerInfo.isreplay);
+	//P2MMLog(0, true, "customFiles: %llu",	playerInfo.customFiles);
+	P2MMLog(0, true, "filesDownloaded: %s",	playerInfo.filesDownloaded);
+
+	P2MMLog(0, true, "Check if player is banned.");
+	for (size_t i = 0; i < banList.size(); i++)
+	{
+		P2MMLog(0, true, "username: %s", banList[i].username.c_str());
+		P2MMLog(0, true, "guid: %s", banList[i].guid.c_str());
+		//! For some reason this is returning false when it should be true. Will look into it later.
+		if (FSubStr(playerInfo.name, banList[i].username.c_str()) || FSubStr(playerInfo.guid, banList[i].guid.c_str()))
+		{
+			const char* bannedStr = _bstr_t(g_pLocalize->FindSafe("#P2MM_BannedFromServer"));
+			V_strncpy(reject, bannedStr, maxrejectlen);
+			*bAllowConnect = false;
+			return PLUGIN_STOP;
+		}
+	}
+
+	return PLUGIN_CONTINUE;
+}
+
 //---------------------------------------------------------------------------------
 // Purpose: Unused callbacks
 //---------------------------------------------------------------------------------
@@ -1007,7 +1048,6 @@ void CP2MMServerPlugin::ClientDisconnect(edict_t* pEntity) {}
 void CP2MMServerPlugin::ClientFullyConnect(edict_t* pEntity) {} // Purpose: Called when a player is fully connected to the server. Player entity still has not spawned in so manipulation is not possible.
 void CP2MMServerPlugin::ClientPutInServer(edict_t* pEntity, char const* playername) {}
 void CP2MMServerPlugin::ClientSettingsChanged(edict_t* pEdict) {}
-PLUGIN_RESULT CP2MMServerPlugin::ClientConnect(bool* bAllowConnect, edict_t* pEntity, const char* pszName, const char* pszAddress, char* reject, int maxrejectlen) { return PLUGIN_CONTINUE; }
 PLUGIN_RESULT CP2MMServerPlugin::NetworkIDValidated(const char* pszUserName, const char* pszNetworkID) { return PLUGIN_CONTINUE; }
 void CP2MMServerPlugin::OnQueryCvarValueFinished(QueryCvarCookie_t iCookie, edict_t* pPlayerEntity, EQueryCvarValueStatus eStatus, const char* pCvarName, const char* pCvarValue) {}
 void CP2MMServerPlugin::OnEdictAllocated(edict_t* edict) {}

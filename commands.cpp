@@ -513,3 +513,146 @@ CON_COMMAND(p2mm_gelocity_start, "Starts the Gelocity race.")
 
 	g_pScriptVM->Run("StartGelocityRace();", false);
 }
+
+//---------------------------------------------------------------------------------
+// P2:MM Improved kick and ban ConCommands
+//---------------------------------------------------------------------------------
+std::vector<RemovePlayerInfo> banList;
+
+// Have to make a ConCommand to remove the player becase 
+void RemovePlayerOperation(bool bBanning, int userid)
+{
+	RemovePlayerInfo bannedPlayer;
+	bannedPlayer.userID = userid;
+	player_info_t playerInfo;
+	engineServer->GetPlayerInfo(UserIDToPlayerIndex(bannedPlayer.userID), &playerInfo);
+	bannedPlayer.username = std::string(playerInfo.name);
+	bannedPlayer.guid = std::string(playerInfo.guid);
+
+	// The first argument determines if the player will be banned or kicked. True is ban.
+	if (bBanning)
+	{
+		for (size_t i = 0; i < banList.size(); i++)
+		{
+			if (FStrEq(banList[i].username.c_str(), bannedPlayer.username.c_str()))
+			{
+				P2MMLog(1, false, "Ban called on player that is already banned!");
+				std::string errorMsg = std::string("\x03(P2:MM): This player is already banned!");
+				UTIL_ClientPrint(UTIL_PlayerByIndex(0), HUD_PRINTTALK, errorMsg.c_str());
+				return;
+			}
+		}
+
+		// Use disconnect to ban the player because normal kick isn't consistent and so we have a custom disconnect message.
+		std::string bannedStr = std::string(_bstr_t(g_pLocalize->FindSafe("#P2MM_BannedFromServer")));
+		std::string opCMD = std::string("disconnect \"" + bannedStr + "\"");
+		std::string banMsg = std::string("\x03(P2:MM): Player " + bannedPlayer.username + " has been banned!");
+		UTIL_ClientPrint(UTIL_PlayerByIndex(0), HUD_PRINTTALK, banMsg.c_str());
+		//CGameClient__ExecuteStringCommand(CBaseServer__GetClient(UserIDToPlayerIndex(bannedPlayer.userID)), opCMD.c_str());
+		banList.push_back(bannedPlayer);
+	}
+	else
+	{
+		// Use disconnect to kick the player because normal kick isn't consistent and so we have a custom disconnect message.
+		std::string kickedStr = std::string(_bstr_t(g_pLocalize->FindSafe("#P2MM_KickedFromServer")));
+		std::string opCMD = std::string("disconnect \"" + kickedStr + "\"");
+		std::string kickMsg = std::string("\x03(P2:MM): Player " + bannedPlayer.username + " has been kicked!");
+		UTIL_ClientPrint(UTIL_PlayerByIndex(0), HUD_PRINTTALK, kickMsg.c_str());
+		//CGameClient__ExecuteStringCommand(CBaseServer__GetClient(UserIDToPlayerIndex(bannedPlayer.userID)), opCMD.c_str());
+	}
+	engineClient->ExecuteClientCmd("gameui_hide");
+
+	P2MMLog(0, true, "Banning?: %i", bBanning);
+	P2MMLog(0, true, "userID: %i", bannedPlayer.userID);
+	P2MMLog(0, true, "username: %s", bannedPlayer.username.c_str());
+	P2MMLog(0, true, "guid: %s", bannedPlayer.guid.c_str());
+}
+
+// Display UI for either banning or kicking so host can ban or kick a player.
+void RemovePlayerUI(int playerIndex, bool bBanning)
+{
+	if (!IsGameActive())
+	{
+		P2MMLog(1, false, "Game session is not currently running!");
+		return;
+	}
+
+	engineClient->ExecuteClientCmd("gameui_activate"); // Doesn't work for some reason although it does for the first run prompt.
+	//CGameClient__ExecuteStringCommand(CBaseServer__GetClient(playerIndex), "gameui_activate");
+	std::vector<RemovePlayerInfo> userList;
+	FOR_ALL_PLAYERS(i)
+	{
+		if (i == 1) continue; // Don't add host to button options.
+		player_info_t playerInfo;
+		engineServer->GetPlayerInfo(i, &playerInfo);
+		RemovePlayerInfo curUserInfo;
+		curUserInfo.userID = playerInfo.userID;
+		curUserInfo.username = playerInfo.name;
+		curUserInfo.guid = playerInfo.guid;
+		userList.push_back(curUserInfo);
+	}
+
+	KeyValues* menuData = new KeyValues("removeplayermenu");
+	menuData->SetWString("title", bBanning ? g_pLocalize->FindSafe("P2MM_BanMenu_t") : g_pLocalize->FindSafe("P2MM_KickMenu_t"));
+	menuData->SetWString("msg", bBanning ? g_pLocalize->FindSafe("P2MM_BanMenu_d") : g_pLocalize->FindSafe("P2MM_KickMenu_d"));
+	menuData->SetInt("level", 0);
+	menuData->SetInt("time", 20);
+
+	char num[32], msg[MAX_PLAYER_NAME_LENGTH], cmd[512];
+	for (size_t i = 0; i < userList.size(); i++)
+	{
+		V_snprintf(num, sizeof(num), "%i", i);
+		V_snprintf(msg, sizeof(msg), "%s", userList[i].username.c_str());
+		V_snprintf(cmd, sizeof(cmd), "removeplayeroperation %i %i", bBanning, userList[i].userID);
+
+		KeyValues* item = menuData->FindKey(num, &g_P2MMServerPlugin);
+		item->SetString("msg", msg);
+		item->SetString("command", cmd);
+	}
+	
+	g_pPluginHelpers->CreateMessage(INDEXENT(playerIndex), DIALOG_MENU, menuData, &g_P2MMServerPlugin);
+	menuData->deleteThis();
+}
+
+CON_COMMAND(p2mm_kick, "Kick a player from the P2:MM play session.")
+{
+	
+	RemovePlayerUI(UTIL_GetCommandClientIndex() + 1, false);
+}
+
+CON_COMMAND(ban, "Ban a player from the P2:MM play session.")
+{
+	RemovePlayerUI(UTIL_GetCommandClientIndex() + 1, true);
+}
+
+CON_COMMAND(unban, "Unban a player from the P2:MM play session.")
+{
+	if (!IsGameActive())
+	{
+		P2MMLog(1, false, "Game session is not currently running!");
+		return;
+	}
+
+	engineClient->ExecuteClientCmd("gameui_activate"); // Doesn't work for some reason although it does for the first run prompt.
+	//CGameClient__ExecuteStringCommand(CBaseServer__GetClient(playerIndex), "gameui_activate");
+	KeyValues* menuData = new KeyValues("unbanmenu");
+	menuData->SetWString("title", g_pLocalize->FindSafe("P2MM_BanMenu_t"));
+	menuData->SetWString("msg", g_pLocalize->FindSafe("P2MM_BanMenu_d"));
+	menuData->SetInt("level", 0);
+	menuData->SetInt("time", 20);
+
+	char num[32], msg[MAX_PLAYER_NAME_LENGTH], cmd[512];
+	for (size_t i = 0; i < banList.size(); i++)
+	{
+		V_snprintf(num, sizeof(num), "%i", i);
+		V_snprintf(msg, sizeof(msg), "%s", banList[i].username.c_str());
+		V_snprintf(cmd, sizeof(cmd), "unbanoperation %i", banList[i].userID); // Add unbanoperation to clientcommand callback
+
+		KeyValues* item = menuData->FindKey(num, &g_P2MMServerPlugin);
+		item->SetString("msg", msg);
+		item->SetString("command", cmd);
+	}
+
+	g_pPluginHelpers->CreateMessage(INDEXENT(UTIL_GetCommandClientIndex() + 1), DIALOG_MENU, menuData, &g_P2MMServerPlugin);
+	menuData->deleteThis();
+}

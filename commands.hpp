@@ -8,6 +8,21 @@
 
 #include "icvar.h"
 
+#include <string>
+#include <vector>
+
+// Struct of player info storedS on the ban list.
+typedef struct RemovePlayerInfo
+{
+	int			userID;	  // Player's unique ID on the server.
+	std::string	username; // Player's username.
+	std::string	guid;	  // Steam2 ID
+} RemovePlayerInfo;
+// The ban list itself, resets every time the game is started.
+extern std::vector<RemovePlayerInfo> banList;
+void RemovePlayerOperation(bool bBanning, int userid);
+void RemovePlayerUI(int playerIndex, bool bBanning);
+
 //---------------------------------------------------------------------------------
 // Core P2:MM ConVars | These shouldn't be modified manually. Hidden to prevent accidentally breaking something.
 //---------------------------------------------------------------------------------

@@ -6,14 +6,12 @@
 //===========================================================================//
 #pragma once
 
-#include "p2mm.hpp"
 #include "sdk.hpp"
+#include "commands.hpp"
+#include "p2mm.hpp"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
-
-extern ConVar p2mm_developer;
-extern ConVar p2mm_lastmap;
 
 //---------------------------------------------------------------------------------
 // Purpose: Logging for the P2MM VScript. The log message must be passed as a string or it will error.
@@ -180,15 +178,7 @@ static void CallFirstRunPrompt()
 	KeyValues* kv = new KeyValues("firstrunprompt");
 	kv->SetInt("level", 1);
 	kv->SetWString("title", g_pLocalize->FindSafe("#P2MM_FirstRunPrompt_t"));
-	//kv->SetString("title", "Welcome to the Portal 2: Multiplayer Mod!");
 	kv->SetWString("msg", g_pLocalize->FindSafe("#P2MM_FirstRunPrompt_d"));
-	/*kv->SetString("msg",
-		"Welcome to the Portal 2: Multiplayer Mod!\n\n"
-		"Input '!help' into chat to see a full list of chat commands you can use!\n"
-		"Hope you enjoy the mod! - Portal 2: Multiplayer Mod Team\n\n"
-		"This message can be disabled in config.nut located in the local p2mm folder on your system.\n"
-		"'p2mm/ModFiles/Portal 2/install_dlc/scripts/vscripts/multiplayermod/config.nut'"
-	);*/
 
 	// CreateMessage prompts can only be seen when the pause menu is up, so pause the game.
 	engineClient->ExecuteClientCmd("gameui_activate");
@@ -340,7 +330,6 @@ void ShowScoreboard(int playerIndex, bool bEnable)
 {
 	CBasePlayer__ShowViewPortPanel(playerIndex, "scores", bEnable);
 }
-	
 
 void RegisterFuncsAndRun()
 {
@@ -390,6 +379,7 @@ void RegisterFuncsAndRun()
 	);
 	ScriptRegisterFunction		(g_pScriptVM, GetMaxPlayers, "Self-explanatory.");
 	ScriptRegisterFunction		(g_pScriptVM, ShowScoreboard, "Enable or disable displaying the score board for players.");
+	ScriptRegisterFunction		(g_pScriptVM, RemovePlayerUI, "Display UI for either banning or kicking so host can ban or kick a player.");
 
 	// Load up the main P2:MM VScript and set
 	g_pScriptVM->Run("IncludeScript(\"multiplayermod/p2mm\");");

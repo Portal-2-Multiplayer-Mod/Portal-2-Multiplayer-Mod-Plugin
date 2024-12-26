@@ -20,7 +20,10 @@
 
 #include "scanner.hpp"
 
+#include <comdef.h> 
+
 // Stand in class definitions, AKA gaslighing the compiler.
+class IClient;
 class CBasePlayer;
 class CPortal_Player;
 class CBaseServer;

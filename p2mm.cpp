@@ -506,8 +506,8 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 	if (!pEntity || pEntity->IsFree())
 		return PLUGIN_CONTINUE;
 
-	const char* pcmd = args[0];
-	const char* fargs = args.ArgS();
+	const char* pCmd = args[0];
+	const char* fArgs = args.ArgS();
 
 	int userid = engineServer->GetPlayerUserId(pEntity);
 	int entindex = UserIDToPlayerIndex(userid);
@@ -515,8 +515,8 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 
 	if (p2mm_spewgameeventinfo.GetBool())
 	{
-		P2MMLog(0, true, "ClientCommand called: %s", pcmd);
-		P2MMLog(0, true, "ClientCommand args: %s", fargs);
+		P2MMLog(0, true, "ClientCommand called: %s", pCmd);
+		P2MMLog(0, true, "ClientCommand args: %s", fArgs);
 		P2MMLog(0, true, "userid: %i", userid);
 		P2MMLog(0, true, "entindex: %i", entindex);
 		P2MMLog(0, true, "playername: %s", playername);
@@ -528,11 +528,11 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 	{
 		HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEClientCommand");
 		if (ge_func)
-			g_pScriptVM->Call<const char*, const char*, int, int, const char*>(ge_func, NULL, false, NULL, pcmd, fargs, userid, entindex, playername);
+			g_pScriptVM->Call<const char*, const char*, int, int, const char*>(ge_func, NULL, false, NULL, pCmd, fArgs, userid, entindex, playername);
 	}
 
 	// signify is the client command used to make on screen icons appear
-	if (FStrEq(pcmd, "signify"))
+	if (FStrEq(pCmd, "signify"))
 	{
 		// Check if its the death icons and if the death icons disable ConVar is on
 		if ((FStrEq(args[1], "death_blue") || FStrEq(args[1], "death_orange")) && !p2mm_deathicons.GetBool())
@@ -544,11 +544,11 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 	{
 		// These commands can be manually called to make everyone emote,
 		// however there are certain other ones we need to let in for players individually to emote.
-		if (FSubStr(pcmd, "taunt_auto") || FSubStr(pcmd, "mp_earn_taunt"))
+		if (FSubStr(pCmd, "taunt_auto") || FSubStr(pCmd, "mp_earn_taunt"))
 			return PLUGIN_STOP;
 
 		// Whether we want to actually stop client commands or not. Host is always ignored.
-		if (entindex != 1 && FSubStr(pcmd, badcc) && p2mm_forbidclientcommands.GetBool())
+		if (entindex != 1 && FSubStr(pCmd, badcc) && p2mm_forbidclientcommands.GetBool())
 		{
 			engineServer->ClientPrintf(INDEXENT(entindex), "This command is blocked from execution!\n");
 			return PLUGIN_STOP;

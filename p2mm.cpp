@@ -314,9 +314,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 
 		// Make sure -allowspectators is there so we get our 33 max players
 		if (!CommandLine()->FindParm("-allowspectators"))
-		{
 			CommandLine()->AppendParm("-allowspectators", "");
-		}
 
 		// MinHook initialization and hooking
 		P2MMLog(0, true, "Initializing MinHook and hooking functions...");
@@ -354,6 +352,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 			&respawn_hook, (void**)&respawn_orig
 		);
 		
+		// UTIL_GetLocalPlayer dedicated server hook crash fix.
 		MH_CreateHook(
 			Memory::Scanner::Scan(SERVERDLL, "8B 15 ?? ?? ?? ?? 8B 4A ?? 33 C0"),
 			&UTIL_GetLocalPlayer, (void**)&UTIL_GetLocalPlayer_orig
@@ -416,7 +415,7 @@ void CP2MMServerPlugin::Unload(void)
 	Memory::ReplacePattern("server", "51 50 90 90 83 C4 10 E8", "51 50 FF D2 83 C4 10 E8");
 	Memory::ReplacePattern("server", "EB 28 3B 75 FC", "74 28 3B 75 FC");
 
-	// Max players -> 3
+	// Max players -> 2
 	Memory::ReplacePattern("server", "83 C0 20 89 01", "83 C0 02 89 01");
 	Memory::ReplacePattern("engine", "31 C0 04 21 8B 17", "85 C0 78 13 8B 17");
 	*reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(this->sv) + 0x228) = 2;
@@ -429,6 +428,10 @@ void CP2MMServerPlugin::Unload(void)
 
 	// runtime max 0.05 -> 0.03
 	Memory::ReplacePattern("vscript", "00 00 00 00 00 00 E0 3F", "00 00 00 E0 51 B8 9E 3F");
+
+	// Remove -allowspectators so max player count is indeed back to 2 and not 3.
+	if (CommandLine()->FindParm("-allowspectators"))
+		CommandLine()->RemoveParm("-allowspectators");
 
 	P2MMLog(0, true, "Disconnecting hooked functions and uninitializing MinHook...");
 	MH_DisableHook(MH_ALL_HOOKS);

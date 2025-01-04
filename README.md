@@ -21,8 +21,6 @@ int         GetSteamID(int playerIndex);                               | "Gets t
 int         UserIDToPlayerIndex(int userid);                           | "Get the player's entity index by their userid."
 bool        IsMapValid(const char* map);                               | "Returns true is the supplied string is a available map to load and run."
 int         GetDeveloperLevelP2MM();                                   | "Returns the value of ConVar p2mm_developer."
-void        SetPhysTypeConVar(int newval);                             | "Sets 'player_held_object_use_view_model' to the supplied integer value."
-void        SetMaxPortalSeparationConvar(int newval);                  | "Sets 'portal_max_separation_force' to the supplied integer value."
 bool        IsDedicatedServer();                                       | "Returns true if this is a dedicated server."
 void        InitializeEntity(HSCRIPT ent);                             | "Initializes an entity. Note: Not all entities will work even after being initialized with this function."
 void        SendToChat(const char* msg, int playerIndex);              | "Sends a raw message to the chat HUD. Specifying no playerIndex or 0 sends to all players. Supports printing localization strings but those that require formatting can't be formatted."

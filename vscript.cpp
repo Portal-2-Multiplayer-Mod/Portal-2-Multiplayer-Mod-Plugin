@@ -61,27 +61,6 @@ static int GetDeveloperLevelP2MM()
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Sets 'player_held_object_use_view_model' to the supplied integer value.
-//---------------------------------------------------------------------------------
-static void SetPhysTypeConVar(int newval)
-{
-	g_pCVar->FindVar("player_held_object_use_view_model")->SetValue(newval);
-}
-
-//---------------------------------------------------------------------------------
-// Purpose: Sets 'portal_max_separation_force' to the supplied integer value.
-//---------------------------------------------------------------------------------
-static void SetMaxPortalSeparationConvar(int newval)
-{
-	if (engineServer->IsDedicatedServer())
-	{
-		P2MMLog(1, true, "SetMaxPortalSeparationConVar can not be set on dedicated servers!");
-		return;
-	}
-	g_pCVar->FindVar("portal_max_separation_force")->SetValue(newval);
-}
-
-//---------------------------------------------------------------------------------
 // Purpose: Returns true if this is a dedicated server.
 //---------------------------------------------------------------------------------
 static bool IsDedicatedServer()
@@ -346,8 +325,6 @@ void RegisterFuncsAndRun()
 	ScriptRegisterFunctionNamed(g_pScriptVM, UserIDToPlayerIndex, "UserIDToPlayerIndex", "Get the player's entity index by their userid.");
 	ScriptRegisterFunction	   (g_pScriptVM, IsMapValid, "Returns true is the supplied string is a available map to load and run.");
 	ScriptRegisterFunction	   (g_pScriptVM, GetDeveloperLevelP2MM, "Returns the value of ConVar p2mm_developer.");
-	ScriptRegisterFunction	   (g_pScriptVM, SetPhysTypeConVar, "Sets 'player_held_object_use_view_model' to the supplied integer value.");
-	ScriptRegisterFunction	   (g_pScriptVM, SetMaxPortalSeparationConvar, "Sets 'portal_max_separation_force' to the supplied integer value.");
 	ScriptRegisterFunction	   (g_pScriptVM, IsDedicatedServer, "Returns true if this is a dedicated server.");
 	ScriptRegisterFunction	   (g_pScriptVM, InitializeEntity, "Initializes an entity. Note: Not all entities will work even after being initialized with this function.");
 	ScriptRegisterFunction	   (g_pScriptVM, SendToChat, "Sends a raw message to the chat HUD. Specifying no playerIndex or 0 sends to all players. Supports printing localization strings but those that require formatting can't be formatted.");

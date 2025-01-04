@@ -123,9 +123,7 @@ CP2MMServerPlugin::CP2MMServerPlugin()
 
 	// Current Portal 2 branch based game being run.
 	// Helps when checking for specific game related things instead of getting the game directory everytime.
-	// Portal 2: 0
-	// Portal Stories: Mel: 1
-	this->m_iCurGameIndex = 0;
+	this->m_iCurGameIndex = -1;
 
 	m_nDebugID = EVENT_DEBUG_ID_INIT;
 	this->m_iClientCommandIndex = 0;
@@ -164,21 +162,46 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 
 	// Determine which Portal 2 branch game we are running.
 	P2MMLog(0, true, "Determining which Portal 2 branch game is being run...");
-	this->m_iCurGameIndex = 0; // Portal 2
-	if ((FStrEq(GetGameMainDir(), "portal_stories")))
-		this->m_iCurGameIndex = 1; // Portal Stories: Mel
+	if ((FStrEq(GetGameMainDir(), "portal2")))
+		this->m_iCurGameIndex = PORTAL_2;
+	else if ((FStrEq(GetGameMainDir(), "portal_stories")))
+		this->m_iCurGameIndex = PORTAL_STORIES_MEL;
+	else if ((FStrEq(GetGameMainDir(), "aperturetag")))
+		this->m_iCurGameIndex = APERTURE_TAG;
+	else if ((FStrEq(GetGameMainDir(), "portalreloaded")))
+		this->m_iCurGameIndex = PORTAL_RELOADED;
+	else if ((FStrEq(GetGameMainDir(), "infra")))
+		this->m_iCurGameIndex = INFRA;
+	else if ((FStrEq(GetGameMainDir(), "divinity")))
+		this->m_iCurGameIndex = DIVINITY;
+
 
 	if (p2mm_developer.GetBool())
 	{
 		switch (this->m_iCurGameIndex)
 		{
-		case 0:
+		case PORTAL_2:
 			P2MMLog(0, true, "Currently running Portal 2.");
 			break;
-		case 1:
+		case PORTAL_STORIES_MEL:
 			P2MMLog(0, true, "Currently running Portal Stories: Mel.");
 			break;
+		case APERTURE_TAG:
+			P2MMLog(0, true, "Currently running Aperture Tag.");
+			break;
+		case PORTAL_RELOADED:
+			P2MMLog(0, true, "Currently running Portal Reloaded.");
+			break;
+		case INFRA:
+			P2MMLog(0, true, "Currently running Infra.");
+			break;
+		case DIVINITY:
+			P2MMLog(0, true, "Currently running Portal: Divinity.");
+			break;
 		default:
+			//! TODO: Need to add more checks for this down the line if a unsupported game is run.
+			P2MMLog(1, true, "INVALID m_iCurGameIndex SPECIFIED! DEFAULTING TO PORTAL 2!");
+			this->m_iCurGameIndex = PORTAL_2;
 			P2MMLog(0, true, "Currently running Portal 2.");
 			break;
 		}

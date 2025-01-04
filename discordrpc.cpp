@@ -295,7 +295,7 @@ bool CDiscordIntegration::StartDiscordRPC()
 	V_snprintf(appid, 255, "%d", engineServer->GetAppID());
 	Discord_Initialize("1201562647880015954", handlers, 1, appid);
 
-	if (g_P2MMServerPlugin.m_iCurGameIndex == 1)
+	if (g_P2MMServerPlugin.m_iCurGameIndex == PORTAL_STORIES_MEL)
 	{
 		RPC.largeImageKey = "p2mmmellogo";
 		RPC.largeImageText = "Portal Stories: Mel";
@@ -353,7 +353,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 		char smallImageText[128] = { 0 };
 		switch (g_P2MMServerPlugin.m_iCurGameIndex)
 		{
-		case (0):
+		case (PORTAL_2):
 			if (FStrEq(CURMAPFILENAME, "mp_coop_community_hub"))
 			{
 				V_strcat(details, "Community Hub", 128);
@@ -396,7 +396,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 				V_strcat(smallImageText, map->chaptername, 128);
 			}
 			break;
-		case (1):
+		case (PORTAL_STORIES_MEL):
 			if (FStrEq(CURMAPFILENAME, "mp_coop_community_hub")) break;
 
 			if (std::strstr(CURMAPFILENAME, "sp_"))

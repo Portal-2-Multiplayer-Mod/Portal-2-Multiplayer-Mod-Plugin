@@ -70,6 +70,17 @@ enum
 	TEAM_BLUE
 };
 
+// iCurGameIndex enum.
+enum
+{
+	PORTAL_2 = 0,
+	PORTAL_STORIES_MEL,
+	APERTURE_TAG,
+	PORTAL_RELOADED,
+	INFRA,
+	DIVINITY
+};
+
 // Struct for map arrays.
 typedef struct
 {
@@ -117,11 +128,11 @@ HSCRIPT				INDEXHANDLE(int iEdictNum);
 //---------------------------------------------------------------------------------
 // Player recipient filter.
 //---------------------------------------------------------------------------------
-class CFilter : public IRecipientFilter
+class CPlayerFilter : public IRecipientFilter
 {
 public:
-	CFilter() { recipient_count = 0; };
-	~CFilter() {};
+	CPlayerFilter() { recipient_count = 0; };
+	~CPlayerFilter() {};
 
 	virtual bool IsReliable() const { return false; }
 	virtual bool IsInitMessage() const { return false; }
@@ -195,7 +206,7 @@ inline edict_t* INDEXENT(int iEdictNum)
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Get the main game directory being used. Ex. portal2
+// Purpose: Returns the current game directory. Ex. portal2
 //---------------------------------------------------------------------------------
 inline const char* GetGameMainDir()
 {
@@ -203,9 +214,9 @@ inline const char* GetGameMainDir()
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Get base game directory. Ex. Portal 2
+// Purpose: Returns the current root game directory. Ex. Portal 2
 //---------------------------------------------------------------------------------
-inline const char* GetGameBaseDir()
+inline const char* GetGameRootDir()
 {
 	char baseDir[MAX_PATH] = { 0 };
 	std::string fullGameDirectoryPath = engineClient->GetGameDirectory();

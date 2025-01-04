@@ -70,11 +70,13 @@ static bool IsDedicatedServer()
 
 //---------------------------------------------------------------------------------
 // Purpose: Initializes, spawns, then activates an entity in the map.
+// Create a entity using CreateByClassname, then use this function on its handle.
+// Note: Not all entities will work even after being initialized with this function.
 //---------------------------------------------------------------------------------
 static void InitializeEntity(HSCRIPT ent)
 {
 	static uintptr_t func = (uintptr_t)Memory::Scanner::Scan<void*>(SERVERDLL, "E8 ?? ?? ?? ?? 8B 4D 18 8B 57 5C", 1);
-	static auto GetCBaseEntityScriptDesc = reinterpret_cast<ScriptClassDesc_t * (*)()>(*reinterpret_cast<uintptr_t*>(func) + func + sizeof(func));
+	static auto GetCBaseEntityScriptDesc = reinterpret_cast<ScriptClassDesc_t* (__cdecl*)()>(*reinterpret_cast<uintptr_t*>(func) + func + sizeof(func));
 	void* pEntity = reinterpret_cast<void*>(g_pScriptVM->GetInstanceValue(ent, GetCBaseEntityScriptDesc()));;
 	if (pEntity)
 	{
@@ -328,16 +330,16 @@ void RegisterFuncsAndRun()
 	ScriptRegisterFunction	   (g_pScriptVM, IsDedicatedServer, "Returns true if this is a dedicated server.");
 	ScriptRegisterFunction	   (g_pScriptVM, InitializeEntity, "Initializes an entity. Note: Not all entities will work even after being initialized with this function.");
 	ScriptRegisterFunction	   (g_pScriptVM, SendToChat, "Sends a raw message to the chat HUD. Specifying no playerIndex or 0 sends to all players. Supports printing localization strings but those that require formatting can't be formatted.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GetGameMainDir, "GetGameMainDir", "Returns the game directory. Ex. portal2");
-	ScriptRegisterFunctionNamed(g_pScriptVM, GetGameBaseDir, "GetGameBaseDir", "Get the main game directory being used. Ex. Portal 2");
-	ScriptRegisterFunction	   (g_pScriptVM, GetLastMap, "Returns the last map recorded by the launcher's Last Map system.");
+	ScriptRegisterFunction	   (g_pScriptVM, GetGameMainDir, "Returns the current game directory. Ex. portal2");
+	ScriptRegisterFunction	   (g_pScriptVM, GetGameRootDir, "Returns the current root game directory. Ex. Portal 2");
+	ScriptRegisterFunction	   (g_pScriptVM, GetLastMap, "Returns the last map recorded by the Last Map system.");
 	ScriptRegisterFunction	   (g_pScriptVM, FirstRunState, "Get or set the state of whether the first map was run or not. Set false/true = 0/1 | -1 to get state.");
 	ScriptRegisterFunction	   (g_pScriptVM, CallFirstRunPrompt, "Shows the first run prompt if enabled in config.nut.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, GetConVarInt, "GetConVarInt", "Get the integer value of a ConVar.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, GetConVarString, "GetConVarString", "Get the string value of a ConVar.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, SetConVarInt, "SetConVarInt", "Set the integer value of a ConVar.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, SetConVarString, "SetConVarString", "Set the string value of a ConVar.");
-	ScriptRegisterFunctionNamed(g_pScriptVM, INDEXHANDLE, "UTIL_PlayerByIndex", "Takes the player's entity index and returns the player's script handle.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, INDEXHANDLE, "PlayerByIndex", "Takes the player's entity index and returns the player's script handle.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, CPortal_Player__RespawnPlayer, "RespawnPlayer", "Respawn the a player by their entity index.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, CPortal_Player__SetFlashlightState, "SetFlashlightState", "Set the flashlight for a player on or off.");
 	ScriptRegisterFunction     (g_pScriptVM, ConsolePrint, "Print a message to the top center position of a player's screen. Specifying no playerIndex or 0 sends to all players."

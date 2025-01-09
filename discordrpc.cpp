@@ -389,7 +389,13 @@ void CDiscordIntegration::UpdateDiscordRPC()
 			else
 			{
 				map = InP2CampaignMap(true);
-				if (!map) break;
+				if (!map)
+				{
+					V_strcat(details, CURMAPFILENAME, 128);
+					V_strcat(smallImageKey, "miscmap", 32);
+					V_strcat(smallImageText, CURMAPFILENAME, 128);
+					break;
+				}
 
 				V_strcat(details, map->mapname, 128);
 				V_strcat(smallImageKey, "coop", 32);

@@ -15,11 +15,11 @@
 //---------------------------------------------------------------------------------
 // Purpose: Logging for the plugin by adding a prefix and line break.
 // Max character limit of 1024 characters.	
-// level:	0 = Msg/DevMsg, 1 = Warning/DevWarning
+// level:	0 = Msg/DevMsg, 1 = Warning/DevWarning, 2 = Error WILL STOP ENGINE!
 //---------------------------------------------------------------------------------
 void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 {
-	if (dev && !p2mm_developer.GetBool()) return; // Stop developer messages when p2mm_developer isn't enabled.
+	if (dev && !p2mm_developer.GetBool() && level != 2) return; // Stop developer messages when p2mm_developer isn't enabled.
 
 	// Take our log message and format any arguments it has into the message.
 	va_list argptr;
@@ -29,7 +29,7 @@ void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 	va_end(argptr);
 
 	// Add a header to the log message.
-	char completeMsg[1024];
+	char completeMsg[1024] = { 0 };
 	V_snprintf(completeMsg, sizeof(completeMsg), "(P2:MM PLUGIN): %s\n", szFormattedText);
 
 	switch (level)
@@ -39,6 +39,10 @@ void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 		return;
 	case 1:
 		Warning(completeMsg);
+		return;
+	case 2:
+		Warning("(P2:MM PLUGIN):\n!!!ERROR ERROR ERROR!!!:\nA ERROR OCCURED WITH THE ENGINE:\n%s", completeMsg);
+		Error(completeMsg);
 		return;
 	default:
 		Warning("(P2:MM PLUGIN): P2MMLog level set outside of 0-1, \"%i\". Defaulting to level 0.\n", level);

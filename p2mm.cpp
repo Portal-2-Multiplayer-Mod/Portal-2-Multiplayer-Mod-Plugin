@@ -304,6 +304,10 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 			commandbase->RemoveFlags(FCVAR_GAMEDLL);
 	}
 
+	// Make sure -allowspectators is there so we get our 33 max players
+	if (!CommandLine()->FindParm("-allowspectators"))
+		CommandLine()->AppendParm("-allowspectators", "");
+
 	// big ol' try catch because game has a TerminateProcess handler for exceptions...
 	// why this wasn't here is mystifying, - 10/2024 NULLderef
 	try {
@@ -334,10 +338,6 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 
 		// runtime max 0.03 -> 0.05
 		Memory::ReplacePattern("vscript", "00 00 00 E0 51 B8 9E 3F", "9a 99 99 99 99 99 a9 3f");
-
-		// Make sure -allowspectators is there so we get our 33 max players
-		if (!CommandLine()->FindParm("-allowspectators"))
-			CommandLine()->AppendParm("-allowspectators", "");
 
 		// MinHook initialization and hooking
 		P2MMLog(0, true, "Initializing MinHook and hooking functions...");
@@ -423,42 +423,49 @@ void CP2MMServerPlugin::Unload(void)
 			commandbase->AddFlags(FCVAR_GAMEDLL);
 	}
 
+	// Remove -allowspectators so max player count is indeed back to 2 and not 3.
+	if (CommandLine()->FindParm("-allowspectators"))
+		CommandLine()->RemoveParm("-allowspectators");
+
 	ConVar_Unregister();
 	P2MMLog(0, true, "Disconnecting tier libraries...");
 	DisconnectTier2Libraries();
 	DisconnectTier1Libraries();
 
-	// Undo byte patches
-	P2MMLog(0, true, "Unpatching Portal 2...");
+	try
+	{
+		// Undo byte patches
+		P2MMLog(0, true, "Unpatching Portal 2...");
 
-	// Linked portal doors event crash patch
-	Memory::ReplacePattern("server", "EB 14 87 04 05 00 00 8B 16", "0F B6 87 04 05 00 00 8B 16");
+		// Linked portal doors event crash patch
+		Memory::ReplacePattern("server", "EB 14 87 04 05 00 00 8B 16", "0F B6 87 04 05 00 00 8B 16");
 
-	// Partner disconnects
-	Memory::ReplacePattern("server", "51 50 90 90 83 C4 10 E8", "51 50 FF D2 83 C4 10 E8");
-	Memory::ReplacePattern("server", "EB 28 3B 75 FC", "74 28 3B 75 FC");
+		// Partner disconnects
+		Memory::ReplacePattern("server", "51 50 90 90 83 C4 10 E8", "51 50 FF D2 83 C4 10 E8");
+		Memory::ReplacePattern("server", "EB 28 3B 75 FC", "74 28 3B 75 FC");
 
-	// Max players -> 2
-	Memory::ReplacePattern("server", "83 C0 20 89 01", "83 C0 02 89 01");
-	Memory::ReplacePattern("engine", "31 C0 04 21 8B 17", "85 C0 78 13 8B 17");
-	*reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(this->sv) + 0x228) = 2;
+		// Max players -> 2
+		Memory::ReplacePattern("server", "83 C0 20 89 01", "83 C0 02 89 01");
+		Memory::ReplacePattern("engine", "31 C0 04 21 8B 17", "85 C0 78 13 8B 17");
+		*reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(this->sv) + 0x228) = 2;
 
-	// Disconnect by "STEAM validation rejected"
-	Memory::ReplacePattern("engine", "01 EB 7D 8B", "01 74 7D 8B");
+		// Disconnect by "STEAM validation rejected"
+		Memory::ReplacePattern("engine", "01 EB 7D 8B", "01 74 7D 8B");
 
-	// sv_password
-	Memory::ReplacePattern("engine", "03 C9 90 51 8D 4D E8", "0F 95 C1 51 8D 4D E8");
+		// sv_password
+		Memory::ReplacePattern("engine", "03 C9 90 51 8D 4D E8", "0F 95 C1 51 8D 4D E8");
 
-	// runtime max 0.05 -> 0.03
-	Memory::ReplacePattern("vscript", "00 00 00 00 00 00 E0 3F", "00 00 00 E0 51 B8 9E 3F");
+		// runtime max 0.05 -> 0.03
+		Memory::ReplacePattern("vscript", "00 00 00 00 00 00 E0 3F", "00 00 00 E0 51 B8 9E 3F");
 
-	// Remove -allowspectators so max player count is indeed back to 2 and not 3.
-	if (CommandLine()->FindParm("-allowspectators"))
-		CommandLine()->RemoveParm("-allowspectators");
-
-	P2MMLog(0, true, "Disconnecting hooked functions and uninitializing MinHook...");
-	MH_DisableHook(MH_ALL_HOOKS);
-	MH_Uninitialize();
+		P2MMLog(0, true, "Disconnecting hooked functions and uninitializing MinHook...");
+		MH_DisableHook(MH_ALL_HOOKS);
+		MH_Uninitialize();
+	}
+	catch (const std::exception& ex)
+	{
+		P2MMLog(0, false, "Encountered error when unload plugin! Skipping other patches... :( Exception: \"%s\"", ex.what());
+	}
 
 	if (p2mm_discord_rpc.GetBool() && g_pDiscordIntegration->RPCRunning)
 		g_pDiscordIntegration->ShutdownDiscordRPC();

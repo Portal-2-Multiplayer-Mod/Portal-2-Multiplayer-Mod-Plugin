@@ -31,8 +31,11 @@ void __fastcall CSteam3Server__OnGSClientDenyHelper_hook(CSteam3Server* thisptr,
 const char* (__cdecl* GetBallBotModel_orig)(bool bLowRes);
 const char* __cdecl GetBallBotModel_hook(bool bLowRes)
 {
-	if (g_P2MMServerPlugin.m_iCurGameIndex == PORTAL_STORIES_MEL)
+	switch (g_P2MMServerPlugin.m_iCurGameIndex)
+	{
+	case (PORTAL_STORIES_MEL):
 		return "models/portal_stories/player/mel.mdl";
+	}
 
 	return GetBallBotModel_orig(bLowRes);
 }
@@ -40,8 +43,11 @@ const char* __cdecl GetBallBotModel_hook(bool bLowRes)
 const char* (__cdecl* GetEggBotModel_orig)(bool bLowRes);
 const char* __cdecl GetEggBotModel_hook(bool bLowRes)
 {
-	if (g_P2MMServerPlugin.m_iCurGameIndex == PORTAL_STORIES_MEL)
+	switch (g_P2MMServerPlugin.m_iCurGameIndex)
+	{
+	case (PORTAL_STORIES_MEL):
 		return "models/player/chell/player.mdl";
+	}
 
 	return GetEggBotModel_orig(bLowRes);
 }
@@ -49,8 +55,9 @@ const char* __cdecl GetEggBotModel_hook(bool bLowRes)
 const char* (__fastcall* CPortal_Player__GetPlayerModelName_orig)(CPortal_Player* thisptr);
 const char* __fastcall CPortal_Player__GetPlayerModelName_hook(CPortal_Player* thisptr)
 {
-	if (g_P2MMServerPlugin.m_iCurGameIndex == PORTAL_STORIES_MEL)
+	switch (g_P2MMServerPlugin.m_iCurGameIndex)
 	{
+	case (PORTAL_STORIES_MEL):
 		if (CBaseEntity__GetTeamNumber((CBasePlayer*)thisptr) == TEAM_BLUE)
 			return "models/portal_stories/player/mel.mdl";
 		else

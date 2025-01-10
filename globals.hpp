@@ -78,6 +78,7 @@ enum
 	APERTURE_TAG,
 	PORTAL_RELOADED,
 	INFRA,
+	STANLEY_PARABLE,
 	DIVINITY
 };
 
@@ -93,6 +94,7 @@ typedef struct
 MapParams* InGelocityMap();
 MapParams* InP2CampaignMap(bool mpMaps = false);
 MapParams* InMelCampaignMap(bool advanced = false);
+MapParams* InDivinityCampaignMap(bool advanced = false);
 
 //---------------------------------------------------------------------------------
 // Interfaces from the engine.

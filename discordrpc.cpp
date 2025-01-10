@@ -295,10 +295,15 @@ bool CDiscordIntegration::StartDiscordRPC()
 	V_snprintf(appid, 255, "%d", engineServer->GetAppID());
 	Discord_Initialize("1201562647880015954", handlers, 1, appid);
 
-	if (g_P2MMServerPlugin.m_iCurGameIndex == PORTAL_STORIES_MEL)
+	switch (g_P2MMServerPlugin.m_iCurGameIndex)
 	{
+	case (PORTAL_STORIES_MEL):
 		RPC.largeImageKey = "p2mmmellogo";
 		RPC.largeImageText = "Portal Stories: Mel";
+		break;
+	case (DIVINITY):
+		RPC.largeImageKey = "p2mmdivinitylogo";
+		RPC.largeImageText = "Portal: Divinity";
 	}
 	UpdateDiscordRPC();
 
@@ -321,30 +326,36 @@ void CDiscordIntegration::ShutdownDiscordRPC()
 
 void CDiscordIntegration::UpdateDiscordRPC()
 {
+	bool bActiveGame = IsGameActive();
+	bool bGameShutdown = IsGameShutdown();
+
 	DiscordLog(0, true, "Updating Discord RPC!");
+	DiscordLog(0, true, "Unloading Plugin: %i", g_P2MMServerPlugin.m_bPluginUnloading);
+	DiscordLog(0, true, "IsGameActive: %i", bActiveGame);
+	DiscordLog(0, true, "IsGameShutdown: %i", bGameShutdown);
+
+	RPC.state = "";
+	RPC.details = "";
+	RPC.smallImageKey = "wave";
+	RPC.smallImageText = "Welcome to P2:MM!";
+	RPC.partyId = "";
+	RPC.partySize = 0;
+	RPC.partyMax = MAX_PLAYERS;
+	RPC.matchSecret = "";
+	RPC.joinSecret = "";
+	RPC.spectateSecret = "";
+	RPC.instance = 0;
 
 	if (g_P2MMServerPlugin.m_bPluginUnloading)
 	{
 		RPC.state = "See you around!";
 		RPC.details = "Shutting down...";
-		RPC.smallImageKey = "wave";
-		RPC.smallImageText = "Welcome to P2:MM!";
-		RPC.partySize = 0;
-		RPC.partyMax = 0;
-		RPC.instance = 0;
 	}
 
-	if (!IsGameActive() || IsGameShutdown())
-	{
+	if (!bActiveGame || bGameShutdown)
 		RPC.details = "Main Menu";
-		RPC.smallImageKey = "wave";
-		RPC.smallImageText = "Welcome to P2:MM!";
-		RPC.partySize = 0;
-		RPC.partyMax = 0;
-		RPC.instance = 0;
-	}
 
-	if (IsGameActive() && (!g_P2MMServerPlugin.m_bPluginUnloading || !IsGameShutdown()))
+	if (bActiveGame && !(g_P2MMServerPlugin.m_bPluginUnloading || bGameShutdown))
 	{
 		MapParams* map = NULL;
 		char state[128] = { 0 };
@@ -415,6 +426,13 @@ void CDiscordIntegration::UpdateDiscordRPC()
 			V_snprintf(smallImageKey, 32, "melchapter%i", map->chapter);
 			V_strcat(smallImageText, map->chaptername, 128);
 			break;
+		case (DIVINITY):
+			map = InDivinityCampaignMap();
+			if (!map) break;
+			V_strcat(details, map->mapname, 128);
+			V_snprintf(smallImageKey, 32, "divinitychapter%i", map->chapter);
+			V_strcat(smallImageText, map->chaptername, 128);
+			break;
 		default:
 			break;
 		}
@@ -431,7 +449,6 @@ void CDiscordIntegration::UpdateDiscordRPC()
 		RPC.smallImageKey = smallImageKey;
 		RPC.smallImageText = smallImageText;
 		RPC.partySize = CURPLAYERCOUNT();
-		RPC.partyMax = MAX_PLAYERS;
 		RPC.instance = 1;
 	}
 

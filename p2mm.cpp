@@ -160,52 +160,69 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 
 	P2MMLog(0, false, "Loading plugin...");
 
-	// Determine which Portal 2 branch game we are running.
+	// Determine which Portal 2 branch game we are running and if its supported.
+	bool unsupportedGame = false;
 	P2MMLog(0, true, "Determining which Portal 2 branch game is being run...");
 	if ((FStrEq(GetGameMainDir(), "portal2")))
-		this->m_iCurGameIndex = PORTAL_2;
-	else if ((FStrEq(GetGameMainDir(), "portal_stories")))
-		this->m_iCurGameIndex = PORTAL_STORIES_MEL;
-	else if ((FStrEq(GetGameMainDir(), "aperturetag")))
-		this->m_iCurGameIndex = APERTURE_TAG;
-	else if ((FStrEq(GetGameMainDir(), "portalreloaded")))
-		this->m_iCurGameIndex = PORTAL_RELOADED;
-	else if ((FStrEq(GetGameMainDir(), "infra")))
-		this->m_iCurGameIndex = INFRA;
-	else if ((FStrEq(GetGameMainDir(), "divinity")))
-		this->m_iCurGameIndex = DIVINITY;
-
-
-	if (p2mm_developer.GetBool())
 	{
-		switch (this->m_iCurGameIndex)
-		{
-		case PORTAL_2:
-			P2MMLog(0, true, "Currently running Portal 2.");
-			break;
-		case PORTAL_STORIES_MEL:
-			P2MMLog(0, true, "Currently running Portal Stories: Mel.");
-			break;
-		case APERTURE_TAG:
-			P2MMLog(0, true, "Currently running Aperture Tag.");
-			break;
-		case PORTAL_RELOADED:
-			P2MMLog(0, true, "Currently running Portal Reloaded.");
-			break;
-		case INFRA:
-			P2MMLog(0, true, "Currently running Infra.");
-			break;
-		case DIVINITY:
-			P2MMLog(0, true, "Currently running Portal: Divinity.");
-			break;
-		default:
-			//! TODO: Need to add more checks for this down the line if a unsupported game is run.
-			P2MMLog(1, true, "INVALID m_iCurGameIndex SPECIFIED! DEFAULTING TO PORTAL 2!");
-			this->m_iCurGameIndex = PORTAL_2;
-			P2MMLog(0, true, "Currently running Portal 2.");
-			break;
-		}
+		this->m_iCurGameIndex = PORTAL_2;
+		P2MMLog(0, false, "Currently running Portal 2.");
 	}
+	else if ((FStrEq(GetGameMainDir(), "portal_stories")))
+	{
+		this->m_iCurGameIndex = PORTAL_STORIES_MEL;
+		P2MMLog(0, false, "Currently running Portal Stories: Mel.");
+	}
+	else if ((FStrEq(GetGameMainDir(), "aperturetag")))
+	{
+		this->m_iCurGameIndex = APERTURE_TAG;
+		P2MMLog(0, false, "Currently running Aperture Tag.");
+		// Unsupported...for now...
+		unsupportedGame = true;
+	}
+	else if ((FStrEq(GetGameMainDir(), "portalreloaded")))
+	{
+		this->m_iCurGameIndex = PORTAL_RELOADED;
+		P2MMLog(0, false, "Currently running Portal Reloaded.");
+		// Unsupported...for now...
+		unsupportedGame = true;
+	}
+	else if ((FStrEq(GetGameMainDir(), "infra")))
+	{
+		this->m_iCurGameIndex = INFRA;
+		P2MMLog(0, false, "Currently running Infra.");
+		// Unsupported...for now...
+		unsupportedGame = true;
+	}
+	else if ((FStrEq(GetGameMainDir(), "thestanleyparable")))
+	{
+		this->m_iCurGameIndex = STANLEY_PARABLE;
+		P2MMLog(0, false, "Currently running The Stanley Parable.");
+		// Unsupported...for now...
+		unsupportedGame = true;
+	}
+	else if ((FStrEq(GetGameMainDir(), "divinity")))
+	{
+		this->m_iCurGameIndex = DIVINITY;
+		P2MMLog(0, false, "Currently running Portal: Divinity.");
+	}
+	else if (!CommandLine()->FindParm("-forcep2mmload"))
+	{
+		P2MMLog(2, false, "\nAn unsupported Source Engine/Portal 2 branch game has been started with P2:MM! Please check the FAQ to see which Portal 2 engine based games are supported!");
+		return false;
+	}
+	else
+	{
+		unsupportedGame = true;
+	}
+
+	if (unsupportedGame && !CommandLine()->FindParm("-forcep2mmload"))
+	{
+		P2MMLog(2, false, "\nThe current Source Engine/Portal 2 branch game is not **yet** supported by P2:MM! Please check the FAQ to see which games are supported!");
+		return false;
+	}
+	else if (unsupportedGame && CommandLine()->FindParm("-forcep2mmload"))
+		P2MMLog(1, false, "P2:MM is being run with a unsupported Source Engine/Portal 2 branch game! Proceed with caution as crashes and bugs could occur!");
 
 	P2MMLog(0, true, "Connecting tier libraries...");
 	ConnectTier1Libraries(&interfaceFactory, 1);
@@ -1029,7 +1046,7 @@ extern void updateMapsList();
 //---------------------------------------------------------------------------------
 void CP2MMServerPlugin::LevelShutdown(void)
 {
-	P2MMLog(0, true, "Level Shutdown!");
+	P2MMLog(0, true, "Level Shutdown! Map: %s", CURMAPFILENAME);
 	p2mm_loop.SetValue("0"); // REMOVE THIS at some point...
 	updateMapsList(); // Update the maps list for p2mm_map.
 	// Update Discord RPC to update the level information or to say the host is on the main menu.

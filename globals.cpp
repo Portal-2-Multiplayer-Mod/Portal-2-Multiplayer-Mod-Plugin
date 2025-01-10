@@ -245,9 +245,7 @@ std::vector<MapParams> gelocityMaps =
 MapParams* InGelocityMap()
 {
 	for (size_t i = 0; i < gelocityMaps.size(); i++)
-	{
 		if (FStrEq(CURMAPFILENAME, gelocityMaps[i].mapfile)) return &gelocityMaps[i];
-	}
 	return NULL;
 }
 
@@ -385,16 +383,12 @@ MapParams* InP2CampaignMap(bool mpMaps)
 	if (mpMaps)
 	{
 		for (size_t i = 0; i < mpCampaignMaps.size(); i++)
-		{
 			if (FStrEq(CURMAPFILENAME, mpCampaignMaps[i].mapfile)) return &mpCampaignMaps[i];
-		}
 	}
 	else
 	{
 		for (size_t i = 0; i < spCampaignMaps.size(); i++)
-		{
 			if (FStrEq(CURMAPFILENAME, spCampaignMaps[i].mapfile)) return &spCampaignMaps[i];
-		}
 	}
 	return NULL;
 }
@@ -460,16 +454,45 @@ MapParams* InMelCampaignMap(bool advanced)
 	if (advanced)
 	{
 		for (size_t i = 0; i < melAdvancedCampaignMaps.size(); i++)
-		{
 			if (FStrEq(CURMAPFILENAME, melAdvancedCampaignMaps[i].mapfile)) return &melAdvancedCampaignMaps[i];
-		}
 	}
 	else
 	{
 		for (size_t i = 0; i < melStoryCampaignMaps.size(); i++)
-		{
 			if (FStrEq(CURMAPFILENAME, melStoryCampaignMaps[i].mapfile)) return &melStoryCampaignMaps[i];
-		}
+	}
+	return NULL;
+}
+
+// Array of maps for Portal: Divinity
+std::vector<MapParams> divinityCampaignMaps =
+{
+	{"sp_a1_divinity_intro",			"Intro",			 1,	"House of Leaves"},
+	{"sp_a1_divinity_bts1",				"BTS 1",			 1,	"House of Leaves"},
+	{"sp_a1_divinity_field_intro",		"Field Intro",		 1,	"House of Leaves"},
+	{"sp_a1_divinity_wall_blocks_wall",	"Wall Blocks Wall",  1,	"House of Leaves"},
+	{"sp_a1_divinity_traversal",		"Traversal",		 1,	"House of Leaves"},
+	{"sp_a1_divinity_funnel_tower",		"Funnel Tower",		 1,	"House of Leaves"},
+	{"sp_a1_divinity_pink_plate",		"Pink Plate",		 1,	"House of Leaves"},
+	{"sp_a1_divinity_core01",			"Core 01",			 1,	"House of Leaves"}
+};
+
+// Check to see which Divinity map is being played.
+MapParams* InDivinityCampaignMap(bool advanced)
+{
+	if (advanced)
+	{
+		// No Divinity Advanced Chambers have been implemented yet.
+
+		//for (size_t i = 0; i < melAdvancedCampaignMaps.size(); i++)
+		//{
+		//	if (FStrEq(CURMAPFILENAME, melAdvancedCampaignMaps[i].mapfile)) return &melAdvancedCampaignMaps[i];
+		//}
+	}
+	else
+	{
+		for (size_t i = 0; i < divinityCampaignMaps.size(); i++)
+			if (FStrEq(CURMAPFILENAME, divinityCampaignMaps[i].mapfile)) return &divinityCampaignMaps[i];
 	}
 	return NULL;
 }

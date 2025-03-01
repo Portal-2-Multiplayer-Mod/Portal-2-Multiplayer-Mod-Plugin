@@ -197,7 +197,7 @@ void CDiscordIntegration::SendWebHookEmbed(std::string title, std::string descri
 	DiscordLog(0, true, std::string("color: " + std::to_string(color)).c_str());
 	DiscordLog(0, true, std::string("footer: " + webhookParams->footer).c_str());
 
-	// Send the curl request in a seperate thread
+	// Send the curl request in a separate thread
 	CreateSimpleThread(SendWebHook, webhookParams);
 }
 
@@ -290,11 +290,12 @@ bool CDiscordIntegration::StartDiscordRPC()
 	handlers->spectateGame = HandleDiscordSpectate;
 	handlers->joinRequest = HandleDiscordJoinRequest;
 
-	DiscordLog(0, true, "Assosiating the plugin with the current Portal 2 branch game then initallizng RPC...");
+	DiscordLog(0, true, "Associating the plugin with the current Portal 2 branch game then initialising RPC...");
 	char appid[255];
 	V_snprintf(appid, 255, "%d", engineServer->GetAppID());
 	Discord_Initialize("1201562647880015954", handlers, 1, appid);
 
+	// Change the default Portal 2 large images with ones assosiated with different mods.
 	switch (g_P2MMServerPlugin.m_iCurGameIndex)
 	{
 	case (PORTAL_STORIES_MEL):
@@ -391,11 +392,15 @@ void CDiscordIntegration::UpdateDiscordRPC()
 			}
 			else if (std::strstr(CURMAPFILENAME, "workshop/"))
 			{
-				const char* lastForwardSlash = strrchr(CURMAPFILENAME, '/');
-				if (!lastForwardSlash) break;
-				V_strcpy(details, lastForwardSlash + 1);
 				V_strcat(smallImageKey, "workshop", 32);
 				V_strcat(smallImageText, "Workshop Map", 128);
+				const char* lastForwardSlash = std::strrchr(CURMAPFILENAME, '/');
+				if (!lastForwardSlash)
+				{
+					V_strcpy(details, "Playing A Workshop Map");
+					break;
+				}
+				V_strcpy(details, lastForwardSlash + 1);
 			}
 			else
 			{
@@ -452,6 +457,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 		RPC.instance = 1;
 	}
 
+	// Discord RPC log debug dump for the update.
 	DiscordLog(0, true, "Discord RPC Debug Spew:");
 	DiscordLog(0, true, "state: %s",RPC.state);
 	DiscordLog(0, true, "details: %s", RPC.details);

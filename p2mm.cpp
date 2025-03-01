@@ -212,16 +212,14 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 	else
-	{
 		unsupportedGame = true;
-	}
 
 	if (unsupportedGame && !CommandLine()->FindParm("-forcep2mmload"))
 	{
 		P2MMLog(2, false, "\nThe current Source Engine/Portal 2 branch game is not **yet** supported by P2:MM! Please check the FAQ to see which games are supported!");
 		return false;
 	}
-	else if (unsupportedGame && CommandLine()->FindParm("-forcep2mmload"))
+	if (unsupportedGame && CommandLine()->FindParm("-forcep2mmload"))
 		P2MMLog(1, false, "P2:MM is being run with a unsupported Source Engine/Portal 2 branch game! Proceed with caution as crashes and bugs could occur!");
 
 	P2MMLog(0, true, "Connecting tier libraries...");
@@ -301,8 +299,10 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	// Discord RPC
 	P2MMLog(0, true, "Checking if Discord RPC should be started...");
 	if (p2mm_discord_rpc.GetBool() && !g_pDiscordIntegration->RPCRunning)
+	{
 		P2MMLog(0, true, "Discord RPC enabled! Starting!");
 		g_pDiscordIntegration->StartDiscordRPC();
+	}
 
 	// Add listener for all used game events
 	P2MMLog(0, true, "Adding listeners for game events...");

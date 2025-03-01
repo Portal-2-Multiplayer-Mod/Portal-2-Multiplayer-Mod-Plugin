@@ -90,12 +90,12 @@ void __cdecl respawn_hook(CBaseEntity* pEdict, bool fCopyCorpse)
 		// Handling OnRespawn VScript event
 		HSCRIPT or_func = g_pScriptVM->LookupFunction("OnRespawn");
 		if (or_func)
-			g_pScriptVM->Call<HSCRIPT>(or_func, NULL, false, NULL, INDEXHANDLE(ENTINDEX(pEdict)));
+			g_pScriptVM->Call<HSCRIPT>(or_func, nullptr, false, nullptr, INDEXHANDLE(ENTINDEX(pEdict)));
 
 		// Handle VScript game event function
 		HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerRespawn");
 		if (ge_func)
-			g_pScriptVM->Call<HSCRIPT>(ge_func, NULL, false, NULL, INDEXHANDLE(ENTINDEX(pEdict)));
+			g_pScriptVM->Call<HSCRIPT>(ge_func, nullptr, false, nullptr, INDEXHANDLE(ENTINDEX(pEdict)));
 	}
 }
 
@@ -104,7 +104,7 @@ CBasePlayer* (__cdecl* UTIL_GetLocalPlayer_orig)();
 CBasePlayer* __cdecl UTIL_GetLocalPlayer()
 {
 	if (engineServer->IsDedicatedServer())
-		return NULL;
+		return nullptr;
 	return UTIL_GetLocalPlayer_orig();
 }
 
@@ -120,7 +120,7 @@ CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
 	static auto _PlayerByIndex = reinterpret_cast<CBasePlayer* (__cdecl*)(int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 8B 4D 08 33 C0 85 C9 7E 30"));
 	return _PlayerByIndex(playerIndex);
 #else // Linux support TODO
-	return NULL;
+	return nullptr;
 #endif
 }
 
@@ -185,8 +185,8 @@ int CBaseEntity__GetTeamNumber(CBasePlayer* pPlayer)
 //---------------------------------------------------------------------------------
 HSCRIPT CBaseEntity__GetScriptScope(CBaseEntity* entity)
 {
-	if (entity == NULL)
-		return NULL;
+	if (!entity)
+		return nullptr;
 
 	return *reinterpret_cast<HSCRIPT*>(reinterpret_cast<uintptr_t>(entity) + 0x33c);
 }

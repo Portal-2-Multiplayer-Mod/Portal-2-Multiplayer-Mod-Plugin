@@ -44,12 +44,6 @@ class CBaseClient;
 #define COMMAND_COMPLETION_MAXITEMS		64
 #define COMMAND_COMPLETION_ITEM_LENGTH	64
 
-// ClientPrint msg_dest macros.
-#define HUD_PRINTNOTIFY		1 // Works same as HUD_PRINTCONSOLE
-#define HUD_PRINTCONSOLE	2
-#define HUD_PRINTTALK		3
-#define HUD_PRINTCENTER		4
-
 // A macro to iterate through all ConVars and ConCommand in the game.
 // Thanks to Nanoman2525 for this.
 #define FOR_ALL_CONSOLE_COMMANDS(pCommandVarName) \
@@ -82,6 +76,16 @@ enum
 	DIVINITY
 };
 
+// ClientPrint msg_dest macros.
+enum
+{
+	HUD_PRINTNOTIFY	= 1, // Works same as HUD_PRINTCONSOLE
+	HUD_PRINTCONSOLE,
+	HUD_PRINTTALK,
+	HUD_PRINTCENTER
+};
+
+
 // Struct for map arrays.
 typedef struct
 {
@@ -109,9 +113,6 @@ extern IGameEventManager2*		g_pGameEventManager_;
 extern IServerPluginHelpers*	g_pPluginHelpers;
 extern IFileSystem*				g_pFileSystem;
 
-// Logging function.
-void P2MMLog(int level, bool dev, const char* pMsgFormat, ...);
-
 //---------------------------------------------------------------------------------
 // UTIL functions.
 //---------------------------------------------------------------------------------
@@ -126,6 +127,9 @@ bool				IsBot(int playerIndex);
 int					GetBotCount();
 int					CURPLAYERCOUNT();
 HSCRIPT				INDEXHANDLE(int iEdictNum);
+
+// Logging function.
+void P2MMLog(int level, bool dev, const char* pMsgFormat, ...);
 
 //---------------------------------------------------------------------------------
 // Player recipient filter.
@@ -201,10 +205,10 @@ inline edict_t* INDEXENT(int iEdictNum)
 	{
 		edict_t* pEdict = g_pGlobals->pEdicts + iEdictNum;
 		if (pEdict->IsFree())
-			return NULL;
+			return nullptr;
 		return pEdict;
 	}
-	return NULL;
+	return nullptr;
 }
 
 //---------------------------------------------------------------------------------

@@ -41,7 +41,7 @@ void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 		Warning(completeMsg);
 		return;
 	case 2:
-		Warning("(P2:MM PLUGIN):\n!!!ERROR ERROR ERROR!!!:\nA ERROR OCCURED WITH THE ENGINE:\n%s", completeMsg);
+		Warning("(P2:MM PLUGIN):\n!!!ERROR ERROR ERROR!!!:\nA FATAL ERROR OCCURED WITH THE ENGINE:\n%s", completeMsg);
 		Error(completeMsg);
 		return;
 	default:
@@ -58,14 +58,14 @@ int UserIDToPlayerIndex(int userid)
 {
 	for (int i = 1; i <= MAX_PLAYERS; i++)
 	{
-		edict_t* pEdict = NULL;
+		edict_t* pEdict = nullptr;
 		if (i >= 0 && i < g_pGlobals->maxEntities)
 			pEdict = (edict_t*)(g_pGlobals->pEdicts + i);
 
 		if (engineServer->GetPlayerUserId(pEdict) == userid)
 			return i;
 	}
-	return NULL; // Return NULL if the index can't be found
+	return 0; // Return 0 if the index can't be found
 }
 
 //---------------------------------------------------------------------------------
@@ -94,7 +94,7 @@ const char* GetPlayerName(int playerIndex)
 //---------------------------------------------------------------------------------
 int GetSteamID(int playerIndex)
 {
-	edict_t* pEdict = NULL;
+	edict_t* pEdict = nullptr;
 	if (playerIndex >= 0 && playerIndex < MAX_PLAYERS)
 		pEdict = (edict_t*)(g_pGlobals->pEdicts + playerIndex);
 
@@ -221,10 +221,10 @@ HSCRIPT INDEXHANDLE(int iEdictNum)
 {
 	edict_t* pEdict = INDEXENT(iEdictNum);
 	if (!pEdict->GetUnknown())
-		return NULL;
+		return nullptr;
 	CBaseEntity* pBaseEntity = pEdict->GetUnknown()->GetBaseEntity();
 	if (!pBaseEntity)
-		return NULL;
+		return nullptr;
 	HSCRIPT entityHandle = CBaseEntity__GetScriptInstance(pBaseEntity);
 	return entityHandle;
 }

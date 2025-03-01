@@ -23,15 +23,15 @@ extern ConVar p2mm_discord_webhooks;
 //---------------------------------------------------------------------------------
 // Interfaces from the engine
 //---------------------------------------------------------------------------------
-IVEngineServer* engineServer = NULL; // Access engine server functions (messaging clients, loading content, making entities, running commands, etc).
-IVEngineClient* engineClient = NULL; // Access engine client functions.
-CGlobalVars* g_pGlobals = NULL; // Access global variables shared between the engine and games dlls.
-IPlayerInfoManager* g_pPlayerInfoManager = NULL; // Access interface functions for players.
-IScriptVM* g_pScriptVM = NULL; // Access VScript interface.
-IServerTools* g_pServerTools = NULL; // Access to interface from engine to tools for manipulating entities.
-IGameEventManager2* g_pGameEventManager_ = NULL; // Access game events interface.
-IServerPluginHelpers* g_pPluginHelpers = NULL; // Access interface for plugin helper functions.
-IFileSystem* g_pFileSystem = NULL; // Access interface for Valve's file system interface.
+IVEngineServer* engineServer = nullptr; // Access engine server functions (messaging clients, loading content, making entities, running commands, etc).
+IVEngineClient* engineClient = nullptr; // Access engine client functions.
+CGlobalVars* g_pGlobals = nullptr; // Access global variables shared between the engine and games dlls.
+IPlayerInfoManager* g_pPlayerInfoManager = nullptr; // Access interface functions for players.
+IScriptVM* g_pScriptVM = nullptr; // Access VScript interface.
+IServerTools* g_pServerTools = nullptr; // Access to interface from engine to tools for manipulating entities.
+IGameEventManager2* g_pGameEventManager_ = nullptr; // Access game events interface.
+IServerPluginHelpers* g_pPluginHelpers = nullptr; // Access interface for plugin helper functions.
+IFileSystem* g_pFileSystem = nullptr; // Access interface for Valve's file system interface.
 #ifndef GAME_DLL
 #define g_pGameEventManager g_pGameEventManager_
 #endif
@@ -524,7 +524,7 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 #ifdef _WIN32
 			reinterpret_cast<void(__cdecl*)(bool bDXChange)>(Memory::Scanner::Scan<void*>(ENGINEDLL, "55 8B EC 83 EC 14 53 33 DB 89"));
 #else
-			NULL; // TODO: Linux & MacOS
+			nullptr; // TODO: Linux
 #endif //  _WIN32
 		if (R_LoadWorldGeometry)
 		{
@@ -570,7 +570,7 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 		P2MMLog(0, true, "userid: %i", userid);
 		P2MMLog(0, true, "entindex: %i", entindex);
 		P2MMLog(0, true, "playername: %s", playername);
-		P2MMLog(0, true, "VScript VM Working?: %s", (g_pScriptVM != NULL) ? "Working" : "Not Working!");
+		P2MMLog(0, true, "VScript VM Working?: %s", (g_pScriptVM) ? "Working" : "Not Working!");
 	}
 
 	// Call the "GEClientCommand" VScript function
@@ -578,7 +578,7 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 	{
 		HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEClientCommand");
 		if (ge_func)
-			g_pScriptVM->Call<const char*, const char*, int, int, const char*>(ge_func, NULL, false, NULL, pCmd, fArgs, userid, entindex, playername);
+			g_pScriptVM->Call<const char*, const char*, int, int, const char*>(ge_func, nullptr, false, nullptr, pCmd, fArgs, userid, entindex, playername);
 	}
 
 	// signify is the client command used to make on screen icons appear
@@ -623,7 +623,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	if (spewinfo)
 	{
 		P2MMLog(0, true, "Game Event Fired: %s", event->GetName());
-		P2MMLog(0, true, "VScript VM Working?: %s", (g_pScriptVM != NULL) ? "Working" : "Not Working!");
+		P2MMLog(0, true, "VScript VM Working?: %s", (g_pScriptVM) ? "Working" : "Not Working!");
 	}
 
 	// Event called when a player pings, "portal_player_ping" returns:
@@ -646,7 +646,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerPing");
 			if (ge_func)
-				g_pScriptVM->Call<short, float, float, float, int>(ge_func, NULL, false, NULL, userid, ping_x, ping_y, ping_z, entindex);
+				g_pScriptVM->Call<short, float, float, float, int>(ge_func, nullptr, false, nullptr, userid, ping_x, ping_y, ping_z, entindex);
 		}
 
 		if (spewinfo)
@@ -676,7 +676,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerPortaled");
 			if (ge_func)
-				g_pScriptVM->Call<short, bool, int>(ge_func, NULL, false, NULL, userid, portal2, entindex);
+				g_pScriptVM->Call<short, bool, int>(ge_func, nullptr, false, nullptr, userid, portal2, entindex);
 		}
 
 		if (spewinfo)
@@ -696,7 +696,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GETurretHitTurret");
 			if (ge_func)
-				g_pScriptVM->Call(ge_func, NULL, false, NULL);
+				g_pScriptVM->Call(ge_func, nullptr, false, nullptr);
 		}
 
 		return;
@@ -709,7 +709,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GECamDetach");
 			if (ge_func)
-				g_pScriptVM->Call(ge_func, NULL, false, NULL);
+				g_pScriptVM->Call(ge_func, nullptr, false, nullptr);
 		}
 
 		return;
@@ -728,7 +728,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerLanded");
 			if (ge_func)
-				g_pScriptVM->Call<short, int>(ge_func, NULL, false, NULL, userid, entindex);
+				g_pScriptVM->Call<short, int>(ge_func, nullptr, false, nullptr, userid, entindex);
 		}
 
 		return;
@@ -741,7 +741,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSpawnBlue");
 			if (ge_func)
-				g_pScriptVM->Call(ge_func, NULL, false, NULL);
+				g_pScriptVM->Call(ge_func, nullptr, false, nullptr);
 		}
 
 		return;
@@ -754,7 +754,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSpawnOrange");
 			if (ge_func)
-				g_pScriptVM->Call(ge_func, NULL, false, NULL);
+				g_pScriptVM->Call(ge_func, nullptr, false, nullptr);
 		}
 
 		return;
@@ -779,7 +779,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				HSCRIPT playerHandle = INDEXHANDLE(entindex);
 				if (playerHandle)
 				{
-					g_pScriptVM->Call<HSCRIPT>(od_func, NULL, false, NULL, playerHandle);
+					g_pScriptVM->Call<HSCRIPT>(od_func, nullptr, false, nullptr, playerHandle);
 					g_pDiscordIntegration->SendWebHookEmbed(std::string(GetPlayerName(entindex) + std::string(" Died!")), "", EMBEDCOLOR_PLAYERDEATH);
 				}
 			}
@@ -787,7 +787,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerDeath");
 			if (ge_func)
-				g_pScriptVM->Call<short, short, int>(ge_func, NULL, false, NULL, userid, attacker, entindex);
+				g_pScriptVM->Call<short, short, int>(ge_func, nullptr, false, nullptr, userid, attacker, entindex);
 		}
 
 		if (spewinfo)
@@ -813,7 +813,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSpawn");
 			if (ge_func)
-				g_pScriptVM->Call<short, int>(ge_func, NULL, false, NULL, userid, entindex);
+				g_pScriptVM->Call<short, int>(ge_func, nullptr, false, nullptr, userid, entindex);
 		}
 
 		if (spewinfo)
@@ -855,7 +855,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerConnect");
 			if (ge_func)
 			{
-				g_pScriptVM->Call<const char*, int, short, const char*, const char*, const char*, bool, int>(ge_func, NULL, false, NULL, name, index, userid, xuid, networkid, address, bot, entindex);
+				g_pScriptVM->Call<const char*, int, short, const char*, const char*, const char*, bool, int>(ge_func, nullptr, false, nullptr, name, index, userid, xuid, networkid, address, bot, entindex);
 				g_pDiscordIntegration->SendWebHookEmbed(std::string(name + std::string(" Joined!")), std::string(name + std::string(" joined the server!")));
 			}
 		}
@@ -898,7 +898,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerInfo");
 			if (ge_func)
-				g_pScriptVM->Call<const char*, int, short, const char*, const char*, bool, int>(ge_func, NULL, false, NULL, name, index, userid, networkid, address, bot, entindex);
+				g_pScriptVM->Call<const char*, int, short, const char*, const char*, bool, int>(ge_func, nullptr, false, nullptr, name, index, userid, networkid, address, bot, entindex);
 		}
 
 		if (spewinfo)
@@ -927,13 +927,13 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 
 		if (g_pScriptVM)
 		{
-			if (entindex != NULL)
+			if (entindex)
 			{
 				// Handling chat commands
 				HSCRIPT cc_func = g_pScriptVM->LookupFunction("ChatCommands");
 				if (cc_func)
 				{
-					g_pScriptVM->Call<const char*, int>(cc_func, NULL, false, NULL, text, entindex);
+					g_pScriptVM->Call<const char*, int>(cc_func, nullptr, false, nullptr, text, entindex);
 
 					std::string playerName = GetPlayerName(entindex);
 					std::string chatMsg = text;
@@ -960,7 +960,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			// Handle VScript game event function
 			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSay");
 			if (ge_func)
-				g_pScriptVM->Call<short, const char*, int>(ge_func, NULL, false, NULL, userid, text, entindex);
+				g_pScriptVM->Call<short, const char*, int>(ge_func, nullptr, false, nullptr, userid, text, entindex);
 		}
 
 		if (spewinfo)
@@ -1011,13 +1011,13 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 		{
 			HSCRIPT playerHandle = INDEXHANDLE(entindex);
 			if (playerHandle)
-				g_pScriptVM->Call<HSCRIPT>(opj_func, NULL, false, NULL, playerHandle);
+				g_pScriptVM->Call<HSCRIPT>(opj_func, nullptr, false, nullptr, playerHandle);
 		}
 
 		// Handle VScript game event function
 		HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEClientActive");
 		if (ge_func)
-			g_pScriptVM->Call<short, int>(ge_func, NULL, false, NULL, userid, entindex);
+			g_pScriptVM->Call<short, int>(ge_func, nullptr, false, nullptr, userid, entindex);
 	}
 
 	// Update Discord RPC to update player count.
@@ -1032,12 +1032,12 @@ void CP2MMServerPlugin::GameFrame(bool simulating)
 {
 	HSCRIPT loop_func = g_pScriptVM->LookupFunction("P2MMLoop");
 	if (loop_func && p2mm_loop.GetBool())
-		g_pScriptVM->Call(loop_func, NULL, false, NULL);
+		g_pScriptVM->Call(loop_func, nullptr, false, nullptr);
 
 	// Handle VScript game event function
 	HSCRIPT gf_func = g_pScriptVM->LookupFunction("GEGameFrame");
 	if (gf_func)
-		g_pScriptVM->Call<bool>(gf_func, NULL, false, NULL, simulating);
+		g_pScriptVM->Call<bool>(gf_func, nullptr, false, nullptr, simulating);
 }
 
 extern void updateMapsList();

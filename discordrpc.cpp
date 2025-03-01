@@ -138,7 +138,7 @@ unsigned SendWebHook(void* webhookParams)
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonPayload);
 
 	// Set the Content-Type header
-	struct curl_slist* headers = NULL;
+	struct curl_slist* headers = nullptr;
 	headers = curl_slist_append(headers, "Content-Type: application/json");
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 

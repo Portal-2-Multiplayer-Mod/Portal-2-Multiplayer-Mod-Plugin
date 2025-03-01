@@ -358,7 +358,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 
 	if (bActiveGame && !(g_P2MMServerPlugin.m_bPluginUnloading || bGameShutdown))
 	{
-		MapParams* map = NULL;
+		MapParams* map = nullptr;
 		char state[128] = { 0 };
 		char details[128] = "Map: ";
 		char smallImageKey[32] = { 0 };
@@ -374,7 +374,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 			}
 			else if (std::strstr(CURMAPFILENAME, "sp_"))
 			{
-				map = InP2CampaignMap();
+				*map = *InP2CampaignMap();
 				if (!map) break;
 
 				V_strcat(details, map->mapname, 128);
@@ -383,7 +383,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 			}
 			else if (std::strstr(CURMAPFILENAME, "gelocity"))
 			{
-				map = InGelocityMap();
+				*map = *InGelocityMap();
 				if (!map) break;
 
 				V_strcat(details, map->mapname, 128);
@@ -404,7 +404,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 			}
 			else
 			{
-				map = InP2CampaignMap(true);
+				*map = *InP2CampaignMap(true);
 				if (!map)
 				{
 					V_strcat(details, CURMAPFILENAME, 128);
@@ -422,9 +422,9 @@ void CDiscordIntegration::UpdateDiscordRPC()
 			if (FStrEq(CURMAPFILENAME, "mp_coop_community_hub")) break;
 
 			if (std::strstr(CURMAPFILENAME, "sp_"))
-				map = InMelCampaignMap(true);
+				*map = *InMelCampaignMap(true);
 			else
-				map = InMelCampaignMap();
+				*map = *InMelCampaignMap();
 			if (!map) break;
 
 			V_strcat(details, map->mapname, 128);
@@ -432,7 +432,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 			V_strcat(smallImageText, map->chaptername, 128);
 			break;
 		case (DIVINITY):
-			map = InDivinityCampaignMap();
+			*map = *InDivinityCampaignMap();
 			if (!map) break;
 			V_strcat(details, map->mapname, 128);
 			V_snprintf(smallImageKey, 32, "divinitychapter%i", map->chapter);

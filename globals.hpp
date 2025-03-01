@@ -91,10 +91,10 @@ typedef struct
 	const char* chaptername;
 } MapParams;
 
-MapParams* InGelocityMap();
-MapParams* InP2CampaignMap(bool mpMaps = false);
-MapParams* InMelCampaignMap(bool advanced = false);
-MapParams* InDivinityCampaignMap(bool advanced = false);
+const MapParams* InGelocityMap();
+const MapParams* InP2CampaignMap(bool mpMaps = false);
+const MapParams* InMelCampaignMap(bool advanced = false);
+const MapParams* InDivinityCampaignMap(bool advanced = false);
 
 //---------------------------------------------------------------------------------
 // Interfaces from the engine.

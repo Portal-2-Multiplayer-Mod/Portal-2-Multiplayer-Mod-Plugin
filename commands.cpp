@@ -186,7 +186,7 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 		engineClient->ExecuteClientCmd(std::string(mapString + "mp_coop_community_hub").c_str());
 
 		std::string initmapstr = std::string("Server has started with map: `" + std::string(requestedMap) + "`");
-		g_pDiscordIntegration->SendWebHookEmbed("Server", initmapstr, EMBEDCOLOR_SERVER, false);
+		g_pDiscordIntegration->SendWebHookEmbed("Server", initmapstr, EMBED_COLOR_SERVER, false);
 	}
 	else
 	{
@@ -195,7 +195,7 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 		engineClient->ExecuteClientCmd(std::string(mapString + requestedMap).c_str());
 
 		std::string initmapstr = std::string("Server has started with map: `" + std::string(requestedMap) + "`");
-		g_pDiscordIntegration->SendWebHookEmbed("Server", initmapstr, EMBEDCOLOR_SERVER, false);
+		g_pDiscordIntegration->SendWebHookEmbed("Server", initmapstr, EMBED_COLOR_SERVER, false);
 	}
 }
 

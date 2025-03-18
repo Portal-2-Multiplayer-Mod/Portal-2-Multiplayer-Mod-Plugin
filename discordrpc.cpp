@@ -77,7 +77,7 @@ struct WebHookParams
 {
 	std::string title = "Unknown";
 	std::string description = "*Insert Yapping Here*";
-	int			color = EMBEDCOLOR_PLAYER;
+	int			color = EMBED_COLOR_PLAYER;
 	std::string footer = "";
 };
 
@@ -212,9 +212,9 @@ void RPCState(IConVar* var, const char* pOldValue, float flOldValue)
 {
 	if (!g_P2MMServerPlugin.m_bPluginLoaded) return;
 	ConVar* cvRPC = (ConVar*)var;
-	if (cvRPC->GetBool() && !g_pDiscordIntegration->RPCRunning)
+	if (cvRPC->GetBool() && !g_pDiscordIntegration->rpcRunning)
 		g_pDiscordIntegration->StartDiscordRPC();
-	if (!cvRPC->GetBool() && g_pDiscordIntegration->RPCRunning)
+	if (!cvRPC->GetBool() && g_pDiscordIntegration->rpcRunning)
 		g_pDiscordIntegration->ShutdownDiscordRPC();
 }
 ConVar p2mm_discord_rpc("p2mm_discord_rpc", "1", FCVAR_NONE, "Enable or disable Discord RPC with P2:MM.", true, 0, true, 1, RPCState);
@@ -222,11 +222,11 @@ ConVar p2mm_discord_rpc("p2mm_discord_rpc", "1", FCVAR_NONE, "Enable or disable 
 static DiscordRichPresence RPC;
 CDiscordIntegration::CDiscordIntegration()
 {
-	this->RPCRunning = false; // Flag bool for whether the RPC is running.
+	this->rpcRunning = false; // Flag bool for whether the RPC is running.
 
 	RPC.state = "";
 	RPC.details = "Starting up...";
-	RPC.startTimestamp = time(0);
+	RPC.startTimestamp = time(nullptr);
 	RPC.endTimestamp = 0;
 	RPC.largeImageKey = "p2mmlogo";
 	RPC.largeImageText = "Portal 2";
@@ -314,7 +314,7 @@ bool CDiscordIntegration::StartDiscordRPC()
 	UpdateDiscordRPC();
 
 	DiscordLog(0, false, "Discord RPC activated!");
-	this->RPCRunning = true;
+	this->rpcRunning = true;
 	return true;
 }
 
@@ -326,7 +326,7 @@ void CDiscordIntegration::ShutdownDiscordRPC()
 	DiscordLog(0, false, "Shutting down Discord RPC...");
 	Discord_ClearPresence();
 	Discord_Shutdown();
-	this->RPCRunning = false;
+	this->rpcRunning = false;
 	DiscordLog(0, false, "Shutdown Discord RPC!");
 }
 
@@ -420,6 +420,8 @@ void CDiscordIntegration::UpdateDiscordRPC()
 
 				V_strcat(details, map->mapname, 128);
 				V_strcat(smallImageKey, "coop", 32);
+				//V_strcat(smallImageKey, "p2mpchapter1", 32);
+				//V_snprintf(smallImageKey, 32, "p2mpchapter%i", map->chapter);
 				V_strcat(smallImageText, map->chaptername, 128);
 			}
 			break;

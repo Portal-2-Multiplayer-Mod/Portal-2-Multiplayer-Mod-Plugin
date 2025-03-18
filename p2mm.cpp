@@ -299,7 +299,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 
 	// Discord RPC
 	P2MMLog(0, true, "Checking if Discord RPC should be started...");
-	if (p2mm_discord_rpc.GetBool() && !g_pDiscordIntegration->RPCRunning)
+	if (p2mm_discord_rpc.GetBool() && !g_pDiscordIntegration->rpcRunning)
 	{
 		P2MMLog(0, true, "Discord RPC enabled! Starting!");
 		g_pDiscordIntegration->StartDiscordRPC();
@@ -484,7 +484,7 @@ void CP2MMServerPlugin::Unload(void)
 		P2MMLog(0, false, "Encountered error when unload plugin! Skipping other patches... :( Exception: \"%s\"", ex.what());
 	}
 
-	if (p2mm_discord_rpc.GetBool() && g_pDiscordIntegration->RPCRunning)
+	if (p2mm_discord_rpc.GetBool() && g_pDiscordIntegration->rpcRunning)
 		g_pDiscordIntegration->ShutdownDiscordRPC();
 
 	m_bPluginLoaded = false;
@@ -541,7 +541,7 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 	if (!g_P2MMServerPlugin.m_bSeenFirstRunPrompt) return;
 
 	std::string changemapstr = std::string("The server has changed the map to: `" + std::string(CURMAPFILENAME) + "`");
-	g_pDiscordIntegration->SendWebHookEmbed("Server", changemapstr, EMBEDCOLOR_SERVER, false);
+	g_pDiscordIntegration->SendWebHookEmbed("Server", changemapstr, EMBED_COLOR_SERVER, false);
 
 	// Update Discord RPC to update current map information.
 	g_pDiscordIntegration->UpdateDiscordRPC();
@@ -780,7 +780,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				if (playerHandle)
 				{
 					g_pScriptVM->Call<HSCRIPT>(od_func, nullptr, false, nullptr, playerHandle);
-					g_pDiscordIntegration->SendWebHookEmbed(std::string(GetPlayerName(entindex) + std::string(" Died!")), "", EMBEDCOLOR_PLAYERDEATH);
+					g_pDiscordIntegration->SendWebHookEmbed(std::string(GetPlayerName(entindex) + std::string(" Died!")), "", EMBED_COLOR_PLAYERDEATH);
 				}
 			}
 

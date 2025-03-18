@@ -305,6 +305,11 @@ bool CDiscordIntegration::StartDiscordRPC()
 	case (DIVINITY):
 		RPC.largeImageKey = "p2mmdivinitylogo";
 		RPC.largeImageText = "Portal: Divinity";
+		break;
+	default:
+		RPC.largeImageKey = "p2mmlogo";
+		RPC.largeImageText = "Portal 2";
+		break;
 	}
 	UpdateDiscordRPC();
 

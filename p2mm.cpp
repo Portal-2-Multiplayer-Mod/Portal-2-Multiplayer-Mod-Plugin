@@ -153,7 +153,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 {
 	if (m_bPluginLoaded)
 	{
-		P2MMLog(1, false, "PLugin already loaded!");
+		P2MMLog(1, false, "Plugin already loaded!");
 		m_bNoUnload = true;
 		return false;
 	}
@@ -162,46 +162,47 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 
 	// Determine which Portal 2 branch game we are running and if its supported.
 	bool unsupportedGame = false;
+	const char* gameMainDir = GetGameMainDir();
 	P2MMLog(0, true, "Determining which Portal 2 branch game is being run...");
-	if ((FStrEq(GetGameMainDir(), "portal2")))
+	if ((FStrEq(gameMainDir, "portal2")))
 	{
 		this->m_iCurGameIndex = PORTAL_2;
 		P2MMLog(0, false, "Currently running Portal 2.");
 	}
-	else if ((FStrEq(GetGameMainDir(), "portal_stories")))
+	else if ((FStrEq(gameMainDir, "portal_stories")))
 	{
 		this->m_iCurGameIndex = PORTAL_STORIES_MEL;
 		P2MMLog(0, false, "Currently running Portal Stories: Mel.");
 	}
-	else if ((FStrEq(GetGameMainDir(), "aperturetag")))
+	else if ((FStrEq(gameMainDir, "aperturetag")))
 	{
 		this->m_iCurGameIndex = APERTURE_TAG;
 		P2MMLog(0, false, "Currently running Aperture Tag.");
 		// Unsupported...for now...
 		unsupportedGame = true;
 	}
-	else if ((FStrEq(GetGameMainDir(), "portalreloaded")))
+	else if ((FStrEq(gameMainDir, "portalreloaded")))
 	{
 		this->m_iCurGameIndex = PORTAL_RELOADED;
 		P2MMLog(0, false, "Currently running Portal Reloaded.");
 		// Unsupported...for now...
 		unsupportedGame = true;
 	}
-	else if ((FStrEq(GetGameMainDir(), "infra")))
+	else if ((FStrEq(gameMainDir, "infra")))
 	{
 		this->m_iCurGameIndex = INFRA;
 		P2MMLog(0, false, "Currently running Infra.");
 		// Unsupported...for now...
 		unsupportedGame = true;
 	}
-	else if ((FStrEq(GetGameMainDir(), "thestanleyparable")))
+	else if ((FStrEq(gameMainDir, "thestanleyparable")))
 	{
 		this->m_iCurGameIndex = STANLEY_PARABLE;
 		P2MMLog(0, false, "Currently running The Stanley Parable.");
 		// Unsupported...for now...
 		unsupportedGame = true;
 	}
-	else if ((FStrEq(GetGameMainDir(), "divinity")))
+	else if ((FStrEq(gameMainDir, "divinity")))
 	{
 		this->m_iCurGameIndex = DIVINITY;
 		P2MMLog(0, false, "Currently running Portal: Divinity.");
@@ -306,19 +307,18 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 
 	// Add listener for all used game events
 	P2MMLog(0, true, "Adding listeners for game events...");
-	for (const char* gameevent : gameEventList)
+	for (const char* gameEvent : gameEventList)
 	{
-		g_pGameEventManager->AddListener(this, gameevent, true);
-		P2MMLog(0, true, "Listener for game event \"%s\" has been added!", gameevent);
+		g_pGameEventManager->AddListener(this, gameEvent, true);
+		P2MMLog(0, true, "Listener for game event \"%s\" has been added!", gameEvent);
 	}
 
 	// Block ConCommands that clients shouldn't execute
 	P2MMLog(0, true, "Blocking console commands...");
-	for (const char* concommand : forbiddenConCommands)
+	for (const char* conCommand : forbiddenConCommands)
 	{
-		ConCommandBase* commandbase = g_pCVar->FindCommandBase(concommand);
-		if (commandbase)
-			commandbase->RemoveFlags(FCVAR_GAMEDLL);
+		if (ConCommandBase* commandBase = g_pCVar->FindCommandBase(conCommand))
+			commandBase->RemoveFlags(FCVAR_GAMEDLL);
 	}
 
 	// Make sure -allowspectators is there so we get our 33 max players
@@ -406,8 +406,8 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	}
 
 	g_pDiscordIntegration->UpdateDiscordRPC();
-
-	P2MMLog(0, false, "Loaded plugin! Horray! :D");
+	
+	P2MMLog(0, false, "Loaded plugin! Yay! :D");
 	m_bPluginLoaded = true;
 	return true;
 }
@@ -452,7 +452,7 @@ void CP2MMServerPlugin::Unload(void)
 	try
 	{
 		// Undo byte patches
-		P2MMLog(0, true, "Unpatching Portal 2...");
+		P2MMLog(0, true, "Un-patching Portal 2...");
 
 		// Linked portal doors event crash patch
 		Memory::ReplacePattern("server", "EB 14 87 04 05 00 00 8B 16", "0F B6 87 04 05 00 00 8B 16");
@@ -475,7 +475,7 @@ void CP2MMServerPlugin::Unload(void)
 		// runtime max 0.05 -> 0.03
 		Memory::ReplacePattern("vscript", "00 00 00 00 00 00 E0 3F", "00 00 00 E0 51 B8 9E 3F");
 
-		P2MMLog(0, true, "Disconnecting hooked functions and uninitializing MinHook...");
+		P2MMLog(0, true, "Disconnecting hooked functions and initializing MinHook...");
 		MH_DisableHook(MH_ALL_HOOKS);
 		MH_Uninitialize();
 	}

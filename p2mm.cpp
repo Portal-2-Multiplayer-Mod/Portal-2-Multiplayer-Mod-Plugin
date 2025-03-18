@@ -14,6 +14,8 @@
 
 #include "minhook/include/MinHook.h"
 
+#include <Windows.h>
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -111,6 +113,8 @@ static const char* forbiddenClientCommands[] =
 //---------------------------------------------------------------------------------
 CP2MMServerPlugin::CP2MMServerPlugin()
 {
+	this->m_hWnd = nullptr; // Game window handle
+	
 	// Store game vars
 	this->m_bSeenFirstRunPrompt = false;	// Flag is set true after CallFirstRunPrompt() is called in VScript.
 	this->m_bFirstMapRan = true;			// Checks if the game ran for the first time.
@@ -159,6 +163,10 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	}
 
 	P2MMLog(0, false, "Loading plugin...");
+
+	this->m_hWnd = FindWindow("Valve001", nullptr);
+	if (!this->m_hWnd)
+		P2MMLog(1, false, "Failed to find game window Valve001!");
 
 	// Determine which Portal 2 branch game we are running and if its supported.
 	bool unsupportedGame = false;
@@ -221,7 +229,10 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 	if (unsupportedGame && CommandLine()->FindParm("-forcep2mmload"))
+	{
+		MessageBox(this->m_hWnd, "P2:MM is being run with a unsupported Source Engine/Portal 2 branch game! Proceed with caution as crashes and bugs could occur!", "Unsupported P2:MM Game", MB_OK | MB_ICONEXCLAMATION);
 		P2MMLog(1, false, "P2:MM is being run with a unsupported Source Engine/Portal 2 branch game! Proceed with caution as crashes and bugs could occur!");
+	}
 
 	P2MMLog(0, true, "Connecting tier libraries...");
 	ConnectTier1Libraries(&interfaceFactory, 1);
@@ -229,7 +240,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 
 	// Make sure that all the interfaces needed are loaded and useable
 	P2MMLog(0, true, "Loading interfaces...");
-	engineServer = (IVEngineServer*)interfaceFactory(INTERFACEVERSION_VENGINESERVER, 0);
+	engineServer = static_cast<IVEngineServer*>(interfaceFactory(INTERFACEVERSION_VENGINESERVER, 0));
 	if (!engineServer)
 	{
 		P2MMLog(1, false, "Unable to load engineServer!");
@@ -237,7 +248,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 
-	engineClient = (IVEngineClient*)interfaceFactory(VENGINE_CLIENT_INTERFACE_VERSION, 0);
+	engineClient = static_cast<IVEngineClient*>(interfaceFactory(VENGINE_CLIENT_INTERFACE_VERSION, 0));
 	if (!engineClient)
 	{
 		P2MMLog(1, false, "Unable to load engineClient!");
@@ -245,7 +256,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 
-	g_pPlayerInfoManager = (IPlayerInfoManager*)gameServerFactory(INTERFACEVERSION_PLAYERINFOMANAGER, 0);
+	g_pPlayerInfoManager = static_cast<IPlayerInfoManager*>(gameServerFactory(INTERFACEVERSION_PLAYERINFOMANAGER, 0));
 	if (!g_pPlayerInfoManager)
 	{
 		P2MMLog(1, false, "Unable to load g_pPlayerInfoManager!");
@@ -253,7 +264,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 
-	g_pScriptVM = (IScriptVM*)interfaceFactory(VSCRIPT_INTERFACE_VERSION, 0);
+	g_pScriptVM = static_cast<IScriptVM*>(interfaceFactory(VSCRIPT_INTERFACE_VERSION, 0));
 	if (!g_pScriptVM)
 	{
 		P2MMLog(1, false, "Unable to load g_pScriptVM!");
@@ -261,7 +272,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 
-	g_pServerTools = (IServerTools*)gameServerFactory(VSERVERTOOLS_INTERFACE_VERSION, 0);
+	g_pServerTools = static_cast<IServerTools*>(gameServerFactory(VSERVERTOOLS_INTERFACE_VERSION, 0));
 	if (!g_pServerTools)
 	{
 		P2MMLog(1, false, "Unable to load g_pServerTools!");
@@ -269,7 +280,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 
-	g_pGameEventManager = (IGameEventManager2*)interfaceFactory(INTERFACEVERSION_GAMEEVENTSMANAGER2, 0);
+	g_pGameEventManager = static_cast<IGameEventManager2*>(interfaceFactory(INTERFACEVERSION_GAMEEVENTSMANAGER2, 0));
 	if (!g_pGameEventManager)
 	{
 		P2MMLog(1, false, "Unable to load g_pGameEventManager!");
@@ -277,7 +288,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 
-	g_pPluginHelpers = (IServerPluginHelpers*)interfaceFactory(INTERFACEVERSION_ISERVERPLUGINHELPERS, 0);
+	g_pPluginHelpers = static_cast<IServerPluginHelpers*>(interfaceFactory(INTERFACEVERSION_ISERVERPLUGINHELPERS, 0));
 	if (!g_pPluginHelpers)
 	{
 		P2MMLog(1, false, "Unable to load g_pPluginHelpers!");
@@ -285,7 +296,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		return false;
 	}
 
-	g_pFileSystem = (IFileSystem*)interfaceFactory(FILESYSTEM_INTERFACE_VERSION, 0);
+	g_pFileSystem = static_cast<IFileSystem*>(interfaceFactory(FILESYSTEM_INTERFACE_VERSION, 0));
 	if (!g_pFileSystem)
 	{
 		P2MMLog(1, false, "Unable to load g_pFileSystem!");
@@ -540,8 +551,8 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 
 	if (!g_P2MMServerPlugin.m_bSeenFirstRunPrompt) return;
 
-	std::string changemapstr = std::string("The server has changed the map to: `" + std::string(CURMAPFILENAME) + "`");
-	g_pDiscordIntegration->SendWebHookEmbed("Server", changemapstr, EMBED_COLOR_SERVER, false);
+	std::string changeMapStr = std::string("The server has changed the map to: `" + std::string(CURMAPFILENAME) + "`");
+	g_pDiscordIntegration->SendWebHookEmbed("Server", changeMapStr, EMBED_COLOR_SERVER, false);
 
 	// Update Discord RPC to update current map information.
 	g_pDiscordIntegration->UpdateDiscordRPC();
@@ -552,7 +563,7 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 //---------------------------------------------------------------------------------
 PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand& args)
 {
-	// Check if its a valid player edict.
+	// Check if it's a valid player edict.
 	if (!pEntity || pEntity->IsFree())
 		return PLUGIN_CONTINUE;
 
@@ -619,8 +630,8 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 //---------------------------------------------------------------------------------
 void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 {
-	bool spewinfo = p2mm_spewgameeventinfo.GetBool();
-	if (spewinfo)
+	bool spewInfo = p2mm_spewgameeventinfo.GetBool();
+	if (spewInfo)
 	{
 		P2MMLog(0, true, "Game Event Fired: %s", event->GetName());
 		P2MMLog(0, true, "VScript VM Working?: %s", (g_pScriptVM) ? "Working" : "Not Working!");
@@ -635,7 +646,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	*/
 	if (FStrEq(event->GetName(), "portal_player_ping"))
 	{
-		short userid = event->GetInt("userid");
+		int userid = event->GetInt("userid");
 		float ping_x = event->GetFloat("ping_x");
 		float ping_y = event->GetFloat("ping_y");
 		float ping_z = event->GetFloat("ping_z");
@@ -649,7 +660,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				g_pScriptVM->Call<short, float, float, float, int>(ge_func, nullptr, false, nullptr, userid, ping_x, ping_y, ping_z, entindex);
 		}
 
-		if (spewinfo)
+		if (spewInfo)
 		{
 			P2MMLog(0, true, "userid: %i", userid);
 			P2MMLog(0, true, "ping_x: %f", ping_x);
@@ -665,9 +676,9 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		"userid"	"short"		// user ID on server
 		"portal2"	"bool"		// false for portal1 (blue)
 	*/
-	else if (FStrEq(event->GetName(), "portal_player_portaled"))
+	if (FStrEq(event->GetName(), "portal_player_portaled"))
 	{
-		short userid = event->GetInt("userid");
+		int userid = event->GetInt("userid");
 		bool portal2 = event->GetString("text");
 		int entindex = UserIDToPlayerIndex(userid);
 
@@ -679,7 +690,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				g_pScriptVM->Call<short, bool, int>(ge_func, nullptr, false, nullptr, userid, portal2, entindex);
 		}
 
-		if (spewinfo)
+		if (spewInfo)
 		{
 			P2MMLog(0, true, "userid: %i", userid);
 			P2MMLog(0, true, "portal2: %s", portal2 ? "true" : "false");
@@ -689,7 +700,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		return;
 	}
 	// Event called when a turret hits another turret, "turret_hit_turret" returns nothing.
-	else if (FStrEq(event->GetName(), "turret_hit_turret"))
+	if (FStrEq(event->GetName(), "turret_hit_turret"))
 	{
 		if (g_pScriptVM)
 		{
@@ -702,7 +713,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		return;
 	}
 	// Event called when a camera is detached from a wall, "security_camera_detached" returns nothing.
-	else if (FStrEq(event->GetName(), "security_camera_detached"))
+	if (FStrEq(event->GetName(), "security_camera_detached"))
 	{
 		if (g_pScriptVM)
 		{
@@ -718,9 +729,9 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	/*
 		"userid"	"short"		// user ID on server
 	*/
-	else if (FStrEq(event->GetName(), "player_landed"))
+	if (FStrEq(event->GetName(), "player_landed"))
 	{
-		short userid = event->GetInt("userid");
+		int userid = event->GetInt("userid");
 		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
@@ -734,7 +745,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		return;
 	}
 	// Event called when a Blue/Atlas spawns, "player_spawn_blue" returns nothing.
-	else if (FStrEq(event->GetName(), "player_spawn_blue"))
+	if (FStrEq(event->GetName(), "player_spawn_blue"))
 	{
 		if (g_pScriptVM)
 		{
@@ -747,7 +758,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		return;
 	}
 	// Event called when a Red/Orange/PBody spawns, "player_spawn_orange" returns nothing.
-	else if (FStrEq(event->GetName(), "player_spawn_orange"))
+	if (FStrEq(event->GetName(), "player_spawn_orange"))
 	{
 		if (g_pScriptVM)
 		{
@@ -764,9 +775,9 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		"userid"	"short"   	// user ID who died
 		"attacker"	"short"	 	// user ID who killed
 	*/
-	else if (FStrEq(event->GetName(), "player_death"))
+	if (FStrEq(event->GetName(), "player_death"))
 	{
-		short userid = event->GetInt("userid");
+		int userid = event->GetInt("userid");
 		short attacker = event->GetInt("attacker");
 		int entindex = UserIDToPlayerIndex(userid);
 
@@ -790,7 +801,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				g_pScriptVM->Call<short, short, int>(ge_func, nullptr, false, nullptr, userid, attacker, entindex);
 		}
 
-		if (spewinfo)
+		if (spewInfo)
 		{
 			P2MMLog(0, true, "userid: %i", userid);
 			P2MMLog(0, true, "attacker: %i", attacker);
@@ -803,9 +814,9 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	/*
 		"userid"	"short"		// user ID on server
 	*/
-	else if (FStrEq(event->GetName(), "player_spawn"))
+	if (FStrEq(event->GetName(), "player_spawn"))
 	{
-		short userid = event->GetInt("userid");
+		int userid = event->GetInt("userid");
 		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
@@ -816,7 +827,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				g_pScriptVM->Call<short, int>(ge_func, nullptr, false, nullptr, userid, entindex);
 		}
 
-		if (spewinfo)
+		if (spewInfo)
 		{
 			P2MMLog(0, true, "userid: %i", userid);
 			P2MMLog(0, true, "entindex: %i", entindex);
@@ -838,11 +849,11 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		"bot"		"bool"		// player is a bot
 	}
 	*/
-	else if (FStrEq(event->GetName(), "player_connect"))
+	if (FStrEq(event->GetName(), "player_connect"))
 	{
 		const char* name = event->GetString("name");
 		int index = event->GetInt("index");
-		short userid = event->GetInt("userid");
+		int userid = event->GetInt("userid");
 		const char* xuid = std::to_string(event->GetUint64("xuid")).c_str();
 		const char* networkid = event->GetString("networkid");
 		const char* address = event->GetString("address");
@@ -860,7 +871,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			}
 		}
 
-		if (spewinfo)
+		if (spewInfo)
 		{
 			P2MMLog(0, true, "name: %s", name);
 			P2MMLog(0, true, "index: %i", index);
@@ -883,11 +894,11 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		"networkid"	"string"	// player network (i.e steam) id
 		"bot"		"bool"		// true if player is a AI bot
 	*/
-	else if (FStrEq(event->GetName(), "player_info"))
+	if (FStrEq(event->GetName(), "player_info"))
 	{
 		const char* name = event->GetString("name");
 		int index = event->GetInt("index");
-		short userid = event->GetInt("userid");
+		int userid = event->GetInt("userid");
 		const char* networkid = event->GetString("networkid");
 		const char* address = event->GetString("address");
 		bool bot = event->GetBool("bot");
@@ -901,7 +912,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				g_pScriptVM->Call<const char*, int, short, const char*, const char*, bool, int>(ge_func, nullptr, false, nullptr, name, index, userid, networkid, address, bot, entindex);
 		}
 
-		if (spewinfo)
+		if (spewInfo)
 		{
 			P2MMLog(0, true, "name: %s", name);
 			P2MMLog(0, true, "index: %i", index);
@@ -919,9 +930,9 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		"userid"	"short"		// user ID on server
 		"text"		"string"	// the say text
 	*/
-	else if (FStrEq(event->GetName(), "player_say"))
+	if (FStrEq(event->GetName(), "player_say"))
 	{
-		short userid = event->GetInt("userid");
+		int userid = event->GetInt("userid");
 		const char* text = event->GetString("text");
 		int entindex = UserIDToPlayerIndex(userid);
 
@@ -963,7 +974,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				g_pScriptVM->Call<short, const char*, int>(ge_func, nullptr, false, nullptr, userid, text, entindex);
 		}
 
-		if (spewinfo)
+		if (spewInfo)
 		{
 			P2MMLog(0, true, "userid: %i", userid);
 			P2MMLog(0, true, "text: %s", text);
@@ -972,8 +983,6 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 
 		return;
 	}
-
-	return;
 }
 
 //---------------------------------------------------------------------------------
@@ -982,7 +991,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 //---------------------------------------------------------------------------------
 void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 {
-	short userid = engineServer->GetPlayerUserId(pEntity);
+	int userid = engineServer->GetPlayerUserId(pEntity);
 	int entindex = UserIDToPlayerIndex(userid);
 
 	if (p2mm_spewgameeventinfo.GetBool())

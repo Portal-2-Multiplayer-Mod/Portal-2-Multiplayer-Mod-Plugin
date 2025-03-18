@@ -53,6 +53,8 @@ public:
 
 	virtual int				GetCommandIndex() { return m_iClientCommandIndex; }
 
+	HWND		m_hWnd;
+
 	bool		m_bPluginLoaded;
 	bool		m_bPluginUnloading;
 	int			m_iCurGameIndex;

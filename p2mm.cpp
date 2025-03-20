@@ -186,8 +186,6 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	{
 		this->m_iCurGameIndex = APERTURE_TAG;
 		P2MMLog(0, false, "Currently running Aperture Tag.");
-		// Unsupported...for now...
-		unsupportedGame = true;
 	}
 	else if ((FStrEq(gameMainDir, "portalreloaded")))
 	{
@@ -390,10 +388,6 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 			Memory::Rel32(Memory::Scanner::Scan(SERVERDLL, "E8 ?? ?? ?? ?? 83 C4 04 50 8B 45 10 8B 10", 1)),
 			&GetEggBotModel_hook, (void**)&GetEggBotModel_orig
 		);
-		MH_CreateHook(
-			Memory::Scanner::Scan(SERVERDLL, "55 8B EC 81 EC 10 01 00 00 53 8B 1D"),
-			&CPortal_Player__GetPlayerModelName_hook, (void**)&CPortal_Player__GetPlayerModelName_orig
-		);
 
 		// For p2mm_instantrespawn.
 		MH_CreateHook(
@@ -412,6 +406,16 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 			Memory::Scanner::Scan(SERVERDLL, "8B 15 ?? ?? ?? ?? 8B 4A ?? 33 C0"),
 			&UTIL_GetLocalPlayer, (void**)&UTIL_GetLocalPlayer_orig
 		);
+
+		// Game-specific hooks
+		switch (g_P2MMServerPlugin.m_iCurGameIndex)
+		{
+		case PORTAL_STORIES_MEL:
+			MH_CreateHook(
+				Memory::Scanner::Scan(SERVERDLL, "55 8B EC 81 EC 10 01 00 00 53 8B 1D"),
+				&CPortal_Player__GetPlayerModelName_hook, (void**)&CPortal_Player__GetPlayerModelName_orig
+			);
+		}
 
 		MH_EnableHook(MH_ALL_HOOKS);
 	} catch (const std::exception& ex) {

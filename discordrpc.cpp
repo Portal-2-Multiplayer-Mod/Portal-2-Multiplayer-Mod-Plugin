@@ -302,6 +302,10 @@ bool CDiscordIntegration::StartDiscordRPC()
 		RPC.largeImageKey = "p2mmmellogo";
 		RPC.largeImageText = "Portal Stories: Mel";
 		break;
+	case (APERTURE_TAG):
+		RPC.largeImageKey = "p2mmtaglogo";
+		RPC.largeImageText = "Aperture Tag";
+		break;	
 	case (DIVINITY):
 		RPC.largeImageKey = "p2mmdivinitylogo";
 		RPC.largeImageText = "Portal: Divinity";
@@ -311,6 +315,7 @@ bool CDiscordIntegration::StartDiscordRPC()
 		RPC.largeImageText = "Portal 2";
 		break;
 	}
+
 	UpdateDiscordRPC();
 
 	DiscordLog(0, false, "Discord RPC activated!");

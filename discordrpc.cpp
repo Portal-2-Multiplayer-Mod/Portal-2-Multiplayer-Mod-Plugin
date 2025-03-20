@@ -306,6 +306,10 @@ bool CDiscordIntegration::StartDiscordRPC()
 		RPC.largeImageKey = "p2mmtaglogo";
 		RPC.largeImageText = "Aperture Tag";
 		break;	
+	case (PORTAL_RELOADED):
+		RPC.largeImageKey = "p2mmreloadedlogo";
+		RPC.largeImageText = "Portal Reloaded";
+		break;
 	case (DIVINITY):
 		RPC.largeImageKey = "p2mmdivinitylogo";
 		RPC.largeImageText = "Portal: Divinity";
@@ -451,6 +455,9 @@ void CDiscordIntegration::UpdateDiscordRPC()
 			V_strcat(smallImageText, map->chaptername, 128);
 			break;
 		default:
+			V_strcat(details, CURMAPFILENAME, 128);
+			V_strcat(smallImageKey, "miscmap", 32);
+			V_strcat(smallImageText, CURMAPFILENAME, 128);
 			break;
 		}
 

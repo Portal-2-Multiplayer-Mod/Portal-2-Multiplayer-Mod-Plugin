@@ -20,7 +20,7 @@ public:
 	void SendWebHookEmbed(std::string title = "Unknown", std::string description = "*Insert Yapping Here*", int color = EMBED_COLOR_PLAYER, bool hasFooter = true);
 	bool StartDiscordRPC();
 	void ShutdownDiscordRPC();
-	void UpdateDiscordRPC();
+	static void UpdateDiscordRPC();
 
 	bool rpcRunning;
 };

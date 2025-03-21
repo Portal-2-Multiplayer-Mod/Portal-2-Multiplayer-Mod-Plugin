@@ -191,14 +191,14 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	{
 		this->m_iCurGameIndex = PORTAL_RELOADED;
 		P2MMLog(0, false, "Currently running Portal Reloaded.");
-		// Unsupported...for now...
+		// Unsupported...
 		unsupportedGame = true;
 	}
 	else if ((FStrEq(gameMainDir, "infra")))
 	{
 		this->m_iCurGameIndex = INFRA;
 		P2MMLog(0, false, "Currently running Infra.");
-		// Unsupported...for now...
+		// Unsupported...
 		unsupportedGame = true;
 	}
 	else if ((FStrEq(gameMainDir, "thestanleyparable")))
@@ -212,6 +212,8 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	{
 		this->m_iCurGameIndex = DIVINITY;
 		P2MMLog(0, false, "Currently running Portal: Divinity.");
+		// Unsupported...for now...
+		unsupportedGame = true;
 	}
 	else if (!CommandLine()->FindParm("-forcep2mmload"))
 	{

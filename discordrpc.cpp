@@ -368,7 +368,10 @@ void CDiscordIntegration::UpdateDiscordRPC()
 	}
 
 	if (!bActiveGame || bGameShutdown)
+	{
+		RPC.state = "In the Main Menu...";
 		RPC.details = "Main Menu";
+	}
 
 	if (bActiveGame && !(g_P2MMServerPlugin.m_bPluginUnloading || bGameShutdown))
 	{
@@ -382,32 +385,32 @@ void CDiscordIntegration::UpdateDiscordRPC()
 		case (PORTAL_2):
 			if (FStrEq(CURMAPFILENAME, "mp_coop_community_hub"))
 			{
-				V_strcat(details, "Community Hub", 128);
-				V_strcat(smallImageKey, "coop", 32);
-				V_strcat(smallImageText, "Community Hub", 128);
+				V_strcat(details, "Community Hub", sizeof(details));
+				V_strcat(smallImageKey, "p2mpchapter1", sizeof(smallImageKey));
+				V_strcat(smallImageText, "Community Hub", sizeof(smallImageText));
 			}
 			else if (std::strstr(CURMAPFILENAME, "sp_"))
 			{
 				*map = *InP2CampaignMap();
 				if (!map) break;
 
-				V_strcat(details, map->mapname, 128);
-				V_snprintf(smallImageKey, 32, "chapter%i", map->chapter);
-				V_strcat(smallImageText, map->chaptername, 128);
+				V_strcat(details, map->mapname, sizeof(details));
+				V_snprintf(smallImageKey, 32, "p2spchapter%i", map->chapter);
+				V_strcat(smallImageText, map->chaptername, sizeof(smallImageText));
 			}
 			else if (std::strstr(CURMAPFILENAME, "gelocity"))
 			{
 				*map = *InGelocityMap();
 				if (!map) break;
 
-				V_strcat(details, map->mapname, 128);
-				V_strcat(smallImageKey, "race", 32);
-				V_strcat(smallImageText, map->mapname, 128);
+				V_strcat(details, map->mapname, sizeof(details));
+				V_strcat(smallImageKey, "race", sizeof(smallImageKey));
+				V_strcat(smallImageText, map->mapname, sizeof(smallImageText));
 			}
 			else if (std::strstr(CURMAPFILENAME, "workshop/"))
 			{
-				V_strcat(smallImageKey, "workshop", 32);
-				V_strcat(smallImageText, "Workshop Map", 128);
+				V_strcat(smallImageKey, "workshop", sizeof(smallImageKey));
+				V_strcat(smallImageText, "Workshop Map", sizeof(smallImageText));
 				const char* lastForwardSlash = std::strrchr(CURMAPFILENAME, '/');
 				if (!lastForwardSlash)
 				{
@@ -421,17 +424,15 @@ void CDiscordIntegration::UpdateDiscordRPC()
 				*map = *InP2CampaignMap(true);
 				if (!map)
 				{
-					V_strcat(details, CURMAPFILENAME, 128);
-					V_strcat(smallImageKey, "miscmap", 32);
-					V_strcat(smallImageText, CURMAPFILENAME, 128);
+					V_strcat(details, CURMAPFILENAME, sizeof(details));
+					V_strcat(smallImageKey, "miscmap", sizeof(smallImageKey));
+					V_strcat(smallImageText, CURMAPFILENAME, sizeof(smallImageText));
 					break;
 				}
 
-				V_strcat(details, map->mapname, 128);
-				V_strcat(smallImageKey, "coop", 32);
-				//V_strcat(smallImageKey, "p2mpchapter1", 32);
-				//V_snprintf(smallImageKey, 32, "p2mpchapter%i", map->chapter);
-				V_strcat(smallImageText, map->chaptername, 128);
+				V_strcat(details, map->mapname, sizeof(details));
+				V_snprintf(smallImageKey, sizeof(smallImageKey), "p2mpcourse%i", map->chapter);
+				V_strcat(smallImageText, map->chaptername, sizeof(smallImageText));
 			}
 			break;
 		case (PORTAL_STORIES_MEL):
@@ -443,30 +444,54 @@ void CDiscordIntegration::UpdateDiscordRPC()
 				*map = *InMelCampaignMap();
 			if (!map) break;
 
-			V_strcat(details, map->mapname, 128);
-			V_snprintf(smallImageKey, 32, "melchapter%i", map->chapter);
-			V_strcat(smallImageText, map->chaptername, 128);
+			V_strcat(details, map->mapname, sizeof(details));
+			V_snprintf(smallImageKey, sizeof(smallImageKey), "melchapter%i", map->chapter);
+			V_strcat(smallImageText, map->chaptername, sizeof(smallImageText));
+			break;
+		case (APERTURE_TAG):
+			*map = *InApertureTagCampaignMap();
+			if (!map) break;
+			
+			V_strcat(details, map->mapname, sizeof(details));
+			V_snprintf(smallImageKey, sizeof(smallImageKey), "aptagchapter%i", map->chapter);
+			V_strcat(smallImageText, map->chaptername, sizeof(smallImageText));
+			break;
+		case (PORTAL_RELOADED):
+			// Portal Reloaded support will not happen for some time, this will remain commented out.
+			// if (std::strstr(CURMAPFILENAME, "sp_"))
+			// 	*map = *InReloadedCampaignMap(true);
+			// else
+			// 	*map = *InReloadedCampaignMap();
+			// if (!map) break;
+			//
+			// V_strcat(details, map->mapname, sizeof(details));
+			// V_snprintf(smallImageKey, sizeof(smallImageKey), "reloadedchapter%i", map->chapter);
+			// V_strcat(smallImageText, map->chaptername, sizeof(smallImageText));
 			break;
 		case (DIVINITY):
-			*map = *InDivinityCampaignMap();
+			if (std::strstr(CURMAPFILENAME, "adv"))
+				*map = *InDivinityCampaignMap(true);
+			else
+				*map = *InMelCampaignMap();
 			if (!map) break;
-			V_strcat(details, map->mapname, 128);
-			V_snprintf(smallImageKey, 32, "divinitychapter%i", map->chapter);
-			V_strcat(smallImageText, map->chaptername, 128);
+			
+			V_strcat(details, map->mapname, sizeof(details));
+			V_snprintf(smallImageKey, sizeof(smallImageKey), "divinitychapter%i", map->chapter);
+			V_strcat(smallImageText, map->chaptername, sizeof(smallImageText));
 			break;
 		default:
-			V_strcat(details, CURMAPFILENAME, 128);
-			V_strcat(smallImageKey, "miscmap", 32);
-			V_strcat(smallImageText, CURMAPFILENAME, 128);
+			V_strcat(details, CURMAPFILENAME, sizeof(details));
+			V_strcat(smallImageKey, "miscmap", sizeof(smallImageKey));
+			V_strcat(smallImageText, CURMAPFILENAME, sizeof(smallImageText));
 			break;
 		}
 
 		if (GetBotCount() == 1) 
-			V_strcat(state, "(1 Bot) Players: ", 128);
+			V_strcat(state, "1 Bot | Players: ", sizeof(state));
 		else if (GetBotCount() > 1) 
-			V_snprintf(state, 128, "(%i Bots) Players: ", GetBotCount());
+			V_snprintf(state, sizeof(state), "%i Bots | Players: ", GetBotCount());
 		else 
-			V_strcat(state, "Players: ", 128);
+			V_strcat(state, "Players: ", sizeof(state));
 
 		RPC.state = state;
 		RPC.details = details;

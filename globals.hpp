@@ -98,6 +98,8 @@ typedef struct
 const MapParams* InGelocityMap();
 const MapParams* InP2CampaignMap(bool mpMaps = false);
 const MapParams* InMelCampaignMap(bool advanced = false);
+const MapParams* InApertureTagCampaignMap();
+// const MapParams* InReloadedCampaignMap(bool coop = false);
 const MapParams* InDivinityCampaignMap(bool advanced = false);
 
 //---------------------------------------------------------------------------------

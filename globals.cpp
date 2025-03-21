@@ -474,7 +474,7 @@ const MapParams* InMelCampaignMap(bool advanced)
 {
 	if (advanced)
 	{
-		for (auto& melAdvancedCampaignMap : melAdvancedCampaignMaps)
+		for (const auto& melAdvancedCampaignMap : melAdvancedCampaignMaps)
 		{
 			if (FStrEq(CURMAPFILENAME, melAdvancedCampaignMap.mapfile))
 				return &melAdvancedCampaignMap;
@@ -493,42 +493,86 @@ const MapParams* InMelCampaignMap(bool advanced)
 }
 
 //---------------------------------------------------------------------------------
-// PORTAL RELOADED CAMPAIGNS
+// APERTURE TAG CAMPAIGN
 //---------------------------------------------------------------------------------
-
-const std::vector<MapParams> portalReloadedSPCampaignMaps =
+// Array of maps for Aperture Tag
+const std::vector<MapParams> apertureTagCampaignMaps =
 {
-	{"sp_a1_pr_map_001",	"Human Storage Vault",	1,	"Human Storage Vault"},
-	{"sp_a1_pr_map_002",	"Time Travel",			2,	"Time Travel"},
-	{"sp_a1_pr_map_003",	"Cubes and Buttons",	3,	"Cubes and Buttons"},
-	{"sp_a1_pr_map_004",	"Portals",				4,	"Portals"},
-	{"sp_a1_pr_map_005",	"Time Portals",			5,	"Time Portals"},
-	{"sp_a1_pr_map_006",	"Timing Tests",			6,	"Timing Tests"},
-	{"sp_a1_pr_map_007",	"Lasers",				7,	"Lasers"},
-	{"sp_a1_pr_map_008",	"Aerial Faithplates",	8,	"Aerial Faithplates"},
-	{"sp_a1_pr_map_009",	"Light Bridges",		9,	"Light Bridges"},
-	{"sp_a1_pr_map_010",	"Turrets",				10,	"Turrets"},
-	{"sp_a1_pr_map_011",	"Exursion Funnels",		11,	"Exursion Funnels"},
-	{"sp_a1_pr_map_012",	"Finale",				12,	"Finale"}
 };
 
-const std::vector<MapParams> portalReloadedMPCampaignMaps =
+// Check to see which Aperture Tag map is being played.
+const MapParams* InApertureTagCampaignMap()
 {
-	{"mp_coop_start",		"Course Selection Hub",	0,	"Course Selection Hub"},
-	{"mp_coop_lobby_3",		"Course Selection Hub",	0,	"Course Selection Hub"},
-	{"mp_coop_end",			"Course Selection Hub",	0,	"Course Selection Hub"},
-	{"mp_coop_pr_cubes",	"Cube Logic",			1,	"Orientation"},
-	{"mp_coop_pr_portals",	"Portal Logic",			1,	"Orientation"},
-	{"mp_coop_pr_teamwork",	"Teamwork",				1,	"Orientation"},
-	{"mp_coop_pr_fling",	"Fling",				2,	"Momentum"},
-	{"mp_coop_pr_loop",		"Loop",					2,	"Momentum"},
-	{"mp_coop_pr_catapult",	"Faithplates",			2,	"Momentum"},
-	{"mp_coop_pr_laser",	"Laser",				3,	"Advanced"},
-	{"mp_coop_pr_bridge",	"Light Bridges",		3,	"Advanced"},
-	{"mp_coop_pr_tbeam",	"Funnel",				3,	"Advanced"},
-	{"mp_coop_pr_bts",		"Behind The Scenes",	4,	"Finale"}
-};
 
+	for (const auto& apertureTagCampaignMap : apertureTagCampaignMaps)
+	{
+		if (FStrEq(CURMAPFILENAME, apertureTagCampaignMap.mapfile))
+			return &apertureTagCampaignMap;
+	}
+	
+	return nullptr;
+}
+
+// Portal Reloaded support will not happen for some time, this will remain commented out.
+// //---------------------------------------------------------------------------------
+// // PORTAL RELOADED CAMPAIGNS
+// //---------------------------------------------------------------------------------
+//
+// const std::vector<MapParams> portalReloadedSPCampaignMaps =
+// {
+// 	{"sp_a1_pr_map_001",	"Human Storage Vault",	1,	"Human Storage Vault"},
+// 	{"sp_a1_pr_map_002",	"Time Travel",			2,	"Time Travel"},
+// 	{"sp_a1_pr_map_003",	"Cubes and Buttons",	3,	"Cubes and Buttons"},
+// 	{"sp_a1_pr_map_004",	"Portals",				4,	"Portals"},
+// 	{"sp_a1_pr_map_005",	"Time Portals",			5,	"Time Portals"},
+// 	{"sp_a1_pr_map_006",	"Timing Tests",			6,	"Timing Tests"},
+// 	{"sp_a1_pr_map_007",	"Lasers",				7,	"Lasers"},
+// 	{"sp_a1_pr_map_008",	"Aerial Faithplates",	8,	"Aerial Faithplates"},
+// 	{"sp_a1_pr_map_009",	"Light Bridges",		9,	"Light Bridges"},
+// 	{"sp_a1_pr_map_010",	"Turrets",				10,	"Turrets"},
+// 	{"sp_a1_pr_map_011",	"Excursion Funnels",		11,	"Exursion Funnels"},
+// 	{"sp_a1_pr_map_012",	"Finale",				12,	"Finale"}
+// };
+//
+// const std::vector<MapParams> portalReloadedMPCampaignMaps =
+// {
+// 	{"mp_coop_start",		"Course Selection Hub",	0,	"Course Selection Hub"},
+// 	{"mp_coop_lobby_3",		"Course Selection Hub",	0,	"Course Selection Hub"},
+// 	{"mp_coop_end",			"Course Selection Hub",	0,	"Course Selection Hub"},
+// 	{"mp_coop_pr_cubes",	"Cube Logic",			1,	"Orientation"},
+// 	{"mp_coop_pr_portals",	"Portal Logic",			1,	"Orientation"},
+// 	{"mp_coop_pr_teamwork",	"Teamwork",				1,	"Orientation"},
+// 	{"mp_coop_pr_fling",	"Fling",				2,	"Momentum"},
+// 	{"mp_coop_pr_loop",		"Loop",					2,	"Momentum"},
+// 	{"mp_coop_pr_catapult",	"Faithplates",			2,	"Momentum"},
+// 	{"mp_coop_pr_laser",	"Laser",				3,	"Advanced"},
+// 	{"mp_coop_pr_bridge",	"Light Bridges",		3,	"Advanced"},
+// 	{"mp_coop_pr_tbeam",	"Funnel",				3,	"Advanced"},
+// 	{"mp_coop_pr_bts",		"Behind The Scenes",	4,	"Finale"}
+// };
+//
+// // Check to see which Mel map is being played.
+// const MapParams* InReloadedCampaignMap(bool singeplayerCampaign)
+// {
+// 	if (singeplayerCampaign)
+// 	{
+// 		for (const auto& portalReloadedSPCampaignMap : portalReloadedSPCampaignMaps)
+// 		{
+// 			if (FStrEq(CURMAPFILENAME, portalReloadedSPCampaignMap.mapfile))
+// 				return &portalReloadedSPCampaignMap;
+// 		}
+// 	}
+// 	else
+// 	{
+// 		for (const auto& portalReloadedMPCampaignMap : portalReloadedMPCampaignMaps)
+// 		{
+// 			if (FStrEq(CURMAPFILENAME, portalReloadedMPCampaignMap.mapfile))
+// 				return &portalReloadedMPCampaignMap;
+// 		}
+// 	}
+// 	
+// 	return nullptr;
+// }
 
 //---------------------------------------------------------------------------------
 // PORTAL: DIVINITY CAMPAIGN
@@ -548,7 +592,7 @@ const std::vector<MapParams> divinityCampaignMaps =
 
 const std::vector<MapParams> divinityAdvancedMaps =
 {
-	{"sp_adv_divinity_transit.bsp",	"Traversal Advanced",	0,	"Advanced"}
+	{"sp_adv_divinity_transit",	"Traversal Advanced",	1,	"Advanced Chambers"}
 };
 
 // Check to see which Divinity map is being played.

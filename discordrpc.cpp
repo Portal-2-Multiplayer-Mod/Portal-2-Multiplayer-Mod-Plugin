@@ -139,7 +139,7 @@ unsigned SendWebHook(void* webhookParams)
 		params->footer + "\" }}], \"attachments\": [] }"
 	);
 
-	DiscordLog(0, true, std::string("jsonPayload: " + jsonPayload).c_str());
+	DiscordLog(INFO, true, std::string("jsonPayload: " + jsonPayload).c_str());
 
 	// Set the POST data
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonPayload);

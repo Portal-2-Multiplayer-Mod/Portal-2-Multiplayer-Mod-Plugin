@@ -342,11 +342,11 @@ void GelocityButtons(IConVar* var, const char* pOldValue, float flOldValue)
 	// Check if host is in a gelocity map.
 	if (!InGelocityMap())
 	{
-		if (!((ConVar*)var)->GetBool())
-			P2MMLog(0, false, "Unlocked buttons...");
+		if (!dynamic_cast<ConVar*>(var)->GetBool())
+			P2MMLog(INFO, false, "Unlocked buttons...");
 		else
-			P2MMLog(0, false, "Locked buttons...");
-		P2MMLog(1, false, "Mode will take effect when Gelocity map is loaded.");
+			P2MMLog(INFO, false, "Locked buttons...");
+		P2MMLog(WARNING, false, "Mode will take effect when Gelocity map is loaded.");
 		return;
 	}
 
@@ -359,7 +359,7 @@ void GelocityButtons(IConVar* var, const char* pOldValue, float flOldValue)
 			"EntFire(\"music_button_1\", \"Unlock\");"
 			"EntFire(\"music_button_2\", \"Unlock\");", false
 		);
-		P2MMLog(0, false, "Unlocked buttons...");
+		P2MMLog(INFO, false, "Unlocked buttons...");
 	}
 	else
 	{
@@ -369,7 +369,7 @@ void GelocityButtons(IConVar* var, const char* pOldValue, float flOldValue)
 			"EntFire(\"music_button_1\", \"Lock\");"
 			"EntFire(\"music_button_2\", \"Lock\");", false
 		);
-		P2MMLog(0, false, "Locked buttons...");
+		P2MMLog(INFO, false, "Locked buttons...");
 	}
 }
 ConVar p2mm_gelocity_lockbuttons("p2mm_gelocity_lockbuttons", "0", FCVAR_NONE, "Toggle the state of the music and lap buttons.", true, 0, true, 1, GelocityButtons);
@@ -379,7 +379,7 @@ CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race. Specify 0 
 	// Check if host is in a gelocity map.
 	if (!InGelocityMap())
 	{
-		P2MMLog(1, false, "Not currently in a Gelocity map!");
+		P2MMLog(WARNING, false, "Not currently in a Gelocity map!");
 		return;
 	}
 
@@ -388,7 +388,7 @@ CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race. Specify 0 
 	g_pScriptVM->GetValue("bRaceStarted", &raceStartedScript);
 	if (raceStartedScript.m_bool)
 	{
-		P2MMLog(1, false, "Race is currently in progress!");
+		P2MMLog(WARNING, false, "Race is currently in progress!");
 		return;
 	}
 
@@ -399,12 +399,12 @@ CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race. Specify 0 
 	{
 		ScriptVariant_t raceLaps;
 		g_pScriptVM->GetValue("iGameLaps", &raceLaps);
-		P2MMLog(0, false, "Current race laps: %i", raceLaps.m_int);
+		P2MMLog(INFO, false, "Current race laps: %i", raceLaps.m_int);
 		return;
 	}
 	else if (V_atoi(args.Arg(1)) < 1 || V_atoi(args.Arg(1)) > 300)
 	{
-		P2MMLog(1, false, "Value out of bounds! Lap counter goes from 1-300!");
+		P2MMLog(WARNING, false, "Value out of bounds! Lap counter goes from 1-300!");
 		return;
 	}
 
@@ -435,7 +435,7 @@ CON_COMMAND(p2mm_gelocity_music, "Set the music track for the Gelocity Race. 0-5
 	// Check if host is in a gelocity map.
 	if (!InGelocityMap())
 	{
-		P2MMLog(1, false, "Not currently in a Gelocity map!");
+		P2MMLog(WARNING, false, "Not currently in a Gelocity map!");
 		return;
 	}
 
@@ -444,7 +444,7 @@ CON_COMMAND(p2mm_gelocity_music, "Set the music track for the Gelocity Race. 0-5
 	g_pScriptVM->GetValue("bFinalLap", &finalLapScript);
 	if (finalLapScript.m_bool)
 	{
-		P2MMLog(1, false, "ITS THE FINAL LAP! LET THE INTENSE FINAL LAP MUSIC PLAY!");
+		P2MMLog(WARNING, false, "ITS THE FINAL LAP! LET THE INTENSE FINAL LAP MUSIC PLAY!");
 		return;
 	}
 
@@ -453,12 +453,12 @@ CON_COMMAND(p2mm_gelocity_music, "Set the music track for the Gelocity Race. 0-5
 	{
 		ScriptVariant_t iMusicTrack;
 		g_pScriptVM->GetValue("iMusicTrack", &iMusicTrack);
-		P2MMLog(0, false, "Current music track: %i", iMusicTrack.m_int);
+		P2MMLog(INFO, false, "Current music track: %i", iMusicTrack.m_int);
 		return;
 	}
 	else if (V_atoi(args.Arg(1)) < 0 || V_atoi(args.Arg(1)) > 5)
 	{
-		P2MMLog(1, false, "Value out of bounds! Music tracks goes from 0-5!");
+		P2MMLog(WARNING, false, "Value out of bounds! Music tracks goes from 0-5!");
 		return;
 	}
 
@@ -484,12 +484,12 @@ CON_COMMAND(p2mm_gelocity_music, "Set the music track for the Gelocity Race. 0-5
 	if (V_atoi(args.Arg(1)) == 0)
 	{
 		UTIL_HudMessage(NULL, musicMessage, std::string("No Music").c_str());
-		P2MMLog(0, false, "Music turned off!", V_atoi(args.Arg(1)));
+		P2MMLog(INFO, false, "Music turned off!", V_atoi(args.Arg(1)));
 	}
 	else
 	{
 		UTIL_HudMessage(NULL, musicMessage, std::string("Music Track: " + std::string(args.Arg(1))).c_str());
-		P2MMLog(0, false, "Set music track to %i!", V_atoi(args.Arg(1)));
+		P2MMLog(INFO, false, "Set music track to %i!", V_atoi(args.Arg(1)));
 	}
 }
 
@@ -498,7 +498,7 @@ CON_COMMAND(p2mm_gelocity_start, "Starts the Gelocity race.")
 	// Check if host is in a gelocity map.
 	if (!InGelocityMap())
 	{
-		P2MMLog(1, false, "Not currently in a Gelocity map!");
+		P2MMLog(WARNING, false, "Not currently in a Gelocity map!");
 		return;
 	}
 
@@ -507,7 +507,7 @@ CON_COMMAND(p2mm_gelocity_start, "Starts the Gelocity race.")
 	g_pScriptVM->GetValue("b_RaceStarted", &raceStartedScript);
 	if (raceStartedScript.m_bool)
 	{
-		P2MMLog(1, false, "Race is currently in progress!");
+		P2MMLog(WARNING, false, "Race is currently in progress!");
 		return;
 	}
 
@@ -532,13 +532,12 @@ void RemovePlayerOperation(bool bBanning, int userid)
 	// The first argument determines if the player will be banned or kicked. True is ban.
 	if (bBanning)
 	{
-		for (size_t i = 0; i < banList.size(); i++)
+		for (auto& i : banList)
 		{
-			if (FStrEq(banList[i].username.c_str(), bannedPlayer.username.c_str()))
+			if (FStrEq(i.username.c_str(), bannedPlayer.username.c_str()))
 			{
-				P2MMLog(1, false, "Ban called on player that is already banned!");
-				std::string errorMsg = std::string("\x03(P2:MM): This player is already banned!");
-				UTIL_ClientPrint(UTIL_PlayerByIndex(0), HUD_PRINTTALK, errorMsg.c_str());
+				P2MMLog(WARNING, false, "Ban called on player that is already banned!");
+				UTIL_ClientPrint(UTIL_PlayerByIndex(0), HUD_PRINTTALK, "\x03(P2:MM): This player is already banned!");
 				return;
 			}
 		}
@@ -562,10 +561,9 @@ void RemovePlayerOperation(bool bBanning, int userid)
 	}
 	engineClient->ExecuteClientCmd("gameui_hide");
 
-	P2MMLog(0, true, "Banning?: %i", bBanning);
-	P2MMLog(0, true, "userID: %i", bannedPlayer.userID);
-	P2MMLog(0, true, "username: %s", bannedPlayer.username.c_str());
-	P2MMLog(0, true, "guid: %s", bannedPlayer.guid.c_str());
+	P2MMLog(INFO, true, "Banning?: %i", bBanning);
+	P2MMLog(INFO, true, "userID: %i", bannedPlayer.userID);
+	P2MMLog(INFO, true, "username: %s", bannedPlayer.username.c_str());
 }
 
 // Display UI for either banning or kicking so host can ban or kick a player.
@@ -573,7 +571,7 @@ void RemovePlayerUI(int playerIndex, bool bBanning)
 {
 	if (!IsGameActive())
 	{
-		P2MMLog(1, false, "Game session is not currently running!");
+		P2MMLog(WARNING, false, "Game session is not currently running!");
 		return;
 	}
 
@@ -629,7 +627,7 @@ CON_COMMAND(unban, "Unban a player from the P2:MM play session.")
 {
 	if (!IsGameActive())
 	{
-		P2MMLog(1, false, "Game session is not currently running!");
+		P2MMLog(WARNING, false, "Game session is not currently running!");
 		return;
 	}
 

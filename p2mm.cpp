@@ -566,8 +566,8 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 
 	if (!g_P2MMServerPlugin.m_bSeenFirstRunPrompt) return;
 
-	std::string changeMapStr = std::string("The server has changed the map to: `" + std::string(CURMAPFILENAME) + "`");
-	g_pDiscordIntegration->SendWebHookEmbed("Server", changeMapStr, EMBED_COLOR_SERVER, false);
+	const auto changeMapStr = std::string("The server has changed the map to: `" + std::string(CURMAPFILENAME) + "`");
+	CDiscordIntegration::SendWebHookEmbed("Server", changeMapStr, EMBED_COLOR_SERVER, false);
 
 	// Update Discord RPC to update current map information.
 	CDiscordIntegration::UpdateDiscordRPC();
@@ -780,12 +780,12 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	// Event called when a player dies, "player_death" returns:	
 	/*
 		"userid"	"int"   	// user ID who died
-		"attacker"	"short"	 	// user ID who killed
+		"attacker"	"int"	 	// user ID who killed
 	*/
 	if (FStrEq(event->GetName(), "player_death"))
 	{
 		int userid = event->GetInt("userid");
-		short attacker = event->GetInt("attacker");
+		int attacker = event->GetInt("attacker");
 		int entindex = UserIDToPlayerIndex(userid);
 
 		if (g_pScriptVM)
@@ -796,13 +796,14 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 				if (HSCRIPT playerHandle = INDEXHANDLE(entindex))
 				{
 					g_pScriptVM->Call<HSCRIPT>(od_func, nullptr, false, nullptr, playerHandle);
-					g_pDiscordIntegration->SendWebHookEmbed(std::string(GetPlayerName(entindex) + std::string(" Died!")), "", EMBED_COLOR_PLAYERDEATH);
+					std::string playerName = GetPlayerName(entindex);
+					CDiscordIntegration::SendWebHookEmbed(playerName + std::string(" Died!"), "", EMBED_COLOR_PLAYERDEATH);
 				}
 			}
 
 			// Handle VScript game event function
 			if (HSCRIPT geFunc = g_pScriptVM->LookupFunction("GEPlayerDeath"))
-				g_pScriptVM->Call<int, short, int>(geFunc, nullptr, false, nullptr, userid, attacker, entindex);
+				g_pScriptVM->Call<int, int, int>(geFunc, nullptr, false, nullptr, userid, attacker, entindex);
 		}
 
 		if (spewInfo)
@@ -869,7 +870,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			if (HSCRIPT geFunc = g_pScriptVM->LookupFunction("GEPlayerConnect"))
 			{
 				g_pScriptVM->Call<const char*, int, int, const char*, const char*, const char*, bool, int>(geFunc, nullptr, false, nullptr, name, index, userid, xuid, networkid, address, bot, entindex);
-				g_pDiscordIntegration->SendWebHookEmbed(std::string(name + std::string(" Joined!")), std::string(name + std::string(" joined the server!")));
+				CDiscordIntegration::SendWebHookEmbed(std::string(name + std::string(" Joined!")), std::string(name + std::string(" joined the server!")));
 			}
 		}
 
@@ -964,7 +965,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 						pos += std::string("\\\\").length();
 					}
 					if (!chatMsg.starts_with("!"))
-						g_pDiscordIntegration->SendWebHookEmbed(playerName, chatMsg);
+						CDiscordIntegration::SendWebHookEmbed(playerName, chatMsg);
 				}
 			}
 
@@ -1048,7 +1049,7 @@ extern void UpdateMapsList();
 void CP2MMServerPlugin::LevelShutdown(void)
 {
 	P2MMLog(INFO, true, "Level Shutdown! Map: %s", CURMAPFILENAME);
-	p2mm_loop.SetValue("0"); // REMOVE THIS at some point...
+	p2mm_loop.SetValue("0"); //! REMOVE THIS at some point...
 	UpdateMapsList(); // Update the maps list for p2mm_map.
 	// Update Discord RPC to update the level information or to say the host is on the main menu.
 	CDiscordIntegration::UpdateDiscordRPC();

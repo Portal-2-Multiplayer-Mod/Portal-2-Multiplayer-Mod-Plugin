@@ -103,12 +103,12 @@ static void WebhookCheck(IConVar* var, const char* pOldValue, float flOldValue)
 		}
 	}
 }
-ConVar p2mm_discord_webhooks("p2mm_discord_webhooks", "0", FCVAR_NOTIFY, "Enable or disable webhooks been the P2:MM Server and Discord.", true, 0, true, 1, WebhookCheck);
-ConVar p2mm_discord_webhooks_url("p2mm_discord_webhooks_url", "", FCVAR_HIDDEN, "Channel webhook URL to send messages to. Should be set in launcher, not here.");
+ConVar p2mm_discord_webhooks("p2mm_discord_webhooks", "0", FCVAR_NOTIFY, "Enable or disable webhooks between the P2:MM Server and Discord.", true, 0, true, 1, WebhookCheck);
+ConVar p2mm_discord_webhooks_url("p2mm_discord_webhooks_url", "", FCVAR_HIDDEN, "Channel webhook URL. Recommended to be set in launcher, not here.");
 ConVar p2mm_discord_webhooks_defaultfooter("p2mm_discord_webhooks_defaultfooter", "1", FCVAR_NONE, "Enable or disable the default embed footer for webhooks.", true, 0, true, 1);
 ConVar p2mm_discord_webhooks_customfooter("p2mm_discord_webhooks_customfooter", "", FCVAR_NONE, "Set a custom embed footer for webhook messages.");
 
-// Parameters that are sent through to the Discord webhook
+// Parameters that are sent through to the Discord webhook.
 struct WebHookParams
 {
 	std::string title = "Unknown";
@@ -117,11 +117,12 @@ struct WebHookParams
 	std::string footer;
 };
 
-// Generates a footer with the player count with max allowed client count and also the current map name
+// Generates a footer with the player count with max allowed client count and also the current map name.
 static std::string DefaultFooter()
 {
 	// g_pGlobals doesn't exist yet at certain situations, so return a blank string.
-	if (!g_pGlobals) return "";
+	if (!g_pGlobals)
+		return "";
 
 	const std::string curPlayerCount = std::to_string(CURPLAYERCOUNT());
 	const std::string maxPlayerCount = std::to_string(MAX_PLAYERS);

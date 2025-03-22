@@ -4,7 +4,6 @@
 // Purpose: Portal 2: Multiplayer Mod server plugin
 // 
 //===========================================================================//
-#pragma once
 
 #include "sdk.hpp"
 #include "commands.hpp"
@@ -16,7 +15,7 @@
 //---------------------------------------------------------------------------------
 // Purpose: Logging for the P2MM VScript. The log message must be passed as a string or it will error.
 //---------------------------------------------------------------------------------
-static void printlP2MM(int level, bool dev, const char* pMsgFormat)
+static void printlP2MM(const int level, const bool dev, const char* pMsgFormat)
 {
 	if (dev && !p2mm_developer.GetBool()) return;
 
@@ -77,8 +76,7 @@ static void InitializeEntity(HSCRIPT ent)
 {
 	static uintptr_t func = (uintptr_t)Memory::Scanner::Scan<void*>(SERVERDLL, "E8 ?? ?? ?? ?? 8B 4D 18 8B 57 5C", 1);
 	static auto GetCBaseEntityScriptDesc = reinterpret_cast<ScriptClassDesc_t* (__cdecl*)()>(*reinterpret_cast<uintptr_t*>(func) + func + sizeof(func));
-	void* pEntity = reinterpret_cast<void*>(g_pScriptVM->GetInstanceValue(ent, GetCBaseEntityScriptDesc()));;
-	if (pEntity)
+	if (void* pEntity = reinterpret_cast<void*>(g_pScriptVM->GetInstanceValue(ent, GetCBaseEntityScriptDesc())))
 	{
 		g_pServerTools->DispatchSpawn(pEntity);
 
@@ -102,8 +100,7 @@ static void SendToChat(int playerIndex, const char* msg)
 			player_info_t playerInfo;
 			if (engineServer->GetPlayerInfo(i, &playerInfo))
 			{
-				CBasePlayer* pPlayer = UTIL_PlayerByIndex(i);
-				if (pPlayer) 
+				if (CBasePlayer* pPlayer = UTIL_PlayerByIndex(i)) 
 				{
 					UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, msg);
 				}
@@ -175,7 +172,7 @@ static void CallFirstRunPrompt()
 //			Specifying no playerIndex or 0 sends to all players.
 //			Supports printing localization strings but those that require formatting can't be formatted.
 //---------------------------------------------------------------------------------
-void ConsolePrint(int playerIndex, const char* msg)
+static void ConsolePrint(int playerIndex, const char* msg)
 {
 	if (!msg) return;
 
@@ -186,8 +183,7 @@ void ConsolePrint(int playerIndex, const char* msg)
 			player_info_t playerInfo;
 			if (engineServer->GetPlayerInfo(i, &playerInfo))
 			{
-				CBasePlayer* pPlayer = UTIL_PlayerByIndex(i);
-				if (pPlayer)
+				if (CBasePlayer* pPlayer = UTIL_PlayerByIndex(i))
 				{
 					UTIL_ClientPrint(pPlayer, HUD_PRINTCONSOLE, msg);
 				}
@@ -212,7 +208,7 @@ void ConsolePrint(int playerIndex, const char* msg)
 //			Specifying no playerIndex or 0 sends to all players.
 //			Supports printing localization strings but those that require formatting can't be formatted.
 //---------------------------------------------------------------------------------
-void ClientPrint(int playerIndex, const char* msg)
+static void ClientPrint(int playerIndex, const char* msg)
 {
 	if (!msg) return;
 
@@ -223,8 +219,7 @@ void ClientPrint(int playerIndex, const char* msg)
 			player_info_t playerInfo;
 			if (engineServer->GetPlayerInfo(i, &playerInfo))
 			{
-				CBasePlayer* pPlayer = UTIL_PlayerByIndex(i);
-				if (pPlayer)
+				if (CBasePlayer* pPlayer = UTIL_PlayerByIndex(i))
 				{
 					UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, msg);
 				}
@@ -252,7 +247,7 @@ void ClientPrint(int playerIndex, const char* msg)
 //			Vector is used to consolidate x, y, and channel parameters together.
 //			Vector is used to consolidate fadeinTime, fadeoutTime, and holdTime.
 //---------------------------------------------------------------------------------
-void HudPrint
+static void HudPrint
 	(
 	int playerIndex, const char* msg, 
 	Vector posChannel, int effect, float fxTime,
@@ -282,7 +277,7 @@ void HudPrint
 
 	if (!playerIndex)
 	{
-		UTIL_HudMessage(NULL, hudTextParams, msg);
+		UTIL_HudMessage(nullptr, hudTextParams, msg);
 		return;
 	}
 
@@ -299,7 +294,7 @@ void HudPrint
 //---------------------------------------------------------------------------------
 // Purpose: Self-explanatory.
 //---------------------------------------------------------------------------------
-int GetMaxPlayers()
+static int GetMaxPlayers()
 {
 	return MAX_PLAYERS;
 }
@@ -307,7 +302,7 @@ int GetMaxPlayers()
 //---------------------------------------------------------------------------------
 // Purpose: Enable or disable displaying the score board for a player.
 //---------------------------------------------------------------------------------
-void ShowScoreboard(int playerIndex, bool bEnable)
+static void ShowScoreboard(int playerIndex, bool bEnable)
 {
 	CBasePlayer__ShowViewPortPanel(playerIndex, "scores", bEnable);
 }

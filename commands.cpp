@@ -14,7 +14,7 @@
 //---------------------------------------------------------------------------------
 // Core P2:MM ConVars | These shouldn't be modified manually. Hidden to prevent accidentally breaking something.
 //---------------------------------------------------------------------------------
-ConVar p2mm_loop("p2mm_loop", "0", FCVAR_HIDDEN, "Flag if P2MMLoop should be looping.");
+ConVar p2mm_loop("p2mm_loop", "0", FCVAR_HIDDEN, "Flag if P2MMLoop should be looping."); //! REMOVE THIS AT SOME POINT!!!
 ConVar p2mm_lastmap("p2mm_lastmap", "", FCVAR_HIDDEN, "Last map recorded for the Last Map system.");
 ConVar p2mm_splitscreen("p2mm_splitscreen", "0", FCVAR_HIDDEN, "Flag for the main menu buttons and launcher to start in splitscreen or not.");
 

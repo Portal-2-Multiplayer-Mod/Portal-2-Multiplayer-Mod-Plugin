@@ -85,14 +85,13 @@ enum
 	HUD_PRINTCENTER
 };
 
-
-// Struct for map arrays.
+// Struct for map parameters.
 typedef struct
 {
-	const char* mapfile;
-	const char* mapname;
+	const char* mapFile;
+	const char* mapName;
 	int chapter;
-	const char* chaptername;
+	const char* chapterName;
 } MapParams;
 
 const MapParams* InGelocityMap();

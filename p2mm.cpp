@@ -356,7 +356,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		// Max players -> 33
 		Memory::ReplacePattern("server", "83 C0 02 89 01", "83 C0 20 89 01");
 		Memory::ReplacePattern("engine", "85 C0 78 13 8B 17", "31 C0 04 21 8B 17");
-		uintptr_t svPtr = *reinterpret_cast<uintptr_t*>(Memory::Scanner::Scan<void*>(ENGINEDLL, "74 0A B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B E5", 3));
+		uintptr_t svPtr = *static_cast<uintptr_t*>(Memory::Scanner::Scan<void*>(ENGINEDLL, "74 0A B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B E5", 3));
 		*reinterpret_cast<int*>(svPtr + 0x228) = 33;
 
 		// Store pointer to the CBaseServer for global access.
@@ -569,7 +569,7 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 	g_pDiscordIntegration->SendWebHookEmbed("Server", changeMapStr, EMBED_COLOR_SERVER, false);
 
 	// Update Discord RPC to update current map information.
-	g_pDiscordIntegration->UpdateDiscordRPC();
+	CDiscordIntegration::UpdateDiscordRPC();
 }
 
 //---------------------------------------------------------------------------------
@@ -601,9 +601,8 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 	// Call the "GEClientCommand" VScript function
 	if (g_pScriptVM)
 	{
-		HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEClientCommand");
-		if (ge_func)
-			g_pScriptVM->Call<const char*, const char*, int, int, const char*>(ge_func, nullptr, false, nullptr, pCmd, fArgs, userid, entindex, playername);
+		if (HSCRIPT geFunc = g_pScriptVM->LookupFunction("GEClientCommand"))
+			g_pScriptVM->Call<const char*, const char*, int, int, const char*>(geFunc, nullptr, false, nullptr, pCmd, fArgs, userid, entindex, playername);
 	}
 
 	// signify is the client command used to make on screen icons appear
@@ -615,7 +614,7 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 	}
 
 	// Stop certain client commands from being excecated by clients and not the host
-	for (const char* badcc : forbiddenClientCommands)
+	for (const char* badCC : forbiddenClientCommands)
 	{
 		// These commands can be manually called to make everyone emote,
 		// however there are certain other ones we need to let in for players individually to emote.
@@ -623,7 +622,7 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 			return PLUGIN_STOP;
 
 		// Whether we want to actually stop client commands or not. Host is always ignored.
-		if (entindex != 1 && FSubStr(pCmd, badcc) && p2mm_forbidclientcommands.GetBool())
+		if (entindex != 1 && FSubStr(pCmd, badCC) && p2mm_forbidclientcommands.GetBool())
 		{
 			engineServer->ClientPrintf(INDEXENT(entindex), "This command is blocked from execution!\n");
 			return PLUGIN_STOP;
@@ -653,7 +652,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 
 	// Event called when a player pings, "portal_player_ping" returns:
 	/*
-		"userid"	"short"		// user ID on server
+		"userid"	"int"		// user ID on server
 		"ping_x"	"float"		// ping's x-coordinate in map
 		"ping_y"	"float"		// ping's y-coordinate in map
 		"ping_z"	"float"		// ping's z-coordinate in map
@@ -669,9 +668,8 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		if (g_pScriptVM)
 		{
 			// Handle VScript game event function
-			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerPing");
-			if (ge_func)
-				g_pScriptVM->Call<short, float, float, float, int>(ge_func, nullptr, false, nullptr, userid, ping_x, ping_y, ping_z, entindex);
+			if (HSCRIPT geFunc = g_pScriptVM->LookupFunction("GEPlayerPing"))
+				g_pScriptVM->Call<int, float, float, float, int>(geFunc, nullptr, false, nullptr, userid, ping_x, ping_y, ping_z, entindex);
 		}
 
 		if (spewInfo)
@@ -687,7 +685,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	}
 	// Event called when a player goes through a portal, "portal_player_portaled" returns:
 	/*
-		"userid"	"short"		// user ID on server
+		"userid"	"int"		// user ID on server
 		"portal2"	"bool"		// false for portal1 (blue)
 	*/
 	if (FStrEq(event->GetName(), "portal_player_portaled"))
@@ -699,9 +697,8 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		if (g_pScriptVM)
 		{
 			// Handle VScript game event function
-			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerPortaled");
-			if (ge_func)
-				g_pScriptVM->Call<short, bool, int>(ge_func, nullptr, false, nullptr, userid, portal2, entindex);
+			if (HSCRIPT geFunc = g_pScriptVM->LookupFunction("GEPlayerPortaled"))
+				g_pScriptVM->Call<int, bool, int>(geFunc, nullptr, false, nullptr, userid, portal2, entindex);
 		}
 
 		if (spewInfo)
@@ -719,9 +716,8 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		if (g_pScriptVM)
 		{
 			// Handle VScript game event function
-			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GETurretHitTurret");
-			if (ge_func)
-				g_pScriptVM->Call(ge_func, nullptr, false, nullptr);
+			if (HSCRIPT geFunc = g_pScriptVM->LookupFunction("GETurretHitTurret"))
+				g_pScriptVM->Call(geFunc, nullptr, false, nullptr);
 		}
 
 		return;
@@ -732,16 +728,15 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		if (g_pScriptVM)
 		{
 			// Handle VScript game event function
-			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GECamDetach");
-			if (ge_func)
-				g_pScriptVM->Call(ge_func, nullptr, false, nullptr);
+			if (HSCRIPT geFunc = g_pScriptVM->LookupFunction("GECamDetach"))
+				g_pScriptVM->Call(geFunc, nullptr, false, nullptr);
 		}
 
 		return;
 	}
 	// Event called when a player touches the ground, "player_landed" returns:	
 	/*
-		"userid"	"short"		// user ID on server
+		"userid"	"int"		// user ID on server
 	*/
 	if (FStrEq(event->GetName(), "player_landed"))
 	{
@@ -751,9 +746,8 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		if (g_pScriptVM)
 		{
 			// Handle VScript game event function
-			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerLanded");
-			if (ge_func)
-				g_pScriptVM->Call<short, int>(ge_func, nullptr, false, nullptr, userid, entindex);
+			if (HSCRIPT geFunc = g_pScriptVM->LookupFunction("GEPlayerLanded"))
+				g_pScriptVM->Call<int, int>(geFunc, nullptr, false, nullptr, userid, entindex);
 		}
 
 		return;
@@ -764,9 +758,8 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		if (g_pScriptVM)
 		{
 			// Handle VScript game event function
-			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSpawnBlue");
-			if (ge_func)
-				g_pScriptVM->Call(ge_func, nullptr, false, nullptr);
+			if (HSCRIPT geFunc = g_pScriptVM->LookupFunction("GEPlayerSpawnBlue"))
+				g_pScriptVM->Call(geFunc, nullptr, false, nullptr);
 		}
 
 		return;
@@ -777,16 +770,15 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		if (g_pScriptVM)
 		{
 			// Handle VScript game event function
-			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSpawnOrange");
-			if (ge_func)
-				g_pScriptVM->Call(ge_func, nullptr, false, nullptr);
+			if (HSCRIPT geFunc = g_pScriptVM->LookupFunction("GEPlayerSpawnOrange"))
+				g_pScriptVM->Call(geFunc, nullptr, false, nullptr);
 		}
 
 		return;
 	}
 	// Event called when a player dies, "player_death" returns:	
 	/*
-		"userid"	"short"   	// user ID who died
+		"userid"	"int"   	// user ID who died
 		"attacker"	"short"	 	// user ID who killed
 	*/
 	if (FStrEq(event->GetName(), "player_death"))
@@ -798,11 +790,9 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		if (g_pScriptVM)
 		{
 			// Handling OnDeath VScript event
-			HSCRIPT od_func = g_pScriptVM->LookupFunction("OnDeath");
-			if (od_func)
+			if (HSCRIPT od_func = g_pScriptVM->LookupFunction("OnDeath"))
 			{
-				HSCRIPT playerHandle = INDEXHANDLE(entindex);
-				if (playerHandle)
+				if (HSCRIPT playerHandle = INDEXHANDLE(entindex))
 				{
 					g_pScriptVM->Call<HSCRIPT>(od_func, nullptr, false, nullptr, playerHandle);
 					g_pDiscordIntegration->SendWebHookEmbed(std::string(GetPlayerName(entindex) + std::string(" Died!")), "", EMBED_COLOR_PLAYERDEATH);
@@ -810,9 +800,8 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			}
 
 			// Handle VScript game event function
-			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerDeath");
-			if (ge_func)
-				g_pScriptVM->Call<short, short, int>(ge_func, nullptr, false, nullptr, userid, attacker, entindex);
+			if (HSCRIPT geFunc = g_pScriptVM->LookupFunction("GEPlayerDeath"))
+				g_pScriptVM->Call<int, short, int>(geFunc, nullptr, false, nullptr, userid, attacker, entindex);
 		}
 
 		if (spewInfo)
@@ -826,7 +815,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	}
 	// Event called when a player spawns, "player_spawn" returns:	
 	/*
-		"userid"	"short"		// user ID on server
+		"userid"	"int"		// user ID on server
 	*/
 	if (FStrEq(event->GetName(), "player_spawn"))
 	{
@@ -836,9 +825,8 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		if (g_pScriptVM)
 		{
 			// Handle VScript game event function
-			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSpawn");
-			if (ge_func)
-				g_pScriptVM->Call<short, int>(ge_func, nullptr, false, nullptr, userid, entindex);
+			if (HSCRIPT geFunc = g_pScriptVM->LookupFunction("GEPlayerSpawn"))
+				g_pScriptVM->Call<int, int>(geFunc, nullptr, false, nullptr, userid, entindex);
 		}
 
 		if (spewInfo)
@@ -856,7 +844,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	/*
 		"name"		"string"	// player name
 		"index"		"byte"		// player slot (entity index-1)
-		"userid"	"short"		// user ID on server (unique on server) "STEAM_1:...", will be "BOT" if player is bot
+		"userid"	"int"		// user ID on server (unique on server) "STEAM_1:...", will be "BOT" if player is bot
 		"xuid"		"uint64"	// XUID/Steam ID (converted to const char*)
 		"networkid" "string" 	// player network (i.e steam) id
 		"address"	"string"	// ip:port
@@ -877,10 +865,9 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		if (g_pScriptVM)
 		{
 			// Handle VScript game event function
-			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerConnect");
-			if (ge_func)
+			if (HSCRIPT geFunc = g_pScriptVM->LookupFunction("GEPlayerConnect"))
 			{
-				g_pScriptVM->Call<const char*, int, short, const char*, const char*, const char*, bool, int>(ge_func, nullptr, false, nullptr, name, index, userid, xuid, networkid, address, bot, entindex);
+				g_pScriptVM->Call<const char*, int, int, const char*, const char*, const char*, bool, int>(geFunc, nullptr, false, nullptr, name, index, userid, xuid, networkid, address, bot, entindex);
 				g_pDiscordIntegration->SendWebHookEmbed(std::string(name + std::string(" Joined!")), std::string(name + std::string(" joined the server!")));
 			}
 		}
@@ -903,7 +890,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	/*
 		"name"		"string"	// player name
 		"index"		"byte"		// player slot (entity index-1)
-		"userid"	"short"		// user ID on server (unique on server) "STEAM_1:...", will be "BOT" if player is bot
+		"userid"	"int"		// user ID on server (unique on server) "STEAM_1:...", will be "BOT" if player is bot
 		"friendsid" "short"		// friends identification number
 		"networkid"	"string"	// player network (i.e steam) id
 		"bot"		"bool"		// true if player is a AI bot
@@ -921,9 +908,8 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 		if (g_pScriptVM)
 		{
 			// Handle VScript game event function
-			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerInfo");
-			if (ge_func)
-				g_pScriptVM->Call<const char*, int, short, const char*, const char*, bool, int>(ge_func, nullptr, false, nullptr, name, index, userid, networkid, address, bot, entindex);
+			if (HSCRIPT geFunc = g_pScriptVM->LookupFunction("GEPlayerInfo"))
+				g_pScriptVM->Call<const char*, int, int, const char*, const char*, bool, int>(geFunc, nullptr, false, nullptr, name, index, userid, networkid, address, bot, entindex);
 		}
 
 		if (spewInfo)
@@ -941,7 +927,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	}
 	// Event called when a player inputs a message into the chat, "player_say" returns:
 	/*
-		"userid"	"short"		// user ID on server
+		"userid"	"int"		// user ID on server
 		"text"		"string"	// the say text
 	*/
 	if (FStrEq(event->GetName(), "player_say"))
@@ -955,8 +941,7 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			if (entindex)
 			{
 				// Handling chat commands
-				HSCRIPT cc_func = g_pScriptVM->LookupFunction("ChatCommands");
-				if (cc_func)
+				if (HSCRIPT cc_func = g_pScriptVM->LookupFunction("ChatCommands"))
 				{
 					g_pScriptVM->Call<const char*, int>(cc_func, nullptr, false, nullptr, text, entindex);
 
@@ -983,9 +968,8 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 			}
 
 			// Handle VScript game event function
-			HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerSay");
-			if (ge_func)
-				g_pScriptVM->Call<short, const char*, int>(ge_func, nullptr, false, nullptr, userid, text, entindex);
+			if (HSCRIPT geFunc = g_pScriptVM->LookupFunction("GEPlayerSay"))
+				g_pScriptVM->Call<int, const char*, int>(geFunc, nullptr, false, nullptr, userid, text, entindex);
 		}
 
 		if (spewInfo)
@@ -1018,34 +1002,29 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 	// Make sure people know that the chat is being recorded if webhook is set
 	if (p2mm_discord_webhooks.GetBool())
 	{
-		CBasePlayer* pPlayer = UTIL_PlayerByIndex(entindex);
-		if (pPlayer)
+		if (CBasePlayer* pPlayer = UTIL_PlayerByIndex(entindex))
 		{
 			P2MMLog(0, true, "Warning for enabled webhooks sent to player index %i.", entindex);
-			UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, "This lobby has Discord Webhook Intergration enabled. All of your ingame messages may be sent to a Discord channel.");
+			UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, "This lobby has Discord Webhook Integration enabled. All of your in-game messages may be sent to a Discord channel.");
 		}
 	}
 
 	if (g_pScriptVM)
 	{
 		// Handling OnPlayerJoin VScript event
-		HSCRIPT opj_func = g_pScriptVM->LookupFunction("OnPlayerJoin");
-		if (opj_func)
+		if (HSCRIPT opj_func = g_pScriptVM->LookupFunction("OnPlayerJoin"))
 		{
-			HSCRIPT playerHandle = INDEXHANDLE(entindex);
-			if (playerHandle)
+			if (HSCRIPT playerHandle = INDEXHANDLE(entindex))
 				g_pScriptVM->Call<HSCRIPT>(opj_func, nullptr, false, nullptr, playerHandle);
 		}
 
 		// Handle VScript game event function
-		HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEClientActive");
-		if (ge_func)
-			g_pScriptVM->Call<short, int>(ge_func, nullptr, false, nullptr, userid, entindex);
+		if (HSCRIPT geFunc = g_pScriptVM->LookupFunction("GEClientActive"))
+			g_pScriptVM->Call<int, int>(geFunc, nullptr, false, nullptr, userid, entindex);
 	}
 
 	// Update Discord RPC to update player count.
-	g_pDiscordIntegration->UpdateDiscordRPC();
-	return;
+	CDiscordIntegration::UpdateDiscordRPC();
 }
 
 //---------------------------------------------------------------------------------
@@ -1053,13 +1032,11 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 //---------------------------------------------------------------------------------
 void CP2MMServerPlugin::GameFrame(bool simulating)
 {
-	HSCRIPT loop_func = g_pScriptVM->LookupFunction("P2MMLoop");
-	if (loop_func && p2mm_loop.GetBool())
+	if (HSCRIPT loop_func = g_pScriptVM->LookupFunction("P2MMLoop"); p2mm_loop.GetBool())
 		g_pScriptVM->Call(loop_func, nullptr, false, nullptr);
 
 	// Handle VScript game event function
-	HSCRIPT gf_func = g_pScriptVM->LookupFunction("GEGameFrame");
-	if (gf_func)
+	if (HSCRIPT gf_func = g_pScriptVM->LookupFunction("GEGameFrame"))
 		g_pScriptVM->Call<bool>(gf_func, nullptr, false, nullptr, simulating);
 }
 
@@ -1073,12 +1050,12 @@ void CP2MMServerPlugin::LevelShutdown(void)
 	p2mm_loop.SetValue("0"); // REMOVE THIS at some point...
 	updateMapsList(); // Update the maps list for p2mm_map.
 	// Update Discord RPC to update the level information or to say the host is on the main menu.
-	g_pDiscordIntegration->UpdateDiscordRPC();
+	CDiscordIntegration::UpdateDiscordRPC();
 }
 
 PLUGIN_RESULT CP2MMServerPlugin::ClientConnect(bool* bAllowConnect, edict_t* pEntity, const char* pszName, const char* pszAddress, char* reject, int maxrejectlen)
 {
-	P2MMLog(0, true, "Player Joinned! playerInfo:");
+	P2MMLog(0, true, "Player Joined! playerInfo:");
 	player_info_t playerInfo;
 	engineServer->GetPlayerInfo(1,			&playerInfo);
 	P2MMLog(0, true, "xuid: %llu",			playerInfo.xuid);
@@ -1094,12 +1071,12 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientConnect(bool* bAllowConnect, edict_t* pEn
 	P2MMLog(0, true, "filesDownloaded: %s",	playerInfo.filesDownloaded);
 
 	P2MMLog(0, true, "Check if player is banned.");
-	for (size_t i = 0; i < banList.size(); i++)
+	for (const auto& i : banList)
 	{
-		P2MMLog(0, true, "username: %s", banList[i].username.c_str());
-		P2MMLog(0, true, "guid: %s", banList[i].guid.c_str());
+		P2MMLog(0, true, "username: %s", i.username.c_str());
+		P2MMLog(0, true, "guid: %s", i.guid.c_str());
 		//! For some reason this is returning false when it should be true. Will look into it later.
-		if (FSubStr(playerInfo.name, banList[i].username.c_str()) || FSubStr(playerInfo.guid, banList[i].guid.c_str()))
+		if (FSubStr(playerInfo.name, i.username.c_str()) || FSubStr(playerInfo.guid, i.guid.c_str()))
 		{
 			const char* bannedStr = _bstr_t(g_pLocalize->FindSafe("#P2MM_BannedFromServer"));
 			V_strncpy(reject, bannedStr, maxrejectlen);

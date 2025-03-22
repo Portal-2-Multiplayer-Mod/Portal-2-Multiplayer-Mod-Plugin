@@ -93,9 +93,9 @@ void __cdecl respawn_hook(CBaseEntity* pEdict, bool fCopyCorpse)
 			g_pScriptVM->Call<HSCRIPT>(or_func, nullptr, false, nullptr, INDEXHANDLE(ENTINDEX(pEdict)));
 
 		// Handle VScript game event function
-		HSCRIPT ge_func = g_pScriptVM->LookupFunction("GEPlayerRespawn");
-		if (ge_func)
-			g_pScriptVM->Call<HSCRIPT>(ge_func, nullptr, false, nullptr, INDEXHANDLE(ENTINDEX(pEdict)));
+		HSCRIPT geFunc = g_pScriptVM->LookupFunction("GEPlayerRespawn");
+		if (geFunc)
+			g_pScriptVM->Call<HSCRIPT>(geFunc, nullptr, false, nullptr, INDEXHANDLE(ENTINDEX(pEdict)));
 	}
 }
 

@@ -249,7 +249,7 @@ const MapParams* InGelocityMap()
 {
 	for (const auto& gelocityMap : gelocityMaps)
 	{
-		if (FStrEq(CURMAPFILENAME, gelocityMap.mapfile))
+		if (FStrEq(CURMAPFILENAME, gelocityMap.mapFile))
 			return &gelocityMap;
 	}
 
@@ -323,7 +323,7 @@ const std::vector<MapParams> spCampaignMaps =
 	{"sp_a4_finale2",                "Finale 2",             9,		"THE Part Where He Kills You"},
 	{"sp_a4_finale3",                "Finale 3",             9,		"THE Part Where He Kills You"},
 	{"sp_a4_finale4",                "Finale 4",             9,		"THE Part Where He Kills You"},
-	{"sp_a5_credits",				"Credits",			 	10,	    "The End :D"}
+	{"sp_a5_credits",				   "Credits",			 	10,	    "The End"}
 };
 
 //---------------------------------------------------------------------------------
@@ -373,7 +373,7 @@ const std::vector<MapParams> mpCampaignMaps =
 	{"mp_coop_paint_red_racer",      "Turret Ninja",         5,		"Mobility Gels"},
 	{"mp_coop_paint_speed_catch",    "Propulsion Retrieval", 5,		"Mobility Gels"},
 	{"mp_coop_paint_longjump_intro", "Vault Entrance",       5,		"Mobility Gels"},
-	{"mp_coop_credits",				 "Credits",			  	 5,		"The End! :D"},
+	{"mp_coop_credits",			   "Credits",			  	5,		"The End! :D"},
 	{"mp_coop_separation_1",         "Separation",           6,		"Art Therapy"},
 	{"mp_coop_tripleaxis",           "Triple Axis",          6,		"Art Therapy"},
 	{"mp_coop_catapult_catch",       "Catapult Catch",       6,		"Art Therapy"},
@@ -389,13 +389,13 @@ const std::vector<MapParams> mpCampaignMaps =
 // Setting mpMaps to true checks through the cooperative campaign maps array.
 // Returns the map file name, chapter/branch number, and chapter/branch name.
 // Returns nullptr if not in a single player or cooperative campaign map.
-const MapParams* InP2CampaignMap(bool mpMaps)
+const MapParams* InP2CampaignMap(const bool mpMaps)
 {
 	if (mpMaps)
 	{
 		for (const auto& mpCampaignMap : mpCampaignMaps)
 		{
-			if (FStrEq(CURMAPFILENAME, mpCampaignMap.mapfile))
+			if (FStrEq(CURMAPFILENAME, mpCampaignMap.mapFile))
 				return &mpCampaignMap;
 		}
 	}
@@ -403,7 +403,7 @@ const MapParams* InP2CampaignMap(bool mpMaps)
 	{
 		for (const auto& spCampaignMap : spCampaignMaps)
 		{
-			if (FStrEq(CURMAPFILENAME, spCampaignMap.mapfile))
+			if (FStrEq(CURMAPFILENAME, spCampaignMap.mapFile))
 				return &spCampaignMap;
 		}
 	}
@@ -439,7 +439,7 @@ const std::vector<MapParams> melStoryCampaignMaps =
 	{"st_a4_factory",       "Factory",			4,	"Organic Complications"},
 	{"st_a4_core_access",   "Core Access",		5,	"INTRUSION"},
 	{"st_a4_finale",        "Finale",			5,	"INTRUSION"},
-	{"st_a5_credits",	   "Credits",			6,	"The End :D"}
+	{"st_a5_credits",		  "Credits",			6,	"The End"}
 };
  
 const std::vector<MapParams> melAdvancedCampaignMaps =
@@ -447,26 +447,26 @@ const std::vector<MapParams> melAdvancedCampaignMaps =
 	{"sp_a1_tramride",      "Tram Ride (Advanced)",			1,	"1952"},
 	{"sp_a1_mel_intro",     "Mel Intro (Advanced)",			1,	"1952"},
 	{"sp_a1_lift",          "Lift (Advanced)",				1,	"1952"},
-	{"sp_a1_garden",        "Garden (Advanced)",			1,	"1952"},
+	{"sp_a1_garden",        "Garden (Advanced)",				1,	"1952"},
 	{"sp_a2_garden_de",     "Destroyed Garden (Advanced)",	2,	"Extended Relaxation"},
 	{"sp_a2_underbounce",   "Underbounce (Advanced)",		2,	"Extended Relaxation"},
 	{"sp_a2_once_upon",     "Once Upon (Advanced)",			2,	"Extended Relaxation"},
-	{"sp_a2_past_power",    "Past Power (Advanced)",		2,	"Extended Relaxation"},
+	{"sp_a2_past_power",    "Past Power (Advanced)",			2,	"Extended Relaxation"},
 	{"sp_a2_ramp",          "Ramp (Advanced)",				2,	"Extended Relaxation"},
 	{"sp_a2_firestorm",     "Firestorm (Advanced)",			2,	"Extended Relaxation"},
 	{"sp_a3_junkyard",      "Junkyard (Advanced)",			3,	"The Ascent"},
 	{"sp_a3_concepts",      "Concepts (Advanced)",			3,	"The Ascent"},
 	{"sp_a3_paint_fling",   "Paint Fling (Advanced)",		3,	"The Ascent"},
 	{"sp_a3_faith_plate",   "Faith Plate (Advanced)",		3,	"The Ascent"},
-	{"sp_a3_transition",    "Transition (Advanced)",		3,	"The Ascent"},
+	{"sp_a3_transition",    "Transition (Advanced)",			3,	"The Ascent"},
 	{"sp_a4_overgrown",     "Overgrown (Advanced)",			4,	"Organic Complications"},
 	{"sp_a4_tb_over_goo",   "Funnel Over Goo (Advanced)",	4,	"Organic Complications"},
 	{"sp_a4_two_of_a_kind", "Two of a Kind (Advanced)",		4,	"Organic Complications"},
 	{"sp_a4_destroyed",     "Destroyed (Advanced)",			4,	"Organic Complications"},
 	{"sp_a4_factory",       "Factory (Advanced)",			4,	"Organic Complications"},
 	{"sp_a4_core_access",   "Core Access (Advanced)",		5,	"INTRUSION"},
-	{"sp_a4_finale",        "Finale (Advanced)",			5,	"INTRUSION"},
-	{"sp_a5_credits",		"Credits (Advanced)",			6,	"The End :D"}
+	{"sp_a4_finale",        "Finale (Advanced)",				5,	"INTRUSION"},
+	{"sp_a5_credits",		  "Credits (Advanced)",			6,	"The End"}
 };
 
 // Check to see which Mel map is being played.
@@ -476,7 +476,7 @@ const MapParams* InMelCampaignMap(bool advanced)
 	{
 		for (const auto& melAdvancedCampaignMap : melAdvancedCampaignMaps)
 		{
-			if (FStrEq(CURMAPFILENAME, melAdvancedCampaignMap.mapfile))
+			if (FStrEq(CURMAPFILENAME, melAdvancedCampaignMap.mapFile))
 				return &melAdvancedCampaignMap;
 		}
 	}
@@ -484,7 +484,7 @@ const MapParams* InMelCampaignMap(bool advanced)
 	{
 		for (const auto& melStoryCampaignMap : melStoryCampaignMaps)
 		{
-			if (FStrEq(CURMAPFILENAME, melStoryCampaignMap.mapfile))
+			if (FStrEq(CURMAPFILENAME, melStoryCampaignMap.mapFile))
 				return &melStoryCampaignMap;
 		}
 	}
@@ -503,10 +503,9 @@ const std::vector<MapParams> apertureTagCampaignMaps =
 // Check to see which Aperture Tag map is being played.
 const MapParams* InApertureTagCampaignMap()
 {
-
 	for (const auto& apertureTagCampaignMap : apertureTagCampaignMaps)
 	{
-		if (FStrEq(CURMAPFILENAME, apertureTagCampaignMap.mapfile))
+		if (FStrEq(CURMAPFILENAME, apertureTagCampaignMap.mapFile))
 			return &apertureTagCampaignMap;
 	}
 	
@@ -558,7 +557,7 @@ const MapParams* InApertureTagCampaignMap()
 // 	{
 // 		for (const auto& portalReloadedSPCampaignMap : portalReloadedSPCampaignMaps)
 // 		{
-// 			if (FStrEq(CURMAPFILENAME, portalReloadedSPCampaignMap.mapfile))
+// 			if (FStrEq(CURMAPFILENAME, portalReloadedSPCampaignMap.mapFile))
 // 				return &portalReloadedSPCampaignMap;
 // 		}
 // 	}
@@ -566,7 +565,7 @@ const MapParams* InApertureTagCampaignMap()
 // 	{
 // 		for (const auto& portalReloadedMPCampaignMap : portalReloadedMPCampaignMaps)
 // 		{
-// 			if (FStrEq(CURMAPFILENAME, portalReloadedMPCampaignMap.mapfile))
+// 			if (FStrEq(CURMAPFILENAME, portalReloadedMPCampaignMap.mapFile))
 // 				return &portalReloadedMPCampaignMap;
 // 		}
 // 	}
@@ -596,13 +595,13 @@ const std::vector<MapParams> divinityAdvancedMaps =
 };
 
 // Check to see which Divinity map is being played.
-const MapParams* InDivinityCampaignMap(bool advanced)
+const MapParams* InDivinityCampaignMap(const bool advanced)
 {
 	if (advanced)
 	{
 		for (const auto& divinityAdvancedMap : divinityAdvancedMaps)
 		{
-			if (FStrEq(CURMAPFILENAME, divinityAdvancedMap.mapfile))
+			if (FStrEq(CURMAPFILENAME, divinityAdvancedMap.mapFile))
 				return &divinityAdvancedMap;
 		}
 	}
@@ -610,7 +609,7 @@ const MapParams* InDivinityCampaignMap(bool advanced)
 	{
 		for (const auto& divinityCampaignMap : divinityCampaignMaps)
 		{
-			if (FStrEq(CURMAPFILENAME, divinityCampaignMap.mapfile))
+			if (FStrEq(CURMAPFILENAME, divinityCampaignMap.mapFile))
 				return &divinityCampaignMap;
 		}
 	}

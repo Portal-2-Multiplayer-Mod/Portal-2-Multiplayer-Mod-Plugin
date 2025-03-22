@@ -147,29 +147,31 @@ void P2MMLog(LogLevel level, bool dev, const char* pMsgFormat, ...);
 class CPlayerFilter : public IRecipientFilter
 {
 public:
-	CPlayerFilter() { recipient_count = 0; };
-	~CPlayerFilter() {};
+	CPlayerFilter(): recipients{} { recipientCount = 0; }
+	~CPlayerFilter() override = default;
 
-	virtual bool IsReliable() const { return false; }
-	virtual bool IsInitMessage() const { return false; }
+	bool IsReliable() const override { return false; }
+	bool IsInitMessage() const override { return false; }
 
-	virtual int GetRecipientCount() const { return recipient_count; }
-	virtual int GetRecipientIndex(int slot) const {
-		return (slot < 0 || slot >= recipient_count) ? -1 : recipients[slot];
+	int GetRecipientCount() const override { return recipientCount; }
+
+	int GetRecipientIndex(int slot) const override
+	{
+		return (slot < 0 || slot >= recipientCount) ? -1 : recipients[slot];
 	}
 
-	void AddPlayer(int playerIndex)
+	void AddPlayer(const int playerIndex)
 	{
-		if (recipient_count < 256)
+		if (recipientCount < 256)
 		{
-			recipients[recipient_count] = playerIndex;
-			recipient_count++;
+			recipients[recipientCount] = playerIndex;
+			recipientCount++;
 		}
 	}
 
 private:
 	int recipients[256];
-	int recipient_count;
+	int recipientCount;
 };
 
 // If String Equals String helper function. Taken from utils.h.
@@ -201,8 +203,8 @@ inline int EDICTINDEX(edict_t* pEdict)
 //---------------------------------------------------------------------------------
 inline int ENTINDEX(CBaseEntity* pEnt)
 {
-	static auto _ENTINDEX = reinterpret_cast<int (__cdecl*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 8B 45 ?? 85 C0 74 ?? 8B 40 ?? 85 C0 74 ?? 8B 0D"));
-	return _ENTINDEX(pEnt);
+	static auto ENTINDEX_ = reinterpret_cast<int (__cdecl*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 8B 45 ?? 85 C0 74 ?? 8B 40 ?? 85 C0 74 ?? 8B 0D"));
+	return ENTINDEX_(pEnt);
 }
 
 //---------------------------------------------------------------------------------
@@ -234,12 +236,15 @@ inline const char* GetGameMainDir()
 //---------------------------------------------------------------------------------
 inline const char* GetGameRootDir()
 {
-	char baseDir[MAX_PATH] = { 0 };
-	std::string fullGameDirectoryPath = engineClient->GetGameDirectory();
-	size_t firstSlash = fullGameDirectoryPath.find_last_of("\\");
-	size_t secondSlash = fullGameDirectoryPath.find_last_of("\\", firstSlash - 1);
-	std::string tempBaseDir = fullGameDirectoryPath.substr(secondSlash + 1, firstSlash - secondSlash - 1);
-	V_strcpy(baseDir, tempBaseDir.c_str());
+	static char baseDir[MAX_PATH] = { 0 };
+	const std::string fullGameDirectoryPath = engineClient->GetGameDirectory();
+
+	// Find last two backslashes
+	const size_t firstSlash = fullGameDirectoryPath.find_last_of('\\');
+	const size_t secondSlash = fullGameDirectoryPath.find_last_of('\\', firstSlash - 1);
+	const std::string tempBaseDir = fullGameDirectoryPath.substr(secondSlash + 1, firstSlash - secondSlash - 1);
+	V_strcpy(baseDir, tempBaseDir.c_str()); // Copy to static buffer
+
 	return baseDir;
 }
 
@@ -248,7 +253,7 @@ inline const char* GetGameRootDir()
 //---------------------------------------------------------------------------------
 inline bool IsGameActive()
 {
-	bool m_activeGame = **Memory::Scanner::Scan<bool**>(ENGINEDLL, "C6 05 ?? ?? ?? ?? ?? C6 05 ?? ?? ?? ?? ?? 0F B6 96", 2);
+	const bool m_activeGame = **Memory::Scanner::Scan<bool**>(ENGINEDLL, "C6 05 ?? ?? ?? ?? ?? C6 05 ?? ?? ?? ?? ?? 0F B6 96", 2);
 	return m_activeGame;
 }
 
@@ -257,6 +262,6 @@ inline bool IsGameActive()
 //---------------------------------------------------------------------------------
 inline bool IsGameShutdown()
 {
-	bool bIsGameShuttingDown = reinterpret_cast<bool(__cdecl*)()>(Memory::Scanner::Scan<void*>(ENGINEDLL, "B8 05 00 00 00 39 05"))();
+	const bool bIsGameShuttingDown = reinterpret_cast<bool(__cdecl*)()>(Memory::Scanner::Scan<void*>(ENGINEDLL, "B8 05 00 00 00 39 05"))();
 	return bIsGameShuttingDown;
 }

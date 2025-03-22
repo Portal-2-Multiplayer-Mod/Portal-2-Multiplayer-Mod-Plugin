@@ -57,20 +57,49 @@ static void DiscordLog(LogLevel level, bool dev, const char* pMsgFormat, ...)
 	}
 }
 
-////-----------------------------------------------------------------------------
-//// Discord Webhooks
-////-----------------------------------------------------------------------------
+/**
+ * @brief Log dump passed in RPC struct info.
+ * @param rpc RPC struct info.
+ */
+static void DumpDiscordRPCValues(const DiscordRichPresence* rpc)
+{
+	DiscordLog(INFO, true, "Discord RPC Debug Spew:");
+	DiscordLog(INFO, true, "state: %s", rpc->state);
+	DiscordLog(INFO, true, "details: %s", rpc->details);
+	DiscordLog(INFO, true, "startTimestamp: %I64d", rpc->startTimestamp);
+	DiscordLog(INFO, true, "endTimestamp: %I64d", rpc->endTimestamp);
+	DiscordLog(INFO, true, "largeImageKey: %s", rpc->largeImageKey);
+	DiscordLog(INFO, true, "largeImageText: %s", rpc->largeImageText);
+	DiscordLog(INFO, true, "smallImageKey: %s", rpc->smallImageKey);
+	DiscordLog(INFO, true, "smallImageText: %s", rpc->smallImageText);
+	DiscordLog(INFO, true, "partyId: %s", rpc->partyId);
+	DiscordLog(INFO, true, "partySize: %i", rpc->partySize);
+	DiscordLog(INFO, true, "partyMax: %i", rpc->partyMax);
+	DiscordLog(INFO, true, "matchSecret: %s", rpc->matchSecret);
+	DiscordLog(INFO, true, "joinSecret: %s", rpc->joinSecret);
+	DiscordLog(INFO, true, "spectateSecret: %s", rpc->spectateSecret);
+	DiscordLog(INFO, true, "instance: %i", rpc->spectateSecret);
+}
 
-void WebhookCheck(IConVar* var, const char* pOldValue, float flOldValue)
+///-----------------------------------------------------------------------------
+/// Discord Webhooks
+///-----------------------------------------------------------------------------
+
+/**
+ * @brief 
+ * @param var 
+ * @param pOldValue 
+ * @param flOldValue 
+ */
+static void WebhookCheck(IConVar* var, const char* pOldValue, float flOldValue)
 {
 	// Make sure people know that the chat is being recorded if webhook is set
-	if (((ConVar*)var)->GetBool())
+	if (dynamic_cast<ConVar*>(var)->GetBool())
 	{
 		FOR_ALL_PLAYERS(i)
 		{
-			CBasePlayer* pPlayer = UTIL_PlayerByIndex(i);
-			if (pPlayer)
-				UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, "This lobby has Discord Webhook Intergration enabled! All of your ingame messages may be sent to a Discord channel.");
+			if (CBasePlayer* pPlayer = UTIL_PlayerByIndex(i))
+				UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, "This lobby has Discord Webhook Integration enabled! All of your in-game messages may be sent to a Discord channel.");
 		}
 	}
 }
@@ -85,30 +114,30 @@ struct WebHookParams
 	std::string title = "Unknown";
 	std::string description = "*Insert Yapping Here*";
 	int			color = EMBED_COLOR_PLAYER;
-	std::string footer = "";
+	std::string footer;
 };
 
 // Generates a footer with the player count with max allowed client count and also the current map name
-std::string DefaultFooter()
+static std::string DefaultFooter()
 {
 	// g_pGlobals doesn't exist yet at certain situations, so return a blank string.
 	if (!g_pGlobals) return "";
 
-	std::string curplayercount = std::to_string(CURPLAYERCOUNT());
-	std::string maxplayercount = std::to_string(MAX_PLAYERS);
-	std::string footer = std::string("Players: ") + curplayercount + "/" + maxplayercount + std::string(" || Current Map: ") + CURMAPFILENAME;
+	const std::string curPlayerCount = std::to_string(CURPLAYERCOUNT());
+	const std::string maxPlayerCount = std::to_string(MAX_PLAYERS);
+	std::string footer = std::string("Players: ") + curPlayerCount + "/" + maxPlayerCount + std::string(" || Current Map: ") + CURMAPFILENAME;
 
 	if (GetBotCount() == 1)
-		footer = std::string("Players: ") + curplayercount + "/" + maxplayercount + std::string(" (1 Bot) || Current Map : ") + CURMAPFILENAME;
+		footer = std::string("Players: ") + curPlayerCount + "/" + maxPlayerCount + std::string(" (1 Bot) || Current Map : ") + CURMAPFILENAME;
 	else if (GetBotCount() > 1)
-		footer = std::string("Players: ") + curplayercount + "/" + maxplayercount + std::string(" (") + std::to_string(GetBotCount()) + std::string(" Bots) || Current Map : ") + CURMAPFILENAME;
+		footer = std::string("Players: ") + curPlayerCount + "/" + maxPlayerCount + std::string(" (") + std::to_string(GetBotCount()) + std::string(" Bots) || Current Map : ") + CURMAPFILENAME;
 		
 
 	return footer;
 }
 
 // Thread sending a curl request to the specified Discord WebHook
-unsigned SendWebHook(void* webhookParams)
+static unsigned SendWebHook(void* webhookParams)
 {
 	if (FStrEq(p2mm_discord_webhooks_url.GetString(), ""))
 	{
@@ -129,14 +158,14 @@ unsigned SendWebHook(void* webhookParams)
 	curl_easy_setopt(curl, CURLOPT_POST, 1L);
 
 	// Create the JSON payload
-	WebHookParams* params = (WebHookParams*)webhookParams;
+	WebHookParams* params = static_cast<WebHookParams*>(webhookParams);
 
 	std::string jsonPayload = std::string(
-		"{ \"content\": null, \"embeds\" : [ {\"title\": \"" +
-		params->title + "\", \"description\" : \"" +
-		params->description + "\", \"color\" : " +
-		std::to_string(params->color) + ", \"footer\": { \"text\": \"" +
-		params->footer + "\" }}], \"attachments\": [] }"
+		R"({ "content": null, "embeds" : [ {"title": ")" +
+		params->title + R"(", "description" : ")" +
+		params->description + R"(", "color" : )" +
+		std::to_string(params->color) + R"(, "footer": { "text": ")" +
+		params->footer + R"(" }}], "attachments": [] })"
 	);
 
 	DiscordLog(INFO, true, std::string("jsonPayload: " + jsonPayload).c_str());
@@ -177,7 +206,7 @@ unsigned SendWebHook(void* webhookParams)
 }
 
 // Send a embed message to Discord via a webhook
-void CDiscordIntegration::SendWebHookEmbed(std::string title, std::string description, int color, bool hasFooter)
+void CDiscordIntegration::SendWebHookEmbed(const std::string& title, const std::string& description, const int color, const bool hasFooter)
 {
 	if (!p2mm_discord_webhooks.GetBool()) return;
 
@@ -215,10 +244,10 @@ void CDiscordIntegration::SendWebHookEmbed(std::string title, std::string descri
 /// OLD API Documentation: https://github.com/discord/discord-api-docs/tree/legacy-gamesdk/docs/rich_presence
 ///-----------------------------------------------------------------------------
 
-void RPCState(IConVar* var, const char* pOldValue, float flOldValue)
+static void RPCState(IConVar* var, const char* pOldValue, float flOldValue)
 {
 	if (!g_P2MMServerPlugin.m_bPluginLoaded) return;
-	ConVar* cvRPC = (ConVar*)var;
+	ConVar* cvRPC = dynamic_cast<ConVar*>(var);
 	if (cvRPC->GetBool() && !g_pDiscordIntegration->rpcRunning)
 		g_pDiscordIntegration->StartDiscordRPC();
 	if (!cvRPC->GetBool() && g_pDiscordIntegration->rpcRunning)
@@ -374,6 +403,9 @@ void CDiscordIntegration::UpdateDiscordRPC()
 	{
 		RPC.state = "See you around!";
 		RPC.details = "Shutting down...";
+		DumpDiscordRPCValues(&RPC);
+		Discord_UpdatePresence(&RPC);
+		return;
 	}
 
 	if (!bActiveGame || bGameShutdown)
@@ -384,7 +416,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 
 	if (bActiveGame && !(g_P2MMServerPlugin.m_bPluginUnloading || bGameShutdown))
 	{
-		MapParams* map = nullptr;
+		const MapParams* map = nullptr;
 		char state[128] = { 0 };
 		char details[128] = "Map: ";
 		char smallImageKey[32] = { 0 };
@@ -394,21 +426,21 @@ void CDiscordIntegration::UpdateDiscordRPC()
 		case (PORTAL_2):
 			if (std::strstr(CURMAPFILENAME, "sp_"))
 			{
-				*map = *InP2CampaignMap();
+				map = InP2CampaignMap();
 				if (!map) break;
 
-				V_strcat(details, map->mapname, sizeof(details));
+				V_strcat(details, map->mapName, sizeof(details));
 				V_snprintf(smallImageKey, 32, "p2spchapter%i", map->chapter);
-				V_strcat(smallImageText, map->chaptername, sizeof(smallImageText));
+				V_strcat(smallImageText, map->chapterName, sizeof(smallImageText));
 			}
 			else if (std::strstr(CURMAPFILENAME, "gelocity"))
 			{
-				*map = *InGelocityMap();
+				map = InGelocityMap();
 				if (!map) break;
 
-				V_strcat(details, map->mapname, sizeof(details));
+				V_strcat(details, map->mapName, sizeof(details));
 				V_strcat(smallImageKey, "race", sizeof(smallImageKey));
-				V_strcat(smallImageText, map->mapname, sizeof(smallImageText));
+				V_strcat(smallImageText, map->mapName, sizeof(smallImageText));
 			}
 			else if (std::strstr(CURMAPFILENAME, "workshop/"))
 			{
@@ -424,7 +456,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 			}
 			else
 			{
-				*map = *InP2CampaignMap(true);
+				map = InP2CampaignMap(true);
 				if (!map)
 				{
 					V_strcat(details, CURMAPFILENAME, sizeof(details));
@@ -433,31 +465,31 @@ void CDiscordIntegration::UpdateDiscordRPC()
 					break;
 				}
 
-				V_strcat(details, map->mapname, sizeof(details));
+				V_strcat(details, map->mapName, sizeof(details));
 				V_snprintf(smallImageKey, sizeof(smallImageKey), "p2mpcourse%i", map->chapter);
-				V_strcat(smallImageText, map->chaptername, sizeof(smallImageText));
+				V_strcat(smallImageText, map->chapterName, sizeof(smallImageText));
 			}
 			break;
 		case (PORTAL_STORIES_MEL):
 			if (FStrEq(CURMAPFILENAME, "mp_coop_community_hub")) break;
 
 			if (std::strstr(CURMAPFILENAME, "sp_"))
-				*map = *InMelCampaignMap(true);
+				map = InMelCampaignMap(true);
 			else
-				*map = *InMelCampaignMap();
+				map = InMelCampaignMap();
 			if (!map) break;
 
-			V_strcat(details, map->mapname, sizeof(details));
+			V_strcat(details, map->mapName, sizeof(details));
 			V_snprintf(smallImageKey, sizeof(smallImageKey), "melchapter%i", map->chapter);
-			V_strcat(smallImageText, map->chaptername, sizeof(smallImageText));
+			V_strcat(smallImageText, map->chapterName, sizeof(smallImageText));
 			break;
 		case (APERTURE_TAG):
-			*map = *InApertureTagCampaignMap();
+			map = InApertureTagCampaignMap();
 			if (!map) break;
 			
-			V_strcat(details, map->mapname, sizeof(details));
+			V_strcat(details, map->mapName, sizeof(details));
 			V_snprintf(smallImageKey, sizeof(smallImageKey), "aptagchapter%i", map->chapter);
-			V_strcat(smallImageText, map->chaptername, sizeof(smallImageText));
+			V_strcat(smallImageText, map->chapterName, sizeof(smallImageText));
 			break;
 		case (PORTAL_RELOADED):
 			// Portal Reloaded support will not happen for some time, this will remain commented out.
@@ -467,20 +499,20 @@ void CDiscordIntegration::UpdateDiscordRPC()
 			// 	*map = *InReloadedCampaignMap();
 			// if (!map) break;
 			//
-			// V_strcat(details, map->mapname, sizeof(details));
+			// V_strcat(details, map->mapName, sizeof(details));
 			// V_snprintf(smallImageKey, sizeof(smallImageKey), "reloadedchapter%i", map->chapter);
-			// V_strcat(smallImageText, map->chaptername, sizeof(smallImageText));
+			// V_strcat(smallImageText, map->chapterName, sizeof(smallImageText));
 			break;
 		case (DIVINITY):
 			if (std::strstr(CURMAPFILENAME, "adv"))
-				*map = *InDivinityCampaignMap(true);
+				map = InDivinityCampaignMap(true);
 			else
-				*map = *InMelCampaignMap();
+				map = InMelCampaignMap();
 			if (!map) break;
 			
-			V_strcat(details, map->mapname, sizeof(details));
+			V_strcat(details, map->mapName, sizeof(details));
 			V_snprintf(smallImageKey, sizeof(smallImageKey), "divinitychapter%i", map->chapter);
-			V_strcat(smallImageText, map->chaptername, sizeof(smallImageText));
+			V_strcat(smallImageText, map->chapterName, sizeof(smallImageText));
 			break;
 		default:
 			V_strcat(details, CURMAPFILENAME, sizeof(details));
@@ -488,7 +520,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 			V_strcat(smallImageText, CURMAPFILENAME, sizeof(smallImageText));
 			break;
 		}
-
+		
 		if (GetBotCount() == 1) 
 			V_strcat(state, "1 Bot | Players: ", sizeof(state));
 		else if (GetBotCount() > 1) 
@@ -503,23 +535,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 		RPC.partySize = CURPLAYERCOUNT();
 		RPC.instance = 1;
 	}
-
-	// Discord RPC log debug dump for the update.
-	DiscordLog(0, true, "Discord RPC Debug Spew:");
-	DiscordLog(0, true, "state: %s",RPC.state);
-	DiscordLog(0, true, "details: %s", RPC.details);
-	DiscordLog(0, true, "startTimestamp: %I64d", RPC.startTimestamp);
-	DiscordLog(0, true, "endTimestamp: %I64d", RPC.endTimestamp);
-	DiscordLog(0, true, "largeImageKey: %s", RPC.largeImageKey);
-	DiscordLog(0, true, "largeImageText: %s", RPC.largeImageText);
-	DiscordLog(0, true, "smallImageKey: %s", RPC.smallImageKey);
-	DiscordLog(0, true, "smallImageText: %s", RPC.smallImageText);
-	DiscordLog(0, true, "partyId: %s", RPC.partyId);
-	DiscordLog(0, true, "partySize: %i", RPC.partySize);
-	DiscordLog(0, true, "partyMax: %i", RPC.partyMax);
-	DiscordLog(0, true, "matchSecret: %s", RPC.matchSecret);
-	DiscordLog(0, true, "joinSecret: %s", RPC.joinSecret);
-	DiscordLog(0, true, "spectateSecret: %s", RPC.spectateSecret);
-	DiscordLog(0, true, "instance: %i", RPC.spectateSecret);
+	
+	DumpDiscordRPCValues(&RPC);
 	Discord_UpdatePresence(&RPC);
 }

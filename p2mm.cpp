@@ -623,7 +623,7 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 			return PLUGIN_STOP;
 
 		// Whether we want to actually stop client commands or not. Host is always ignored.
-		if (entindex != 1 && FSubStr(pCmd, badCC) && p2mm_forbidclientcommands.GetBool())
+		if (entindex != 1 && FSubStr(pCmd, badCC) && p2mm_forbid_clientcommands.GetBool())
 		{
 			engineServer->ClientPrintf(INDEXENT(entindex), "This command is blocked from execution!\n");
 			return PLUGIN_STOP;
@@ -644,7 +644,7 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 //---------------------------------------------------------------------------------
 void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 {
-	bool spewInfo = p2mm_spewgameeventinfo.GetBool();
+	bool spewInfo = p2mm_spew_gameevent_info.GetBool();
 	if (spewInfo)
 	{
 		P2MMLog(INFO, true, "Game Event Fired: %s", event->GetName());
@@ -993,7 +993,7 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 	int userid = engineServer->GetPlayerUserId(pEntity);
 	int entindex = UserIDToPlayerIndex(userid);
 
-	if (p2mm_spewgameeventinfo.GetBool())
+	if (p2mm_spew_gameevent_info.GetBool())
 	{
 		P2MMLog(INFO, true, "ClientActive Called!");
 		P2MMLog(INFO, true, "userid: %i", userid);
@@ -1041,7 +1041,7 @@ void CP2MMServerPlugin::GameFrame(bool simulating)
 		g_pScriptVM->Call<bool>(gf_func, nullptr, false, nullptr, simulating);
 }
 
-extern void updateMapsList();
+extern void UpdateMapsList();
 //---------------------------------------------------------------------------------
 // Purpose: Called when a the map is changing to another map, or the server is shutting down.
 //---------------------------------------------------------------------------------
@@ -1049,7 +1049,7 @@ void CP2MMServerPlugin::LevelShutdown(void)
 {
 	P2MMLog(INFO, true, "Level Shutdown! Map: %s", CURMAPFILENAME);
 	p2mm_loop.SetValue("0"); // REMOVE THIS at some point...
-	updateMapsList(); // Update the maps list for p2mm_map.
+	UpdateMapsList(); // Update the maps list for p2mm_map.
 	// Update Discord RPC to update the level information or to say the host is on the main menu.
 	CDiscordIntegration::UpdateDiscordRPC();
 }

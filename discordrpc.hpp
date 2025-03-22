@@ -17,7 +17,7 @@ class CDiscordIntegration {
 public:
 	CDiscordIntegration();
 
-	void SendWebHookEmbed(std::string title = "Unknown", std::string description = "*Insert Yapping Here*", int color = EMBED_COLOR_PLAYER, bool hasFooter = true);
+	static void SendWebHookEmbed(const std::string& title = "Unknown", const std::string& description = "*Insert Yapping Here*", int color = EMBED_COLOR_PLAYER, bool hasFooter = true);
 	bool StartDiscordRPC();
 	void ShutdownDiscordRPC();
 	static void UpdateDiscordRPC();

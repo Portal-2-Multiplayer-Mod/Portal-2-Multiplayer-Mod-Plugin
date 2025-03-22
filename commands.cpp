@@ -21,7 +21,7 @@ ConVar p2mm_splitscreen("p2mm_splitscreen", "0", FCVAR_HIDDEN, "Flag for the mai
 //---------------------------------------------------------------------------------
 // UTIL P2:MM ConVars | ConVars the host can change.
 //---------------------------------------------------------------------------------
-ConVar p2mm_forbidclientcommands("p2mm_forbidclientcommands", "1", FCVAR_NONE, "Stop client commands clients shouldn't be executing.");
+ConVar p2mm_forbid_clientcommands("p2mm_forbid_clientcommands", "1", FCVAR_NONE, "Stop client commands clients shouldn't be executing.");
 ConVar p2mm_deathicons("p2mm_deathicons", "1", FCVAR_NONE, "Whether or not when players die the death icon should appear.");
 ConVar p2mm_instantrespawn("p2mm_instantrespawn", "0", FCVAR_NONE, "Whether respawning should be instant or not.");
 
@@ -30,22 +30,21 @@ ConVar p2mm_instantrespawn("p2mm_instantrespawn", "0", FCVAR_NONE, "Whether resp
 //---------------------------------------------------------------------------------
 ConVar p2mm_developer("p2mm_developer", "0", FCVAR_NONE, "Enable for P2:MM developer messages.");
 
-void UpdateDisplayGEsConVar(IConVar* var, const char* pOldValue, float flOldValue)
+static void UpdateDisplayGEsConVar(IConVar* var, const char* pOldValue, float flOldValue)
 {
-	ConVar* pGEConVar = g_pCVar->FindVar("display_game_events");
-	if (pGEConVar)
-		pGEConVar->SetValue(((ConVar*)var)->GetBool());
+	if (ConVar* pGEConVar = g_pCVar->FindVar("display_game_events"))
+		pGEConVar->SetValue(dynamic_cast<ConVar*>(var)->GetBool());
 }
-ConVar p2mm_spewgameeventinfo("p2mm_spewgameeventinfo", "0", FCVAR_NONE, "Log information from called game events in the console, p2mm_developer must also be on. Can cause lots of console spam.", UpdateDisplayGEsConVar);
+ConVar p2mm_spew_gameevent_info("p2mm_spew_gameevent_info", "0", FCVAR_NONE, "Log information from called game events in the console, p2mm_developer must also be on. Can cause lots of console spam.", UpdateDisplayGEsConVar);
 
 //---------------------------------------------------------------------------------
 // P2:MM p2mm_map ConCommand Logic
 //---------------------------------------------------------------------------------
-std::vector<std::string> mapList; // List of maps for the p2mm_map command auto complete.
-std::vector<std::string> workshopMapList; // List of all workshop map for the p2mm_map auto complete.
+static std::vector<std::string> mapList; // List of maps for the p2mm_map command auto complete.
+static std::vector<std::string> workshopMapList; // List of all workshop map for the p2mm_map auto complete.
 
-// Update the map list avaliable to p2mm_map by scanning for all map files in SearchPath.
-void updateMapsList() {
+// Update the map list available to p2mm_map by scanning for all map files in SearchPath.
+void UpdateMapsList() {
 	mapList.clear();
 	CUtlVector<CUtlString> outList;
 	AddFilesToList(outList, "maps", "GAME", "bsp");
@@ -54,9 +53,9 @@ void updateMapsList() {
 	{
 		// Get each map and get their relative path to each SearchPath and make slashes forward slashes.
 		// Then turn relativePath into a std::string to easily manipulate.
-		const char* curmap = outList[i];
+		const char* curMap = outList[i];
 		char relativePath[MAX_PATH] = { 0 };
-		g_pFileSystem->FullPathToRelativePathEx(curmap, "GAME", relativePath, sizeof(relativePath));
+		g_pFileSystem->FullPathToRelativePathEx(curMap, "GAME", relativePath, sizeof(relativePath));
 		V_FixSlashes(relativePath, '/');
 		V_StripExtension(relativePath, relativePath, sizeof(relativePath));
 		std::string fixedRelativePath(relativePath);
@@ -65,14 +64,14 @@ void updateMapsList() {
 		fixedRelativePath.erase(0, strlen("maps/"));
 
 		// Remove the whole "workshop/(workshop id)" part if there isn't multiple workshop maps of the same file name.
-		size_t lastSlashPos = fixedRelativePath.find_last_of("/");
+		size_t lastSlashPos = fixedRelativePath.find_last_of('/');
 		if (lastSlashPos != std::string::npos && fixedRelativePath.rfind("workshop/") != std::string::npos)
 		{
 			fixedRelativePath.erase(0, strlen("workshop/"));
 			workshopMapList.push_back(fixedRelativePath);
 		}
 
-		// Push the map string on to the list to display avaliable options for the command.
+		// Push the map string on to the list to display available options for the command.
 		mapList.push_back(std::move(fixedRelativePath));
 	}
 }
@@ -82,22 +81,22 @@ static int p2mm_map_CompletionFunc(const char* partial, char commands[COMMAND_CO
 {
 	// If the map list is empty, generate it.
 	if (mapList.empty()) {
-		updateMapsList();
+		UpdateMapsList();
 	}
 
 	// Assemble together the current state of the inputted command.
-	const char* concommand = "p2mm_map ";
-	const char* match = (V_strstr(partial, concommand) == partial) ? partial + V_strlen(concommand) : partial;
+	const char* conCommand = "p2mm_map ";
+	const char* match = (V_strstr(partial, conCommand) == partial) ? partial + V_strlen(conCommand) : partial;
 
 	// Go through the map list searching for matches with the assembled inputted command.
 	int numMatchedMaps = 0;
-	for (const std::string map : mapList)
+	for (const std::string& map : mapList)
 	{
 		if (numMatchedMaps >= COMMAND_COMPLETION_MAXITEMS) break;
 
 		if (V_strstr(map.c_str(), match))
 		{
-			V_snprintf(commands[numMatchedMaps++], COMMAND_COMPLETION_ITEM_LENGTH, "%s%s", concommand, map.c_str());
+			V_snprintf(commands[numMatchedMaps++], COMMAND_COMPLETION_ITEM_LENGTH, "%s%s", conCommand, map.c_str());
 		}
 	}
 
@@ -108,14 +107,14 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 {
 	// If the map list is empty, generate it.
 	if (mapList.empty()) {
-		updateMapsList();
+		UpdateMapsList();
 	}
 
 	// Make sure the CON_COMMAND was executed correctly.
 	if (args.ArgC() < 2 || FStrEq(args.Arg(1), ""))
 	{
-		updateMapsList();
 		P2MMLog(WARNING, false, "p2mm_map called incorrectly! Usage: \"p2mm_map (map to start)\"");
+		UpdateMapsList();
 		return;
 	}
 
@@ -142,7 +141,7 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 			P2MMLog(WARNING, false, "p2mm_map was called with P2MM_LASTMAP, but p2mm_lastmap is empty or invalid!");
 			engineClient->ExecuteClientCmd("disconnect \"There is no last map recorded or the map doesn't exist! Please start a play session with the other options first.\"");
 			engineClient->ExecuteClientCmd(completePVCmd);
-			updateMapsList();
+			UpdateMapsList();
 			return;
 		}
 		V_strcpy(requestedMap, p2mm_lastmap.GetString());
@@ -152,20 +151,17 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 
 	// Check if the requested map is a workshop map.
 	std::string tempMapStr = requestedMap;
-	for (const std::string map : workshopMapList)
+	for (const std::string& map : workshopMapList)
 	{
 		if (tempMapStr == map)
-		{
-			tempMapStr = std::string("workshop/" + tempMapStr);
-			V_strcpy(requestedMap, tempMapStr.c_str());
-		}
+			V_strcpy(requestedMap, std::string("workshop/" + tempMapStr).c_str());
 	}
 
 	// Check if the supplied map is a valid map.
 	if (!engineServer->IsMapValid(requestedMap))
 	{
-		updateMapsList();
 		P2MMLog(WARNING, false, "p2mm_map was given a non-valid map or one that doesn't exist! \"%s\"", requestedMap);
+		UpdateMapsList();
 		return;
 	}
 
@@ -201,7 +197,7 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 
 CON_COMMAND(p2mm_updatemaplist, "Manually updates the list of available maps that can be loaded with p2mm_map.")
 {
-	updateMapsList();
+	UpdateMapsList();
 }
 
 CON_COMMAND(p2mm_maplist, "Lists available maps that can be loaded with p2mm_map.")
@@ -229,8 +225,8 @@ CON_COMMAND(p2mm_respawnall, "Respawns all players.")
 	}
 }
 
-bool m_ConVarConCommandsShown = false; // Bool to track if the hidden ConVars and ConCommands are showing.
-std::vector<ConCommandBase*> toggledCVCCs; // List of toggled ConVars and ConCommands with the FCVAR_DEVELOPMENTONLY and FCVAR_HIDDEN ConVar flags removed.
+static bool m_ConVarConCommandsShown = false; // Bool to track if the hidden ConVars and ConCommands are showing.
+static std::vector<ConCommandBase*> toggledCVCCs; // List of toggled ConVars and ConCommands with the FCVAR_DEVELOPMENTONLY and FCVAR_HIDDEN ConVar flags removed.
 CON_COMMAND_F(p2mm_toggle_dev_cc_cvars, "Toggle showing any ConVars and ConCommands that have the FCVAR_DEVELOPMENTONLY and FCVAR_HIDDEN ConVar flags.", FCVAR_HIDDEN)
 {
 	int iToggleCount = 0; // To tell the user how many ConVars and ConCommands where toggle to show or hide.
@@ -311,7 +307,7 @@ CON_COMMAND_F(p2mm_helloworld2, "Hello World 2: Electric Boogaloo!", FCVAR_HIDDE
 ConVar p2mm_gelocity_laps_default("p2mm_gelocity_laps_default", "3", FCVAR_NONE, "Set the default amount of laps for a Gelocity race.", true, 1, true, 300);
 ConVar p2mm_gelocity_music_default("p2mm_gelocity_music_default", "0", FCVAR_NONE, "Set the default music track for a Gelocity race.", true, 0, true, 5);
 
-void GelocityTournament(IConVar* var, const char* pOldValue, float flOldValue)
+static void GelocityTournament(IConVar* var, const char* pOldValue, float flOldValue)
 {
 	// Check if host is in a gelocity map.
 	if (!InGelocityMap())
@@ -337,7 +333,7 @@ void GelocityTournament(IConVar* var, const char* pOldValue, float flOldValue)
 }
 ConVar p2mm_gelocity_tournamentmode("p2mm_gelocity_tournamentmode", "0", FCVAR_NONE, "Turn on or off tournament mode.", true, 0, true, 1, GelocityTournament);
 
-void GelocityButtons(IConVar* var, const char* pOldValue, float flOldValue)
+static void GelocityButtons(IConVar* var, const char* pOldValue, float flOldValue)
 {
 	// Check if host is in a gelocity map.
 	if (!InGelocityMap())
@@ -351,7 +347,7 @@ void GelocityButtons(IConVar* var, const char* pOldValue, float flOldValue)
 	}
 
 	// Lock or unlock the buttons.
-	if (!((ConVar*)var)->GetBool())
+	if (!dynamic_cast<ConVar*>(var)->GetBool())
 	{
 		g_pScriptVM->Run(
 			"EntFire(\"rounds_button_1\", \"Unlock\");"
@@ -427,7 +423,7 @@ CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race. Specify 0 
 	lapMessage.fxTime = 0.f;
 	lapMessage.channel = 3;
 
-	UTIL_HudMessage(NULL, lapMessage, std::string("Race Laps: " + std::string(args.Arg(1))).c_str());
+	UTIL_HudMessage(nullptr, lapMessage, std::string("Race Laps: " + std::string(args.Arg(1))).c_str());
 }
 
 CON_COMMAND(p2mm_gelocity_music, "Set the music track for the Gelocity Race. 0-5 0 = No Music.")
@@ -462,7 +458,7 @@ CON_COMMAND(p2mm_gelocity_music, "Set the music track for the Gelocity Race. 0-5
 		return;
 	}
 
-	g_pScriptVM->Run(std::string("iMusicTrack <- " + std::to_string(V_atoi(args.Arg(1))) + "; EntFire(\"counter_music\", \"SetValue\", iMusicTrack.tostring());").c_str(), false);
+	g_pScriptVM->Run(std::string("iMusicTrack <- " + std::to_string(V_atoi(args.Arg(1))) + R"(; EntFire("counter_music", "SetValue", iMusicTrack.tostring());)").c_str(), false);
 	HudMessageParams musicMessage;
 	musicMessage.x = -1;
 	musicMessage.y = 0.2f;
@@ -564,10 +560,11 @@ void RemovePlayerOperation(bool bBanning, int userid)
 	P2MMLog(INFO, true, "Banning?: %i", bBanning);
 	P2MMLog(INFO, true, "userID: %i", bannedPlayer.userID);
 	P2MMLog(INFO, true, "username: %s", bannedPlayer.username.c_str());
+	P2MMLog(INFO, true, "guid: %s", bannedPlayer.guid.c_str());
 }
 
 // Display UI for either banning or kicking so host can ban or kick a player.
-void RemovePlayerUI(int playerIndex, bool bBanning)
+void RemovePlayerUI(const int playerIndex, const bool bBanning)
 {
 	if (!IsGameActive())
 	{

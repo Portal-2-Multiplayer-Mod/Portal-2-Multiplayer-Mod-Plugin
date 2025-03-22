@@ -202,11 +202,11 @@ void CDiscordIntegration::SendWebHookEmbed(std::string title, std::string descri
 }
 
 
-////-----------------------------------------------------------------------------
-//// Discord Rich Presence
-//// OLD API Source: https://github.com/discord/discord-rpc
-//// OLD API Documentation: https://github.com/discord/discord-api-docs/tree/legacy-gamesdk/docs/rich_presence
-////-----------------------------------------------------------------------------
+///-----------------------------------------------------------------------------
+/// Discord Rich Presence
+/// OLD API Source: https://github.com/discord/discord-rpc
+/// OLD API Documentation: https://github.com/discord/discord-api-docs/tree/legacy-gamesdk/docs/rich_presence
+///-----------------------------------------------------------------------------
 
 void RPCState(IConVar* var, const char* pOldValue, float flOldValue)
 {
@@ -383,13 +383,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 		switch (g_P2MMServerPlugin.m_iCurGameIndex)
 		{
 		case (PORTAL_2):
-			if (FStrEq(CURMAPFILENAME, "mp_coop_community_hub"))
-			{
-				V_strcat(details, "Community Hub", sizeof(details));
-				V_strcat(smallImageKey, "p2mpchapter1", sizeof(smallImageKey));
-				V_strcat(smallImageText, "Community Hub", sizeof(smallImageText));
-			}
-			else if (std::strstr(CURMAPFILENAME, "sp_"))
+			if (std::strstr(CURMAPFILENAME, "sp_"))
 			{
 				*map = *InP2CampaignMap();
 				if (!map) break;

@@ -47,7 +47,6 @@ void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 	default:
 		Warning("(P2:MM PLUGIN): P2MMLog level set outside of 0-1, \"%i\". Defaulting to level 0.\n", level);
 		ConColorMsg(P2MM_PLUGIN_CONSOLE_COLOR, completeMsg);
-		return;
 	}
 }
 
@@ -92,7 +91,7 @@ const char* GetPlayerName(int playerIndex)
 //---------------------------------------------------------------------------------
 // Purpose: Gets the account ID component of player SteamID by the player's entity index.
 //---------------------------------------------------------------------------------
-int GetSteamID(int playerIndex)
+int GetSteamID(const int playerIndex)
 {
 	edict_t* pEdict = nullptr;
 	if (playerIndex >= 0 && playerIndex < MAX_PLAYERS)
@@ -117,7 +116,7 @@ int GetSteamID(int playerIndex)
 //---------------------------------------------------------------------------------
 int GetConVarInt(const char* cvName)
 {
-	ConVar* pVar = g_pCVar->FindVar(cvName);
+	const ConVar* pVar = g_pCVar->FindVar(cvName);
 	if (!pVar)
 	{
 		P2MMLog(1, false, "Could not find ConVar: \"%s\"! Returning -1!", cvName);
@@ -132,7 +131,7 @@ int GetConVarInt(const char* cvName)
 //---------------------------------------------------------------------------------
 const char* GetConVarString(const char* cvName)
 {
-	ConVar* pVar = g_pCVar->FindVar(cvName);
+	const ConVar* pVar = g_pCVar->FindVar(cvName);
 	if (!pVar)
 	{
 		P2MMLog(1, false, "Could not find ConVar: \"%s\"! Returning \"\"!", cvName);
@@ -154,7 +153,6 @@ void SetConVarInt(const char* cvName, int newValue)
 		return;
 	}
 	pVar->SetValue(newValue);
-	return;
 }
 
 //---------------------------------------------------------------------------------
@@ -222,14 +220,15 @@ HSCRIPT INDEXHANDLE(int iEdictNum)
 	edict_t* pEdict = INDEXENT(iEdictNum);
 	if (!pEdict->GetUnknown())
 		return nullptr;
+		
 	CBaseEntity* pBaseEntity = pEdict->GetUnknown()->GetBaseEntity();
 	if (!pBaseEntity)
 		return nullptr;
-	HSCRIPT entityHandle = CBaseEntity__GetScriptInstance(pBaseEntity);
-	return entityHandle;
+	
+	return CBaseEntity__GetScriptInstance(pBaseEntity);
 }
 
-///			 Campaign Map Arrays & Functions			\\\	
+///			 Campaign Map Arrays & Functions			\\\
 
 //---------------------------------------------------------------------------------
 // GELOCITY MAPS
@@ -259,7 +258,7 @@ const MapParams* InGelocityMap()
 //---------------------------------------------------------------------------------
 // PORTAL 2 SINGLE PLAYER CAMPAIGN
 //---------------------------------------------------------------------------------
-const std::vector<MapParams> spCampaignMaps =
+const std::vector<MapParams> SP_CAMPAIGN_MAPS =
 {
 	{"sp_a1_intro1",                 "Container Ride",       1,		"The Courtesy Call"},
 	{"sp_a1_intro2",                 "Portal Carousel",      1,		"The Courtesy Call"},
@@ -329,11 +328,12 @@ const std::vector<MapParams> spCampaignMaps =
 //---------------------------------------------------------------------------------
 // PORTAL 2 COOPERATIVE CAMPAIGN
 //---------------------------------------------------------------------------------
-const std::vector<MapParams> mpCampaignMaps =
+const std::vector<MapParams> MP_CAMPAIGN_MAPS =
 {
 	{"mp_coop_start",                "Calibration",          0,		"Introduction"},
 	{"mp_coop_lobby_2",              "Cooperative Lobby",    0,		"Introduction"},
 	{"mp_coop_lobby_3",              "Cooperative Lobby",    0,		"Introduction"},
+	{"mp_coop_community_hub",        "Community Hub",		1,		"Community Hub"},
 	{"mp_coop_doors",                "Doors",                1,		"Team Building"},
 	{"mp_coop_race_2",               "Buttons",              1,		"Team Building"},
 	{"mp_coop_laser_2",              "Lasers",               1,		"Team Building"},
@@ -393,7 +393,7 @@ const MapParams* InP2CampaignMap(const bool mpMaps)
 {
 	if (mpMaps)
 	{
-		for (const auto& mpCampaignMap : mpCampaignMaps)
+		for (const auto& mpCampaignMap : MP_CAMPAIGN_MAPS)
 		{
 			if (FStrEq(CURMAPFILENAME, mpCampaignMap.mapFile))
 				return &mpCampaignMap;
@@ -401,7 +401,7 @@ const MapParams* InP2CampaignMap(const bool mpMaps)
 	}
 	else
 	{
-		for (const auto& spCampaignMap : spCampaignMaps)
+		for (const auto& spCampaignMap : SP_CAMPAIGN_MAPS)
 		{
 			if (FStrEq(CURMAPFILENAME, spCampaignMap.mapFile))
 				return &spCampaignMap;
@@ -415,7 +415,7 @@ const MapParams* InP2CampaignMap(const bool mpMaps)
 // PORTAL STORIES: MEL CAMPAIGNS
 //---------------------------------------------------------------------------------
 
-const std::vector<MapParams> melStoryCampaignMaps =
+const std::vector<MapParams> MEL_STORY_CAMPAIGN_MAPS =
 {
 	{"st_a1_tramride",      "Tram Ride",		1,	"1952"},
 	{"st_a1_mel_intro",     "Mel Intro",		1,	"1952"},
@@ -442,7 +442,7 @@ const std::vector<MapParams> melStoryCampaignMaps =
 	{"st_a5_credits",		  "Credits",			6,	"The End"}
 };
  
-const std::vector<MapParams> melAdvancedCampaignMaps =
+const std::vector<MapParams> MEL_ADVANCED_CAMPAIGN_MAPS =
 {
 	{"sp_a1_tramride",      "Tram Ride (Advanced)",			1,	"1952"},
 	{"sp_a1_mel_intro",     "Mel Intro (Advanced)",			1,	"1952"},
@@ -474,7 +474,7 @@ const MapParams* InMelCampaignMap(bool advanced)
 {
 	if (advanced)
 	{
-		for (const auto& melAdvancedCampaignMap : melAdvancedCampaignMaps)
+		for (const auto& melAdvancedCampaignMap : MEL_ADVANCED_CAMPAIGN_MAPS)
 		{
 			if (FStrEq(CURMAPFILENAME, melAdvancedCampaignMap.mapFile))
 				return &melAdvancedCampaignMap;
@@ -482,7 +482,7 @@ const MapParams* InMelCampaignMap(bool advanced)
 	}
 	else
 	{
-		for (const auto& melStoryCampaignMap : melStoryCampaignMaps)
+		for (const auto& melStoryCampaignMap : MEL_STORY_CAMPAIGN_MAPS)
 		{
 			if (FStrEq(CURMAPFILENAME, melStoryCampaignMap.mapFile))
 				return &melStoryCampaignMap;
@@ -496,14 +496,44 @@ const MapParams* InMelCampaignMap(bool advanced)
 // APERTURE TAG CAMPAIGN
 //---------------------------------------------------------------------------------
 // Array of maps for Aperture Tag
-const std::vector<MapParams> apertureTagCampaignMaps =
+const std::vector<MapParams> APERTURE_TAG_CAMPAIGN_MAPS =
 {
+	{"gg_intro_wakeup",	"Wake Up/Intro", 1, "Aperture Tag"},
+	{"gg_blue_only",	    "Blue Only I",	  1, "Aperture Tag"},
+	{"gg_blue_only_2",	"Blue Only II",  1, "Aperture Tag"},
+	{"gg_blue_only_3",	"Blue Only III", 1, "Aperture Tag"},
+	{"gg_blue_only_2_pt2","Blue Only IV",  1, "Aperture Tag"},
+	{"gg_a1_intro4",		"Smooth Jazz",	  1, "Aperture Tag"},
+	{"gg_blue_upplatform","Portals",       1, "Aperture Tag"},
+	{"gg_red_only",		  "Speed Gel Upgrade", 2,"Speed Gel Upgrade"},
+	{"gg_red_surf",		  "Surf",              2,"Speed Gel Upgrade"},
+	{"gg_all_intro",		  "All Intro",         2,"Speed Gel Upgrade"},
+	{"gg_all_rotating_wall","Rotating Wall",     2,"Speed Gel Upgrade"},
+	{"gg_all_fizzler",	  "Fizzlers",          2,"Speed Gel Upgrade"},
+	{"gg_all_intro_2",	  "All Intro 2",       2,"Speed Gel Upgrade"},
+	{"gg_a2_column_blocker","Column Blocker",      3,"No More Recycling Tests"},
+	{"gg_all_puzzle2",	  "Portals 2",           3,"No More Recycling Tests"},
+	{"gg_all2_puzzle1",	  "Future Starter",      3,"No More Recycling Tests"},
+	{"gg_all_puzzle1",	  "Final Qualification", 3,"No More Recycling Tests"},
+	{"gg_all2_escape1",	  "ALSSER/Escape",       3,"No More Recycling Tests"},
+	{"gg_stage_reveal",		 "Reveal",           4,"The Stage"},
+	{"gg_stage_bridgebounce_2","Bridge Bounce",    4,"The Stage"},
+	{"gg_stage_redfirst",		 "Red First",        4,"The Stage"},
+	{"gg_stage_laserrelay",	 "Laser Relay",      4,"The Stage"},
+	{"gg_stage_beamscotty",	 "Citranium Desert", 4,"The Stage"},
+	{"gg_stage_bridgebounce",	 "Bridge Bounce 2",  4,"The Stage"},
+	{"gg_stage_roofbounce",	 "Roof Bounce",      4,"The Stage"},
+	{"gg_stage_pickbounce",	 "Pick Bounce",      4,"The Stage"},
+	{"gg_stage_theend",		 "The End",          4,"The Stage"},
+	{"gg_credit_video", "Game Credits",                   5, "Extras"},
+	{"gg_trailer_map",  "Trailer Map",                    5, "Extras"},
+	{"gg_tag_remix",	  "TAG: The Power of Paint Remake", 5, "Extras"}
 };
 
 // Check to see which Aperture Tag map is being played.
 const MapParams* InApertureTagCampaignMap()
 {
-	for (const auto& apertureTagCampaignMap : apertureTagCampaignMaps)
+	for (const auto& apertureTagCampaignMap : APERTURE_TAG_CAMPAIGN_MAPS)
 	{
 		if (FStrEq(CURMAPFILENAME, apertureTagCampaignMap.mapFile))
 			return &apertureTagCampaignMap;
@@ -516,8 +546,8 @@ const MapParams* InApertureTagCampaignMap()
 // //---------------------------------------------------------------------------------
 // // PORTAL RELOADED CAMPAIGNS
 // //---------------------------------------------------------------------------------
-//
-// const std::vector<MapParams> portalReloadedSPCampaignMaps =
+// 
+// const std::vector<MapParams> PORTAL_RELOADED_SP_CAMPAIGN_MAPS =
 // {
 // 	{"sp_a1_pr_map_001",	"Human Storage Vault",	1,	"Human Storage Vault"},
 // 	{"sp_a1_pr_map_002",	"Time Travel",			2,	"Time Travel"},
@@ -533,7 +563,7 @@ const MapParams* InApertureTagCampaignMap()
 // 	{"sp_a1_pr_map_012",	"Finale",				12,	"Finale"}
 // };
 //
-// const std::vector<MapParams> portalReloadedMPCampaignMaps =
+// const std::vector<MapParams> PORTAL_RELOADED_MP_CAMPAIGN_MAPS =
 // {
 // 	{"mp_coop_start",		"Course Selection Hub",	0,	"Course Selection Hub"},
 // 	{"mp_coop_lobby_3",		"Course Selection Hub",	0,	"Course Selection Hub"},
@@ -555,7 +585,7 @@ const MapParams* InApertureTagCampaignMap()
 // {
 // 	if (singeplayerCampaign)
 // 	{
-// 		for (const auto& portalReloadedSPCampaignMap : portalReloadedSPCampaignMaps)
+// 		for (const auto& portalReloadedSPCampaignMap : PORTAL_RELOADED_SP_CAMPAIGN_MAPS)
 // 		{
 // 			if (FStrEq(CURMAPFILENAME, portalReloadedSPCampaignMap.mapFile))
 // 				return &portalReloadedSPCampaignMap;
@@ -563,7 +593,7 @@ const MapParams* InApertureTagCampaignMap()
 // 	}
 // 	else
 // 	{
-// 		for (const auto& portalReloadedMPCampaignMap : portalReloadedMPCampaignMaps)
+// 		for (const auto& portalReloadedMPCampaignMap : PORTAL_RELOADED_MP_CAMPAIGN_MAPS)
 // 		{
 // 			if (FStrEq(CURMAPFILENAME, portalReloadedMPCampaignMap.mapFile))
 // 				return &portalReloadedMPCampaignMap;
@@ -577,7 +607,7 @@ const MapParams* InApertureTagCampaignMap()
 // PORTAL: DIVINITY CAMPAIGN
 //---------------------------------------------------------------------------------
 
-const std::vector<MapParams> divinityCampaignMaps =
+const std::vector<MapParams> DIVINITY_CAMPAIGN_MAPS =
 {
 	{"sp_a1_divinity_intro",			"Intro",			 1,	"House of Leaves"},
 	{"sp_a1_divinity_bts1",				"BTS 1",			 1,	"House of Leaves"},
@@ -589,7 +619,7 @@ const std::vector<MapParams> divinityCampaignMaps =
 	{"sp_a1_divinity_core01",			"Core 01",			 1,	"House of Leaves"}
 };
 
-const std::vector<MapParams> divinityAdvancedMaps =
+const std::vector<MapParams> DIVINITY_ADVANCED_MAPS =
 {
 	{"sp_adv_divinity_transit",	"Traversal Advanced",	1,	"Advanced Chambers"}
 };
@@ -599,7 +629,7 @@ const MapParams* InDivinityCampaignMap(const bool advanced)
 {
 	if (advanced)
 	{
-		for (const auto& divinityAdvancedMap : divinityAdvancedMaps)
+		for (const auto& divinityAdvancedMap : DIVINITY_ADVANCED_MAPS)
 		{
 			if (FStrEq(CURMAPFILENAME, divinityAdvancedMap.mapFile))
 				return &divinityAdvancedMap;
@@ -607,7 +637,7 @@ const MapParams* InDivinityCampaignMap(const bool advanced)
 	}
 	else
 	{
-		for (const auto& divinityCampaignMap : divinityCampaignMaps)
+		for (const auto& divinityCampaignMap : DIVINITY_CAMPAIGN_MAPS)
 		{
 			if (FStrEq(CURMAPFILENAME, divinityCampaignMap.mapFile))
 				return &divinityCampaignMap;

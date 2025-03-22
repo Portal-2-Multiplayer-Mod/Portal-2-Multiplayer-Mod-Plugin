@@ -114,16 +114,16 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 	// Make sure the CON_COMMAND was executed correctly.
 	if (args.ArgC() < 2 || FStrEq(args.Arg(1), ""))
 	{
-		P2MMLog(1, false, "p2mm_map called incorrectly! Usage: \"p2mm_map (map to start)\"");
 		updateMapsList();
+		P2MMLog(WARNING, false, "p2mm_map called incorrectly! Usage: \"p2mm_map (map to start)\"");
 		return;
 	}
 
 	// A check done by the menu to request to use the last recorded map in the p2mm_lastmap ConVar.
 	char requestedMap[256] = { 0 };
 	V_strcpy(requestedMap, args.Arg(1));
-	P2MMLog(0, true, "Requested Map: %s", requestedMap);
-	P2MMLog(0, true, "p2mm_lastmap: %s", p2mm_lastmap.GetString());
+	P2MMLog(INFO, true, "Requested Map: %s", requestedMap);
+	P2MMLog(INFO, true, "p2mm_lastmap: %s", p2mm_lastmap.GetString());
 	if (FStrEq(requestedMap, "P2MM_LASTMAP"))
 	{
 		if (!engineServer->IsMapValid(p2mm_lastmap.GetString()))
@@ -139,14 +139,14 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 			char completePVCmd[sizeof("playvol \"#music/mainmenu/portal2_background0%d\" 0.35") + sizeof(iAct)] = { 0 };
 			V_snprintf(completePVCmd, sizeof(completePVCmd), "playvol \"#music/mainmenu/portal2_background0%i\" 0.35", iAct);
 
-			P2MMLog(1, false, "p2mm_map was called with P2MM_LASTMAP, but p2mm_lastmap is empty or invalid!");
+			P2MMLog(WARNING, false, "p2mm_map was called with P2MM_LASTMAP, but p2mm_lastmap is empty or invalid!");
 			engineClient->ExecuteClientCmd("disconnect \"There is no last map recorded or the map doesn't exist! Please start a play session with the other options first.\"");
 			engineClient->ExecuteClientCmd(completePVCmd);
 			updateMapsList();
 			return;
 		}
 		V_strcpy(requestedMap, p2mm_lastmap.GetString());
-		P2MMLog(0, true, "P2MM_LASTMAP called! Running Last Map: \"%s\"", requestedMap);
+		P2MMLog(INFO, true, "P2MM_LASTMAP called! Running Last Map: \"%s\"", requestedMap);
 	}
 	p2mm_lastmap.SetValue(""); // Set last map ConVar to blank so it doesn't trigger level changes where we don't want it to trigger.
 
@@ -164,14 +164,14 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 	// Check if the supplied map is a valid map.
 	if (!engineServer->IsMapValid(requestedMap))
 	{
-		P2MMLog(1, false, "p2mm_map was given a non-valid map or one that doesn't exist! \"%s\"", requestedMap);
 		updateMapsList();
+		P2MMLog(WARNING, false, "p2mm_map was given a non-valid map or one that doesn't exist! \"%s\"", requestedMap);
 		return;
 	}
 
 	// Check if the user requested it to start in splitscreen or not.
-	std::string mapString = p2mm_splitscreen.GetBool() ? "ss_map " : "map ";
-	P2MMLog(0, true, "Map String: %s", mapString.c_str());
+	const std::string mapString = p2mm_splitscreen.GetBool() ? "ss_map " : "map ";
+	P2MMLog(INFO, true, "Map String: %s", mapString.c_str());
 
 	// Set first run flag on and set the last map ConVar value so the system.
 	// can change from mp_coop_community_hub to the requested map.
@@ -180,22 +180,22 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 	g_P2MMServerPlugin.m_bSeenFirstRunPrompt = false;
 	if (!FSubStr(requestedMap, "mp_coop"))
 	{
-		P2MMLog(0, true, "\"mp_coop\" not found, singleplayer map being run. Full ExecuteClientCmd: \"%s\"", std::string(mapString + "mp_coop_community_hub").c_str());
-		P2MMLog(0, true, "requestedMap: \"%s\"", requestedMap);
+		P2MMLog(INFO, true, R"("mp_coop" not found, single player map being run. Full ExecuteClientCmd: "%s")", std::string(mapString + "mp_coop_community_hub").c_str());
+		P2MMLog(INFO, true, "requestedMap: \"%s\"", requestedMap);
 		p2mm_lastmap.SetValue(requestedMap);
 		engineClient->ExecuteClientCmd(std::string(mapString + "mp_coop_community_hub").c_str());
 
-		std::string initmapstr = std::string("Server has started with map: `" + std::string(requestedMap) + "`");
-		g_pDiscordIntegration->SendWebHookEmbed("Server", initmapstr, EMBED_COLOR_SERVER, false);
+		std::string initMapStr = std::string("Server has started with map: `" + std::string(requestedMap) + "`");
+		CDiscordIntegration::SendWebHookEmbed("Server", initMapStr, EMBED_COLOR_SERVER, false);
 	}
 	else
 	{
-		P2MMLog(0, true, "\"mp_coop\" found, multiplayer map being run. Full ExecuteClientCmd: \"%s\"", std::string(mapString + requestedMap).c_str());
-		P2MMLog(0, true, "requestedMap: \"%s\"", requestedMap);
+		P2MMLog(INFO, true, R"("mp_coop" found, multiplayer map being run. Full ExecuteClientCmd: "%s")", std::string(mapString + requestedMap).c_str());
+		P2MMLog(INFO, true, "requestedMap: \"%s\"", requestedMap);
 		engineClient->ExecuteClientCmd(std::string(mapString + requestedMap).c_str());
 
-		std::string initmapstr = std::string("Server has started with map: `" + std::string(requestedMap) + "`");
-		g_pDiscordIntegration->SendWebHookEmbed("Server", initmapstr, EMBED_COLOR_SERVER, false);
+		std::string initMapStr = std::string("Server has started with map: `" + std::string(requestedMap) + "`");
+		CDiscordIntegration::SendWebHookEmbed("Server", initMapStr, EMBED_COLOR_SERVER, false);
 	}
 }
 
@@ -206,13 +206,13 @@ CON_COMMAND(p2mm_updatemaplist, "Manually updates the list of available maps tha
 
 CON_COMMAND(p2mm_maplist, "Lists available maps that can be loaded with p2mm_map.")
 {
-	P2MMLog(0, false, "AVALIABLE MAPS:");
-	P2MMLog(0, false, "----------------------------------------");
-	for (const std::string map : mapList)
+	P2MMLog(INFO, false, "AVAILABLE MAPS:");
+	P2MMLog(INFO, false, "----------------------------------------");
+	for (const std::string& map : mapList)
 	{
-		P2MMLog(0, false, map.c_str());
+		P2MMLog(INFO, false, map.c_str());
 	}
-	P2MMLog(0, false, "----------------------------------------");
+	P2MMLog(INFO, false, "----------------------------------------");
 }
 
 
@@ -261,7 +261,7 @@ CON_COMMAND_F(p2mm_toggle_dev_cc_cvars, "Toggle showing any ConVars and ConComma
 		m_ConVarConCommandsShown = true;
 	}
 
-	P2MMLog(0, false, "%s %i ConVars/ConCommands!", m_ConVarConCommandsShown ? "Unhid" : "Hid", iToggleCount);
+	P2MMLog(INFO, false, "%s %i ConVars/ConCommands!", m_ConVarConCommandsShown ? "Unhid" : "Hid", iToggleCount);
 }
 
 //---------------------------------------------------------------------------------
@@ -316,8 +316,8 @@ void GelocityTournament(IConVar* var, const char* pOldValue, float flOldValue)
 	// Check if host is in a gelocity map.
 	if (!InGelocityMap())
 	{
-		P2MMLog(0, false, "Gelocity tournament mode ConVar was changed from %i to %i.", (int)flOldValue, ((ConVar*)var)->GetBool());
-		P2MMLog(1, false, "Mode will take effect when Gelocity map is loaded.");
+		P2MMLog(INFO, false, "Gelocity tournament mode ConVar was changed from %i to %i.", static_cast<int>(flOldValue), dynamic_cast<ConVar*>(var)->GetBool());
+		P2MMLog(WARNING, false, "Mode will take effect when Gelocity map is loaded.");
 		return;
 	}
 
@@ -326,12 +326,12 @@ void GelocityTournament(IConVar* var, const char* pOldValue, float flOldValue)
 	g_pScriptVM->GetValue("b_RaceStarted", &raceStartedScript);
 	if (raceStartedScript.m_bool)
 	{
-		P2MMLog(1, false, "Race is currently in progress!");
+		P2MMLog(WARNING, false, "Race is currently in progress!");
 		return;
 	}
 
-	P2MMLog(0, false, "Gelocity tournament mode ConVar was changed from %i to %i!", (int)flOldValue, ((ConVar*)var)->GetBool());
-	P2MMLog(1, false, "Restarting map based on tournament mode change!");
+	P2MMLog(INFO, false, "Gelocity tournament mode ConVar was changed from %i to %i!", static_cast<int>(flOldValue), dynamic_cast<ConVar*>(var)->GetBool());
+	P2MMLog(WARNING, false, "Restarting map based on tournament mode change!");
 
 	engineClient->ExecuteClientCmd(std::string("changelevel " + std::string(CURMAPFILENAME)).c_str());
 }

@@ -19,8 +19,16 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-// Log Discord GameSDK logs to the console. This is mainly a developer mode only logging system and only the warning and error logs should be shown.
-void DiscordLog(int level, bool dev, const char* pMsgFormat, ...)
+
+/**
+ * @brief  Log Discord GameSDK logs to the console.
+ *		   This is mainly a developer mode only logging system and only the warning and error logs should be shown.
+ * @param level Log level.
+ * @param dev Whether this is a dev message that shouldn't be printed normally.
+ * @param pMsgFormat Log message.
+ * @param ... Formatting arguments.
+ */
+static void DiscordLog(LogLevel level, bool dev, const char* pMsgFormat, ...)
 {
 	if (dev && !p2mm_developer.GetBool()) return; // Stop debug and info messages when p2mm_developer isn't enabled.
 
@@ -37,16 +45,15 @@ void DiscordLog(int level, bool dev, const char* pMsgFormat, ...)
 
 	switch (level)
 	{
-	case 0:
+	case (INFO):
 		ConColorMsg(P2MM_DISCORD_CONSOLE_COLOR_NORMAL, completeMsg);
 		return;
-	case 1:
+	case (WARNING):
 		ConColorMsg(P2MM_DISCORD_CONSOLE_COLOR_WARNING, completeMsg);
 		return;
 	default:
 		Warning("(P2:MM DISCORD): DiscordLog level out of range, \"%i\". Defaulting to level 0.\n", level);
 		ConColorMsg(P2MM_DISCORD_CONSOLE_COLOR_NORMAL, completeMsg);
-		return;
 	}
 }
 
@@ -105,7 +112,7 @@ unsigned SendWebHook(void* webhookParams)
 {
 	if (FStrEq(p2mm_discord_webhooks_url.GetString(), ""))
 	{
-		DiscordLog(1, false, "Webhook for \"p2mm_discord_webhooks_url\" has not been specified.");
+		DiscordLog(WARNING, false, "Webhook for \"p2mm_discord_webhooks_url\" has not been specified.");
 		return 1;
 	}
 
@@ -114,7 +121,7 @@ unsigned SendWebHook(void* webhookParams)
 
 	if (!curl)
 	{
-		DiscordLog(1, false, "Failed to initalize curl request!");
+		DiscordLog(WARNING, false, "Failed to initialize curl request!");
 		return 1;
 	}
 
@@ -148,13 +155,13 @@ unsigned SendWebHook(void* webhookParams)
 	switch (curlCode)
 	{
 	case (CURLE_OK):
-		DiscordLog(0, true, "Sent webhook curl request!");
+		DiscordLog(INFO, true, "Sent webhook curl request!");
 		break;
 	case (CURLE_URL_MALFORMAT):
-		DiscordLog(1, false, "An invalid URL was supplied for p2mm_discord_webhook_url! Please check that it has been entered correctly.");
+		DiscordLog(WARNING, false, "An invalid URL was supplied for p2mm_discord_webhook_url! Please check that it has been entered correctly.");
 		break;
 	default:
-		DiscordLog(1, false, "Failed to send curl request! Error Code: %i", curlCode);
+		DiscordLog(WARNING, false, "Failed to send curl request! Error Code: %i", curlCode);
 		break;
 	}
 
@@ -191,11 +198,11 @@ void CDiscordIntegration::SendWebHookEmbed(std::string title, std::string descri
 		webhookParams->footer = std::string(p2mm_discord_webhooks_customfooter.GetString());
 	}
 
-	DiscordLog(0, true, "Embed webhookParams:");
-	DiscordLog(0, true, std::string("title: " + title).c_str());
-	DiscordLog(0, true, std::string("description: " + description).c_str());
-	DiscordLog(0, true, std::string("color: " + std::to_string(color)).c_str());
-	DiscordLog(0, true, std::string("footer: " + webhookParams->footer).c_str());
+	DiscordLog(INFO, true, "Embed webhookParams:");
+	DiscordLog(INFO, true, std::string("title: " + title).c_str());
+	DiscordLog(INFO, true, std::string("description: " + description).c_str());
+	DiscordLog(INFO, true, std::string("color: " + std::to_string(color)).c_str());
+	DiscordLog(INFO, true, std::string("footer: " + webhookParams->footer).c_str());
 
 	// Send the curl request in a separate thread
 	CreateSimpleThread(SendWebHook, webhookParams);
@@ -243,7 +250,7 @@ CDiscordIntegration::CDiscordIntegration()
 
 static void HandleDiscordReady(const DiscordUser* connectedUser)
 {
-	DiscordLog(0, false, "Discord: Connected to user %s#%s - %s\n",
+	DiscordLog(INFO, false, "Discord: Connected to user %s#%s - %s\n",
 		connectedUser->username,
 		connectedUser->discriminator,
 		connectedUser->userId);
@@ -251,12 +258,12 @@ static void HandleDiscordReady(const DiscordUser* connectedUser)
 
 static void HandleDiscordDisconnected(int errcode, const char* message)
 {
-	DiscordLog(1, false, "Discord: Disconnected (%d: %s)\n", errcode, message);
+	DiscordLog(WARNING, false, "Discord: Disconnected (%d: %s)\n", errcode, message);
 }
 
 static void HandleDiscordError(int errcode, const char* message)
 {
-	DiscordLog(1, false, "Discord: Error (%d: %s)\n", errcode, message);
+	DiscordLog(WARNING, false, "Discord: Error (%d: %s)\n", errcode, message);
 }
 
 static void HandleDiscordJoin(const char* secret)
@@ -279,9 +286,9 @@ static void HandleDiscordJoinRequest(const DiscordUser* request)
 //---------------------------------------------------------------------------------
 bool CDiscordIntegration::StartDiscordRPC()
 {
-	DiscordLog(0, false, "Starting up Discord RPC!");
+	DiscordLog(INFO, false, "Starting up Discord RPC!");
 
-	DiscordLog(0, true, "Setting Discord event handlers...");
+	DiscordLog(INFO, true, "Setting Discord event handlers...");
 	DiscordEventHandlers* handlers = new DiscordEventHandlers;
 	handlers->ready = HandleDiscordReady;
 	handlers->disconnected = HandleDiscordDisconnected;
@@ -290,12 +297,12 @@ bool CDiscordIntegration::StartDiscordRPC()
 	handlers->spectateGame = HandleDiscordSpectate;
 	handlers->joinRequest = HandleDiscordJoinRequest;
 
-	DiscordLog(0, true, "Associating the plugin with the current Portal 2 branch game then initialising RPC...");
+	DiscordLog(INFO, true, "Associating the plugin with the current Portal 2 branch game then initialising RPC...");
 	char appid[255];
 	V_snprintf(appid, 255, "%d", engineServer->GetAppID());
 	Discord_Initialize("1201562647880015954", handlers, 1, appid);
 
-	// Change the default Portal 2 large images with ones assosiated with different mods.
+	// Change the default Portal 2 large images with ones associated with different mods.
 	switch (g_P2MMServerPlugin.m_iCurGameIndex)
 	{
 	case (PORTAL_STORIES_MEL):
@@ -322,7 +329,7 @@ bool CDiscordIntegration::StartDiscordRPC()
 
 	UpdateDiscordRPC();
 
-	DiscordLog(0, false, "Discord RPC activated!");
+	DiscordLog(INFO, false, "Discord RPC activated!");
 	this->rpcRunning = true;
 	return true;
 }
@@ -332,11 +339,11 @@ bool CDiscordIntegration::StartDiscordRPC()
 //---------------------------------------------------------------------------------
 void CDiscordIntegration::ShutdownDiscordRPC()
 {
-	DiscordLog(0, false, "Shutting down Discord RPC...");
+	DiscordLog(INFO, false, "Shutting down Discord RPC...");
 	Discord_ClearPresence();
 	Discord_Shutdown();
 	this->rpcRunning = false;
-	DiscordLog(0, false, "Shutdown Discord RPC!");
+	DiscordLog(INFO, false, "Shutdown Discord RPC!");
 }
 
 void CDiscordIntegration::UpdateDiscordRPC()
@@ -344,11 +351,13 @@ void CDiscordIntegration::UpdateDiscordRPC()
 	bool bActiveGame = IsGameActive();
 	bool bGameShutdown = IsGameShutdown();
 
-	DiscordLog(0, true, "Updating Discord RPC!");
-	DiscordLog(0, true, "Unloading Plugin: %i", g_P2MMServerPlugin.m_bPluginUnloading);
-	DiscordLog(0, true, "IsGameActive: %i", bActiveGame);
-	DiscordLog(0, true, "IsGameShutdown: %i", bGameShutdown);
+	// Log game states checked for RPC.
+	DiscordLog(INFO, true, "Updating Discord RPC!");
+	DiscordLog(INFO, true, "Unloading Plugin?: %i", g_P2MMServerPlugin.m_bPluginUnloading);
+	DiscordLog(INFO, true, "IsGameActive?: %i", bActiveGame);
+	DiscordLog(INFO, true, "IsGameShutdown?: %i", bGameShutdown);
 
+	// Clear out old RPC status.
 	RPC.state = "";
 	RPC.details = "";
 	RPC.smallImageKey = "wave";

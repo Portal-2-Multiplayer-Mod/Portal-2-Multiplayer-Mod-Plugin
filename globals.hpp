@@ -55,8 +55,17 @@ class CBaseClient;
 #define FOR_ALL_PLAYERS(i) \
 	for (int i = 1; i <= CURPLAYERCOUNT(); i++)
 
+// Log levels for all log functions.
+typedef enum LogLevels : std::uint8_t
+{
+	INFO = 0,
+	WARNING,
+	ERRORR // Have to use ERRORR because of include by Windows API. Yeah I know, I hate it too.
+} LogLevel;
+
+
 // Player team enum.
-enum
+enum : std::uint8_t
 {
 	TEAM_SINGLEPLAYER = 0,
 	TEAM_SPECTATOR,
@@ -65,7 +74,7 @@ enum
 };
 
 // iCurGameIndex enum.
-enum
+enum : std::uint8_t
 {
 	PORTAL_2 = 0,
 	PORTAL_STORIES_MEL,
@@ -77,7 +86,7 @@ enum
 };
 
 // ClientPrint msg_dest macros.
-enum
+enum : std::uint8_t
 {
 	HUD_PRINTNOTIFY	= 1, // Works same as HUD_PRINTCONSOLE
 	HUD_PRINTCONSOLE,
@@ -130,7 +139,7 @@ int					CURPLAYERCOUNT();
 HSCRIPT				INDEXHANDLE(int iEdictNum);
 
 // Logging function.
-void P2MMLog(int level, bool dev, const char* pMsgFormat, ...);
+void P2MMLog(LogLevel level, bool dev, const char* pMsgFormat, ...);
 
 //---------------------------------------------------------------------------------
 // Player recipient filter.

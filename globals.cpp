@@ -17,7 +17,7 @@
 // Max character limit of 1024 characters.	
 // level:	0 = Msg/DevMsg, 1 = Warning/DevWarning, 2 = Error WILL STOP ENGINE!
 //---------------------------------------------------------------------------------
-void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
+void P2MMLog(const LogLevel level, const bool dev, const char* pMsgFormat, ...)
 {
 	if (dev && !p2mm_developer.GetBool() && level != 2) return; // Stop developer messages when p2mm_developer isn't enabled.
 
@@ -34,13 +34,13 @@ void P2MMLog(int level, bool dev, const char* pMsgFormat, ...)
 
 	switch (level)
 	{
-	case 0:
+	case (INFO):
 		ConColorMsg(P2MM_PLUGIN_CONSOLE_COLOR, completeMsg);
 		return;
-	case 1:
+	case (WARNING):
 		Warning(completeMsg);
 		return;
-	case 2:
+	case (ERRORR):
 		Warning("(P2:MM PLUGIN):\n!!!ERROR ERROR ERROR!!!:\nA FATAL ERROR OCCURED WITH THE ENGINE:\n%s", completeMsg);
 		Error(completeMsg);
 		return;
@@ -74,14 +74,14 @@ const char* GetPlayerName(int playerIndex)
 {
 	if (playerIndex <= 0 || playerIndex > MAX_PLAYERS)
 	{
-		P2MMLog(0, true, "Invalid index passed to GetPlayerName: %i!", playerIndex);
+		P2MMLog(INFO, true, "Invalid index passed to GetPlayerName: %i!", playerIndex);
 		return "";
 	}
 
 	player_info_t playerInfo;
 	if (!engineServer->GetPlayerInfo(playerIndex, &playerInfo))
 	{
-		P2MMLog(0, true, "Couldn't retrieve playerInfo of player index \"%i\" in GetPlayerName!", playerIndex);
+		P2MMLog(INFO, true, "Couldn't retrieve playerInfo of player index \"%i\" in GetPlayerName!", playerIndex);
 		return "";
 	}
 
@@ -119,7 +119,7 @@ int GetConVarInt(const char* cvName)
 	const ConVar* pVar = g_pCVar->FindVar(cvName);
 	if (!pVar)
 	{
-		P2MMLog(1, false, "Could not find ConVar: \"%s\"! Returning -1!", cvName);
+		P2MMLog(WARNING, false, R"(Could not find ConVar: "%s"! Returning ""!)", cvName);
 		return -1;
 	}
 
@@ -134,7 +134,7 @@ const char* GetConVarString(const char* cvName)
 	const ConVar* pVar = g_pCVar->FindVar(cvName);
 	if (!pVar)
 	{
-		P2MMLog(1, false, "Could not find ConVar: \"%s\"! Returning \"\"!", cvName);
+		P2MMLog(WARNING, false, R"(Could not find ConVar: "%s"! Returning ""!)", cvName);
 		return "";
 	}
 
@@ -149,7 +149,7 @@ void SetConVarInt(const char* cvName, int newValue)
 	ConVar* pVar = g_pCVar->FindVar(cvName);
 	if (!pVar)
 	{
-		P2MMLog(1, false, "Could not set ConVar: \"%s\"!", cvName);
+		P2MMLog(WARNING, false, "Could not set ConVar: \"%s\"!", cvName);
 		return;
 	}
 	pVar->SetValue(newValue);
@@ -163,7 +163,7 @@ void SetConVarString(const char* cvName, const char* newValue)
 	ConVar* pVar = g_pCVar->FindVar(cvName);
 	if (!pVar)
 	{
-		P2MMLog(1, false, "Could not set ConVar: \"%s\"!", cvName);
+		P2MMLog(WARNING, false, "Could not set ConVar: \"%s\"!", cvName);
 		return;
 	}
 	pVar->SetValue(newValue);
@@ -178,7 +178,7 @@ bool IsBot(int playerIndex)
 	player_info_t playerInfo;
 	if (!engineServer->GetPlayerInfo(playerIndex, &playerInfo))
 	{
-		P2MMLog(0, true, "Couldn't retrieve playerinfo of player index \"%i\" in IsBot!", playerIndex);
+		P2MMLog(INFO, true, "Couldn't retrieve player info of player index \"%i\" in IsBot!", playerIndex);
 		return false;
 	}
 

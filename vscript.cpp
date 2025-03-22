@@ -115,7 +115,7 @@ static void SendToChat(int playerIndex, const char* msg)
 	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
 	if (!pPlayer)
 	{
-		P2MMLog(1, false, "Invalid player index specified for SendToChat! playerIndex: \"%i\"", playerIndex);
+		P2MMLog(WARNING, false, "Invalid player index specified for SendToChat! playerIndex: \"%i\"", playerIndex);
 		return;
 	}
 	UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, msg);
@@ -149,11 +149,11 @@ static void CallFirstRunPrompt()
 	// Don't display again once the first one is shown.
 	if (g_P2MMServerPlugin.m_bSeenFirstRunPrompt)
 	{
-		P2MMLog(0, true, "First run prompt already shown...");
+		P2MMLog(INFO, true, "First run prompt already shown...");
 		return;
 	}
 
-	P2MMLog(0, true, "DISPLAYING FIRST RUN PROMPT!");
+	P2MMLog(INFO, true, "DISPLAYING FIRST RUN PROMPT!");
 
 	// Put together KeyValues to pass to CreateMessage.
 	KeyValues* kv = new KeyValues("firstrunprompt");
@@ -199,7 +199,7 @@ void ConsolePrint(int playerIndex, const char* msg)
 	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
 	if (!pPlayer)
 	{
-		P2MMLog(1, false, "Invalid player index passed into ConsolePrint! playerIndex: \"%i\"", playerIndex);
+		P2MMLog(WARNING, false, "Invalid player index passed into ConsolePrint! playerIndex: \"%i\"", playerIndex);
 		return;
 	}
 
@@ -236,7 +236,7 @@ void ClientPrint(int playerIndex, const char* msg)
 	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
 	if (!pPlayer)
 	{
-		P2MMLog(1, false, "Invalid player index specified for ClientPrint! playerIndex: \"%i\"", playerIndex);
+		P2MMLog(WARNING, false, "Invalid player index specified for ClientPrint! playerIndex: \"%i\"", playerIndex);
 		return;
 	}
 
@@ -289,7 +289,7 @@ void HudPrint
 	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
 	if (!pPlayer)
 	{
-		P2MMLog(1, false, "Invalid playerIndex passed into HudPrint! playerIndex: \"%i\"", playerIndex);
+		P2MMLog(WARNING, false, "Invalid playerIndex passed into HudPrint! playerIndex: \"%i\"", playerIndex);
 		return;
 	}
 
@@ -317,7 +317,7 @@ void RegisterFuncsAndRun()
 	g_pScriptVM = **Memory::Scanner::Scan<IScriptVM***>(SERVERDLL, "8B 1D ?? ?? ?? ?? 57 85 DB", 2);
 	if (!g_pScriptVM)
 	{
-		P2MMLog(1, false, "Could not register or run our VScript functions!");
+		P2MMLog(WARNING, false, "Could not register or run our VScript functions!");
 		return;
 	}
 

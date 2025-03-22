@@ -199,7 +199,7 @@ HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity)
 	static auto _GetScriptInstance = reinterpret_cast<HSCRIPT(__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 51 56 8B F1 83 BE 50"));
 	if (!_GetScriptInstance)
 	{
-		P2MMLog(1, false, "Could not get script instance for entity!");
+		P2MMLog(WARNING, false, "Could not get script instance for entity!");
 		return nullptr;
 	}
 
@@ -219,7 +219,7 @@ void CBasePlayer__ShowViewPortPanel(int playerIndex, const char* name, bool bSho
 	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
 	if (!pPlayer)
 	{
-		P2MMLog(1, false, "Couldn't get player to display view port panel to! playerIndex: %i", playerIndex);
+		P2MMLog(WARNING, false, "Couldn't get player to display view port panel to! playerIndex: %i", playerIndex);
 		return;
 	}
 	static auto _ShowViewPortPanel = reinterpret_cast<void(__thiscall*)(CBasePlayer*, const char*, bool, KeyValues*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 83 EC 20 53 56 8B F1 57 8D 4D ?? E8 ?? ?? ?? ?? 56"));
@@ -237,7 +237,7 @@ void CPortal_Player__RespawnPlayer(int playerIndex)
 	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
 	if (!pPlayer)
 	{
-		P2MMLog(1, false, "Couldn't get player to respawn! playerIndex: %i", playerIndex);
+		P2MMLog(WARNING, false, "Couldn't get player to respawn! playerIndex: %i", playerIndex);
 		return;
 	}
 
@@ -256,7 +256,7 @@ void CPortal_Player__SetFlashlightState(int playerIndex, bool enable)
 	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
 	if (!pPlayer)
 	{
-		P2MMLog(1, true, "Couldn't get player to set flashlight state! playerIndex: %i enable: %i", playerIndex, !!enable);
+		P2MMLog(WARNING, true, "Couldn't get player to set flashlight state! playerIndex: %i enable: %i", playerIndex, !!enable);
 		return;
 	}
 

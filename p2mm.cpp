@@ -157,67 +157,67 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 {
 	if (m_bPluginLoaded)
 	{
-		P2MMLog(1, false, "Plugin already loaded!");
+		P2MMLog(WARNING, false, "Plugin already loaded!");
 		m_bNoUnload = true;
 		return false;
 	}
 
-	P2MMLog(0, false, "Loading plugin...");
+	P2MMLog(INFO, false, "Loading plugin...");
 
 	this->m_hWnd = FindWindow("Valve001", nullptr);
 	if (!this->m_hWnd)
-		P2MMLog(1, false, "Failed to find game window Valve001!");
+		P2MMLog(WARNING, false, "Failed to find game window Valve001!");
 
 	// Determine which Portal 2 branch game we are running and if its supported.
 	bool unsupportedGame = false;
 	const char* gameMainDir = GetGameMainDir();
-	P2MMLog(0, true, "Determining which Portal 2 branch game is being run...");
+	P2MMLog(INFO, true, "Determining which Portal 2 branch game is being run...");
 	if ((FStrEq(gameMainDir, "portal2")))
 	{
 		this->m_iCurGameIndex = PORTAL_2;
-		P2MMLog(0, false, "Currently running Portal 2.");
+		P2MMLog(INFO, false, "Currently running Portal 2.");
 	}
 	else if ((FStrEq(gameMainDir, "portal_stories")))
 	{
 		this->m_iCurGameIndex = PORTAL_STORIES_MEL;
-		P2MMLog(0, false, "Currently running Portal Stories: Mel.");
+		P2MMLog(INFO, false, "Currently running Portal Stories: Mel.");
 	}
 	else if ((FStrEq(gameMainDir, "aperturetag")))
 	{
 		this->m_iCurGameIndex = APERTURE_TAG;
-		P2MMLog(0, false, "Currently running Aperture Tag.");
+		P2MMLog(INFO, false, "Currently running Aperture Tag.");
 	}
 	else if ((FStrEq(gameMainDir, "portalreloaded")))
 	{
 		this->m_iCurGameIndex = PORTAL_RELOADED;
-		P2MMLog(0, false, "Currently running Portal Reloaded.");
+		P2MMLog(INFO, false, "Currently running Portal Reloaded.");
 		// Unsupported...
 		unsupportedGame = true;
 	}
 	else if ((FStrEq(gameMainDir, "infra")))
 	{
 		this->m_iCurGameIndex = INFRA;
-		P2MMLog(0, false, "Currently running Infra.");
+		P2MMLog(INFO, false, "Currently running Infra.");
 		// Unsupported...
 		unsupportedGame = true;
 	}
 	else if ((FStrEq(gameMainDir, "thestanleyparable")))
 	{
 		this->m_iCurGameIndex = STANLEY_PARABLE;
-		P2MMLog(0, false, "Currently running The Stanley Parable.");
+		P2MMLog(INFO, false, "Currently running The Stanley Parable.");
 		// Unsupported...for now...
 		unsupportedGame = true;
 	}
 	else if ((FStrEq(gameMainDir, "divinity")))
 	{
 		this->m_iCurGameIndex = DIVINITY;
-		P2MMLog(0, false, "Currently running Portal: Divinity.");
+		P2MMLog(INFO, false, "Currently running Portal: Divinity.");
 		// Unsupported...for now...
 		unsupportedGame = true;
 	}
 	else if (!CommandLine()->FindParm("-forcep2mmload"))
 	{
-		P2MMLog(2, false, "\nAn unsupported Source Engine/Portal 2 branch game has been started with P2:MM! Please check the FAQ to see which Portal 2 engine based games are supported!");
+		P2MMLog(ERRORR, false, "\nAn unsupported Source Engine/Portal 2 branch game has been started with P2:MM! Please check the FAQ to see which Portal 2 engine based games are supported!");
 		return false;
 	}
 	else
@@ -225,25 +225,26 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 
 	if (unsupportedGame && !CommandLine()->FindParm("-forcep2mmload"))
 	{
-		P2MMLog(2, false, "\nThe current Source Engine/Portal 2 branch game is not **yet** supported by P2:MM! Please check the FAQ to see which games are supported!");
+		P2MMLog(ERRORR, false, "\nThe current Source Engine/Portal 2 branch game is not **yet** supported by P2:MM! Please check the FAQ to see which games are supported!");
 		return false;
 	}
 	if (unsupportedGame && CommandLine()->FindParm("-forcep2mmload"))
 	{
-		MessageBox(this->m_hWnd, "P2:MM is being run with a unsupported Source Engine/Portal 2 branch game! Proceed with caution as crashes and bugs could occur!", "Unsupported P2:MM Game", MB_OK | MB_ICONEXCLAMATION);
-		P2MMLog(1, false, "P2:MM is being run with a unsupported Source Engine/Portal 2 branch game! Proceed with caution as crashes and bugs could occur!");
+		MessageBox(this->m_hWnd, "P2:MM is being run with a unsupported Source Engine/Portal 2 branch game! \"-forcep2mmload\" has been specified to override stopping the game from proceeding to load. Proceed with caution as crashes and bugs could occur!", "Unsupported P2:MM Game", MB_OK | MB_ICONEXCLAMATION);
+		P2MMLog(WARNING, false, "P2:MM is being run with a unsupported Source Engine/Portal 2 branch game! \"-forcep2mmload\" has been specified to override stopping the game from proceeding to load. Proceed with caution as crashes and bugs could occur!");
 	}
 
-	P2MMLog(0, true, "Connecting tier libraries...");
+	P2MMLog(INFO, true, "Connecting tier libraries...");
 	ConnectTier1Libraries(&interfaceFactory, 1);
 	ConnectTier2Libraries(&interfaceFactory, 1);
 
-	// Make sure that all the interfaces needed are loaded and useable
-	P2MMLog(0, true, "Loading interfaces...");
+	// Make sure that all the interfaces needed are loaded and usable.
+	P2MMLog(INFO, true, "Loading interfaces...");
 	engineServer = static_cast<IVEngineServer*>(interfaceFactory(INTERFACEVERSION_VENGINESERVER, 0));
 	if (!engineServer)
 	{
-		P2MMLog(1, false, "Unable to load engineServer!");
+		assert(0 && "Unable to load engineServer!");
+		P2MMLog(WARNING, false, "Unable to load engineServer!");
 		this->m_bNoUnload = true;
 		return false;
 	}
@@ -251,7 +252,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	engineClient = static_cast<IVEngineClient*>(interfaceFactory(VENGINE_CLIENT_INTERFACE_VERSION, 0));
 	if (!engineClient)
 	{
-		P2MMLog(1, false, "Unable to load engineClient!");
+		P2MMLog(WARNING, false, "Unable to load engineClient!");
 		this->m_bNoUnload = true;
 		return false;
 	}
@@ -259,7 +260,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	g_pPlayerInfoManager = static_cast<IPlayerInfoManager*>(gameServerFactory(INTERFACEVERSION_PLAYERINFOMANAGER, 0));
 	if (!g_pPlayerInfoManager)
 	{
-		P2MMLog(1, false, "Unable to load g_pPlayerInfoManager!");
+		P2MMLog(WARNING, false, "Unable to load g_pPlayerInfoManager!");
 		this->m_bNoUnload = true;
 		return false;
 	}
@@ -267,7 +268,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	g_pScriptVM = static_cast<IScriptVM*>(interfaceFactory(VSCRIPT_INTERFACE_VERSION, 0));
 	if (!g_pScriptVM)
 	{
-		P2MMLog(1, false, "Unable to load g_pScriptVM!");
+		P2MMLog(WARNING, false, "Unable to load g_pScriptVM!");
 		this->m_bNoUnload = true;
 		return false;
 	}
@@ -275,7 +276,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	g_pServerTools = static_cast<IServerTools*>(gameServerFactory(VSERVERTOOLS_INTERFACE_VERSION, 0));
 	if (!g_pServerTools)
 	{
-		P2MMLog(1, false, "Unable to load g_pServerTools!");
+		P2MMLog(WARNING, false, "Unable to load g_pServerTools!");
 		this->m_bNoUnload = true;
 		return false;
 	}
@@ -283,7 +284,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	g_pGameEventManager = static_cast<IGameEventManager2*>(interfaceFactory(INTERFACEVERSION_GAMEEVENTSMANAGER2, 0));
 	if (!g_pGameEventManager)
 	{
-		P2MMLog(1, false, "Unable to load g_pGameEventManager!");
+		P2MMLog(WARNING, false, "Unable to load g_pGameEventManager!");
 		this->m_bNoUnload = true;
 		return false;
 	}
@@ -291,7 +292,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	g_pPluginHelpers = static_cast<IServerPluginHelpers*>(interfaceFactory(INTERFACEVERSION_ISERVERPLUGINHELPERS, 0));
 	if (!g_pPluginHelpers)
 	{
-		P2MMLog(1, false, "Unable to load g_pPluginHelpers!");
+		P2MMLog(WARNING, false, "Unable to load g_pPluginHelpers!");
 		this->m_bNoUnload = true;
 		return false;
 	}
@@ -299,7 +300,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	g_pFileSystem = static_cast<IFileSystem*>(interfaceFactory(FILESYSTEM_INTERFACE_VERSION, 0));
 	if (!g_pFileSystem)
 	{
-		P2MMLog(1, false, "Unable to load g_pFileSystem!");
+		P2MMLog(WARNING, false, "Unable to load g_pFileSystem!");
 		this->m_bNoUnload = true;
 		return false;
 	}
@@ -309,23 +310,23 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	ConVar_Register(0);
 
 	// Discord RPC
-	P2MMLog(0, true, "Checking if Discord RPC should be started...");
+	P2MMLog(INFO, true, "Checking if Discord RPC should be started...");
 	if (p2mm_discord_rpc.GetBool() && !g_pDiscordIntegration->rpcRunning)
 	{
-		P2MMLog(0, true, "Discord RPC enabled! Starting!");
+		P2MMLog(INFO, true, "Discord RPC enabled! Starting!");
 		g_pDiscordIntegration->StartDiscordRPC();
 	}
 
 	// Add listener for all used game events
-	P2MMLog(0, true, "Adding listeners for game events...");
+	P2MMLog(INFO, true, "Adding listeners for game events...");
 	for (const char* gameEvent : gameEventList)
 	{
 		g_pGameEventManager->AddListener(this, gameEvent, true);
-		P2MMLog(0, true, "Listener for game event \"%s\" has been added!", gameEvent);
+		P2MMLog(INFO, true, "Listener for game event \"%s\" has been added!", gameEvent);
 	}
 
 	// Block ConCommands that clients shouldn't execute
-	P2MMLog(0, true, "Blocking console commands...");
+	P2MMLog(INFO, true, "Blocking console commands...");
 	for (const char* conCommand : forbiddenConCommands)
 	{
 		if (ConCommandBase* commandBase = g_pCVar->FindCommandBase(conCommand))
@@ -340,7 +341,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 	// why this wasn't here is mystifying, - 10/2024 NULLderef
 	try {
 		// Byte patches
-		P2MMLog(0, true, "Patching Portal 2...");
+		P2MMLog(INFO, true, "Patching Portal 2...");
 
 		// "Steam not running." error fix for dedicated servers. This only works for dedicated servrs when the plugin file is named "ghostinj" and server is run with -usegh.
 		if (engineServer->IsDedicatedServer())
@@ -372,41 +373,41 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		Memory::ReplacePattern("vscript", "00 00 00 E0 51 B8 9E 3F", "9a 99 99 99 99 99 a9 3f");
 
 		// MinHook initialization and hooking
-		P2MMLog(0, true, "Initializing MinHook and hooking functions...");
+		P2MMLog(INFO, true, "Initializing MinHook and hooking functions...");
 		MH_Initialize();
 
 		// NoSteamLogon disconnect hook patch.
 		MH_CreateHook(
 			(LPVOID)Memory::Scanner::Scan<void*>(ENGINEDLL, "55 8B EC 83 EC 08 53 56 57 8B F1 E8 ?? ?? ?? ?? 8B"),
-			&CSteam3Server__OnGSClientDenyHelper_hook, (void**)&CSteam3Server__OnGSClientDenyHelper_orig
+			&CSteam3Server__OnGSClientDenyHelper_hook, reinterpret_cast<void**>(&CSteam3Server__OnGSClientDenyHelper_orig)
 		);
 
 		// Hook onto the function which defines what Atlas's and PBody's models are.
 		MH_CreateHook(
 			Memory::Rel32(Memory::Scanner::Scan(SERVERDLL, "E8 ?? ?? ?? ?? 83 C4 40 50", 1)),
-			&GetBallBotModel_hook, (void**)&GetBallBotModel_orig
+			&GetBallBotModel_hook, reinterpret_cast<void**>(&GetBallBotModel_orig)
 		);
 		MH_CreateHook(
 			Memory::Rel32(Memory::Scanner::Scan(SERVERDLL, "E8 ?? ?? ?? ?? 83 C4 04 50 8B 45 10 8B 10", 1)),
-			&GetEggBotModel_hook, (void**)&GetEggBotModel_orig
+			&GetEggBotModel_hook, reinterpret_cast<void**>(&GetEggBotModel_orig)
 		);
 
 		// For p2mm_instantrespawn.
 		MH_CreateHook(
 			Memory::Scanner::Scan(SERVERDLL, "53 8B DC 83 EC 08 83 E4 F0 83 C4 04 55 8B 6B ?? 89 6C 24 ?? 8B EC A1 ?? ?? ?? ?? F3 0F 10 40 ?? F3 0F 58 05 ?? ?? ?? ?? 83 EC 28 56 57 6A 00 51 8B F1 F3 0F 11 04 24 E8 ?? ?? ?? ?? 6A 03"),
-			&CPortal_Player__PlayerDeathThink_hook, (void**)&CPortal_Player__PlayerDeathThink_orig
+			&CPortal_Player__PlayerDeathThink_hook, reinterpret_cast<void**>(&CPortal_Player__PlayerDeathThink_orig)
 		);
 
 		// "respawn" function hook for getting a VScript "game event" call out of it.
 		MH_CreateHook(
 			Memory::Scanner::Scan(SERVERDLL, "55 8B EC A1 ?? ?? ?? ?? 80 78 ?? ?? 75 ?? 80 78"),
-			&respawn_hook, (void**)&respawn_orig
+			&respawn_hook, reinterpret_cast<void**>(&respawn_orig)
 		);
 		
 		// UTIL_GetLocalPlayer dedicated server hook crash fix.
 		MH_CreateHook(
 			Memory::Scanner::Scan(SERVERDLL, "8B 15 ?? ?? ?? ?? 8B 4A ?? 33 C0"),
-			&UTIL_GetLocalPlayer, (void**)&UTIL_GetLocalPlayer_orig
+			&UTIL_GetLocalPlayer, reinterpret_cast<void**>(&UTIL_GetLocalPlayer_orig)
 		);
 
 		// Game-specific hooks
@@ -415,20 +416,20 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterface
 		case PORTAL_STORIES_MEL:
 			MH_CreateHook(
 				Memory::Scanner::Scan(SERVERDLL, "55 8B EC 81 EC 10 01 00 00 53 8B 1D"),
-				&CPortal_Player__GetPlayerModelName_hook, (void**)&CPortal_Player__GetPlayerModelName_orig
+				&CPortal_Player__GetPlayerModelName_hook, reinterpret_cast<void**>(&CPortal_Player__GetPlayerModelName_orig)
 			);
 		}
 
 		MH_EnableHook(MH_ALL_HOOKS);
 	} catch (const std::exception& ex) {
-		P2MMLog(0, false, "Failed to load plugin! :( Exception: \"%s\"", ex.what());
+		P2MMLog(INFO, false, "Failed to load plugin! :( Exception: \"%s\"", ex.what());
 		this->m_bNoUnload = true;
 		return false;
 	}
 
 	g_pDiscordIntegration->UpdateDiscordRPC();
 	
-	P2MMLog(0, false, "Loaded plugin! Yay! :D");
+	P2MMLog(INFO, false, "Loaded plugin! Yay! :D");
 	m_bPluginLoaded = true;
 	return true;
 }
@@ -445,20 +446,20 @@ void CP2MMServerPlugin::Unload(void)
 		return;
 	}
 
-	P2MMLog(0, false, "Unloading Plugin...");
+	P2MMLog(INFO, false, "Unloading Plugin...");
 	this->m_bPluginUnloading = true;
 	g_pDiscordIntegration->UpdateDiscordRPC();
 
-	P2MMLog(0, true, "Removing listeners for game events...");
+	P2MMLog(INFO, true, "Removing listeners for game events...");
 	g_pGameEventManager->RemoveListener(this);
 
 	// Unblock ConCommands that clients shouldn't execute
-	P2MMLog(0, true, "Unblocking console commands...");
-	for (const char* concommand : forbiddenConCommands)
+	P2MMLog(INFO, true, "Unblocking console commands...");
+	for (const char* conCommand : forbiddenConCommands)
 	{
-		ConCommandBase* commandbase = g_pCVar->FindCommandBase(concommand);
-		if (commandbase)
-			commandbase->AddFlags(FCVAR_GAMEDLL);
+		ConCommandBase* commandBase = g_pCVar->FindCommandBase(conCommand);
+		if (commandBase)
+			commandBase->AddFlags(FCVAR_GAMEDLL);
 	}
 
 	// Remove -allowspectators so max player count is indeed back to 2 and not 3.
@@ -466,14 +467,14 @@ void CP2MMServerPlugin::Unload(void)
 		CommandLine()->RemoveParm("-allowspectators");
 
 	ConVar_Unregister();
-	P2MMLog(0, true, "Disconnecting tier libraries...");
+	P2MMLog(INFO, true, "Disconnecting tier libraries...");
 	DisconnectTier2Libraries();
 	DisconnectTier1Libraries();
 
 	try
 	{
 		// Undo byte patches
-		P2MMLog(0, true, "Un-patching Portal 2...");
+		P2MMLog(INFO, true, "Un-patching Portal 2...");
 	
 		// "Steam not running." error fix for dedicated servers. This only works for dedicated servrs when the plugin file is named "ghostinj" and server is run with -usegh.
 		if (engineServer->IsDedicatedServer())
@@ -500,20 +501,20 @@ void CP2MMServerPlugin::Unload(void)
 		// runtime max 0.05 -> 0.03
 		Memory::ReplacePattern("vscript", "00 00 00 00 00 00 E0 3F", "00 00 00 E0 51 B8 9E 3F");
 
-		P2MMLog(0, true, "Disconnecting hooked functions and initializing MinHook...");
+		P2MMLog(INFO, true, "Disconnecting hooked functions and initializing MinHook...");
 		MH_DisableHook(MH_ALL_HOOKS);
 		MH_Uninitialize();
 	}
 	catch (const std::exception& ex)
 	{
-		P2MMLog(0, false, "Encountered error when unload plugin! Skipping other patches... :( Exception: \"%s\"", ex.what());
+		P2MMLog(INFO, false, "Encountered error when unload plugin! Skipping other patches... :( Exception: \"%s\"", ex.what());
 	}
 
 	if (p2mm_discord_rpc.GetBool() && g_pDiscordIntegration->rpcRunning)
 		g_pDiscordIntegration->ShutdownDiscordRPC();
 
 	m_bPluginLoaded = false;
-	P2MMLog(0, false, "Plugin unloaded! Goodbye!");
+	P2MMLog(INFO, false, "Plugin unloaded! Goodbye!");
 }
 
 //---------------------------------------------------------------------------------
@@ -538,7 +539,7 @@ void CP2MMServerPlugin::ServerActivate(edict_t* pEdictList, int edictCount, int 
 //---------------------------------------------------------------------------------
 void CP2MMServerPlugin::LevelInit(char const* pMapName)
 {
-	P2MMLog(0, true, "Level Init!");
+	P2MMLog(INFO, true, "Level Init!");
 
 	// Dedicated server paint map patch
 	// Paint usage doesn't function naturally on dedicated servers, so this will help enable it again.
@@ -560,7 +561,7 @@ void CP2MMServerPlugin::LevelInit(char const* pMapName)
 			engineServer->GetPaintmapDataRLE(paintData2);
 		}
 		else
-			P2MMLog(1, false, "Couldn't find R_LoadWorldGeometry! Paint will not work on this map load.");
+			P2MMLog(WARNING, false, "Couldn't find R_LoadWorldGeometry! Paint will not work on this map load.");
 	}
 
 	if (!g_P2MMServerPlugin.m_bSeenFirstRunPrompt) return;
@@ -588,14 +589,14 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientCommand(edict_t* pEntity, const CCommand&
 	int entindex = UserIDToPlayerIndex(userid);
 	const char* playername = GetPlayerName(entindex);
 
-	if (p2mm_spewgameeventinfo.GetBool())
+	if (p2mm_spew_gameevent_info.GetBool())
 	{
-		P2MMLog(0, true, "ClientCommand called: %s", pCmd);
-		P2MMLog(0, true, "ClientCommand args: %s", fArgs);
-		P2MMLog(0, true, "userid: %i", userid);
-		P2MMLog(0, true, "entindex: %i", entindex);
-		P2MMLog(0, true, "playername: %s", playername);
-		P2MMLog(0, true, "VScript VM Working?: %s", (g_pScriptVM) ? "Working" : "Not Working!");
+		P2MMLog(INFO, true, "ClientCommand called: %s", pCmd);
+		P2MMLog(INFO, true, "ClientCommand args: %s", fArgs);
+		P2MMLog(INFO, true, "userid: %i", userid);
+		P2MMLog(INFO, true, "entindex: %i", entindex);
+		P2MMLog(INFO, true, "playername: %s", playername);
+		P2MMLog(INFO, true, "VScript VM Working?: %s", (g_pScriptVM) ? "Working" : "Not Working!");
 	}
 
 	// Call the "GEClientCommand" VScript function
@@ -646,8 +647,8 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 	bool spewInfo = p2mm_spewgameeventinfo.GetBool();
 	if (spewInfo)
 	{
-		P2MMLog(0, true, "Game Event Fired: %s", event->GetName());
-		P2MMLog(0, true, "VScript VM Working?: %s", (g_pScriptVM) ? "Working" : "Not Working!");
+		P2MMLog(INFO, true, "Game Event Fired: %s", event->GetName());
+		P2MMLog(INFO, true, "VScript VM Working?: %s", (g_pScriptVM) ? "Working" : "Not Working!");
 	}
 
 	// Event called when a player pings, "portal_player_ping" returns:
@@ -674,11 +675,11 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 
 		if (spewInfo)
 		{
-			P2MMLog(0, true, "userid: %i", userid);
-			P2MMLog(0, true, "ping_x: %f", ping_x);
-			P2MMLog(0, true, "ping_y: %f", ping_y);
-			P2MMLog(0, true, "ping_z: %f", ping_z);
-			P2MMLog(0, true, "entindex: %i", entindex);
+			P2MMLog(INFO, true, "userid: %i", userid);
+			P2MMLog(INFO, true, "ping_x: %f", ping_x);
+			P2MMLog(INFO, true, "ping_y: %f", ping_y);
+			P2MMLog(INFO, true, "ping_z: %f", ping_z);
+			P2MMLog(INFO, true, "entindex: %i", entindex);
 		}
 
 		return;
@@ -703,9 +704,9 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 
 		if (spewInfo)
 		{
-			P2MMLog(0, true, "userid: %i", userid);
-			P2MMLog(0, true, "portal2: %s", portal2 ? "true" : "false");
-			P2MMLog(0, true, "entindex: %i", entindex);
+			P2MMLog(INFO, true, "userid: %i", userid);
+			P2MMLog(INFO, true, "portal2: %s", portal2 ? "true" : "false");
+			P2MMLog(INFO, true, "entindex: %i", entindex);
 		}
 
 		return;
@@ -806,9 +807,9 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 
 		if (spewInfo)
 		{
-			P2MMLog(0, true, "userid: %i", userid);
-			P2MMLog(0, true, "attacker: %i", attacker);
-			P2MMLog(0, true, "entindex: %i", entindex);
+			P2MMLog(INFO, true, "userid: %i", userid);
+			P2MMLog(INFO, true, "attacker: %i", attacker);
+			P2MMLog(INFO, true, "entindex: %i", entindex);
 		}
 
 		return;
@@ -831,8 +832,8 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 
 		if (spewInfo)
 		{
-			P2MMLog(0, true, "userid: %i", userid);
-			P2MMLog(0, true, "entindex: %i", entindex);
+			P2MMLog(INFO, true, "userid: %i", userid);
+			P2MMLog(INFO, true, "entindex: %i", entindex);
 		}
 
 		return;
@@ -874,14 +875,14 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 
 		if (spewInfo)
 		{
-			P2MMLog(0, true, "name: %s", name);
-			P2MMLog(0, true, "index: %i", index);
-			P2MMLog(0, true, "userid: %i", userid);
-			P2MMLog(0, true, "xuid: %d", xuid);
-			P2MMLog(0, true, "networkid: %s", networkid);
-			P2MMLog(0, true, "address: %s", address);
-			P2MMLog(0, true, "bot: %i", bot);
-			P2MMLog(0, true, "entindex: %i", entindex);
+			P2MMLog(INFO, true, "name: %s", name);
+			P2MMLog(INFO, true, "index: %i", index);
+			P2MMLog(INFO, true, "userid: %i", userid);
+			P2MMLog(INFO, true, "xuid: %d", xuid);
+			P2MMLog(INFO, true, "networkid: %s", networkid);
+			P2MMLog(INFO, true, "address: %s", address);
+			P2MMLog(INFO, true, "bot: %i", bot);
+			P2MMLog(INFO, true, "entindex: %i", entindex);
 		}
 
 		return;
@@ -914,13 +915,13 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 
 		if (spewInfo)
 		{
-			P2MMLog(0, true, "name: %s", name);
-			P2MMLog(0, true, "index: %i", index);
-			P2MMLog(0, true, "userid: %i", userid);
-			P2MMLog(0, true, "networkid: %s", networkid);
-			P2MMLog(0, true, "address: %s", address);
-			P2MMLog(0, true, "bot: %i", bot);
-			P2MMLog(0, true, "entindex: %i", entindex);
+			P2MMLog(INFO, true, "name: %s", name);
+			P2MMLog(INFO, true, "index: %i", index);
+			P2MMLog(INFO, true, "userid: %i", userid);
+			P2MMLog(INFO, true, "networkid: %s", networkid);
+			P2MMLog(INFO, true, "address: %s", address);
+			P2MMLog(INFO, true, "bot: %i", bot);
+			P2MMLog(INFO, true, "entindex: %i", entindex);
 		}
 
 		return;
@@ -948,8 +949,8 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 					std::string playerName = GetPlayerName(entindex);
 					std::string chatMsg = text;
 
-					P2MMLog(0, true, playerName.c_str());
-					P2MMLog(0, true, chatMsg.c_str());
+					P2MMLog(INFO, true, playerName.c_str());
+					P2MMLog(INFO, true, chatMsg.c_str());
 
 					// Replace any "\\" characters with "\\\\" so backslashes can exist but not break anything
 					size_t pos = 0;
@@ -974,9 +975,9 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 
 		if (spewInfo)
 		{
-			P2MMLog(0, true, "userid: %i", userid);
-			P2MMLog(0, true, "text: %s", text);
-			P2MMLog(0, true, "entindex: %i", entindex);
+			P2MMLog(INFO, true, "userid: %i", userid);
+			P2MMLog(INFO, true, "text: %s", text);
+			P2MMLog(INFO, true, "entindex: %i", entindex);
 		}
 
 		return;
@@ -994,9 +995,9 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 
 	if (p2mm_spewgameeventinfo.GetBool())
 	{
-		P2MMLog(0, true, "ClientActive Called!");
-		P2MMLog(0, true, "userid: %i", userid);
-		P2MMLog(0, true, "entindex: %i", entindex);
+		P2MMLog(INFO, true, "ClientActive Called!");
+		P2MMLog(INFO, true, "userid: %i", userid);
+		P2MMLog(INFO, true, "entindex: %i", entindex);
 	}
 
 	// Make sure people know that the chat is being recorded if webhook is set
@@ -1004,7 +1005,7 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 	{
 		if (CBasePlayer* pPlayer = UTIL_PlayerByIndex(entindex))
 		{
-			P2MMLog(0, true, "Warning for enabled webhooks sent to player index %i.", entindex);
+			P2MMLog(INFO, true, "Warning for enabled webhooks sent to player index %i.", entindex);
 			UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, "This lobby has Discord Webhook Integration enabled. All of your in-game messages may be sent to a Discord channel.");
 		}
 	}
@@ -1046,7 +1047,7 @@ extern void updateMapsList();
 //---------------------------------------------------------------------------------
 void CP2MMServerPlugin::LevelShutdown(void)
 {
-	P2MMLog(0, true, "Level Shutdown! Map: %s", CURMAPFILENAME);
+	P2MMLog(INFO, true, "Level Shutdown! Map: %s", CURMAPFILENAME);
 	p2mm_loop.SetValue("0"); // REMOVE THIS at some point...
 	updateMapsList(); // Update the maps list for p2mm_map.
 	// Update Discord RPC to update the level information or to say the host is on the main menu.
@@ -1055,26 +1056,26 @@ void CP2MMServerPlugin::LevelShutdown(void)
 
 PLUGIN_RESULT CP2MMServerPlugin::ClientConnect(bool* bAllowConnect, edict_t* pEntity, const char* pszName, const char* pszAddress, char* reject, int maxrejectlen)
 {
-	P2MMLog(0, true, "Player Joined! playerInfo:");
+	P2MMLog(INFO, true, "Player Joined! playerInfo:");
 	player_info_t playerInfo;
 	engineServer->GetPlayerInfo(1,			&playerInfo);
-	P2MMLog(0, true, "xuid: %llu",			playerInfo.xuid);
-	P2MMLog(0, true, "name: %s",			playerInfo.name);
-	P2MMLog(0, true, "userID: %i",			playerInfo.userID);
-	P2MMLog(0, true, "guid: %s",			playerInfo.guid);
-	P2MMLog(0, true, "friendsID: %lu",		playerInfo.friendsID);
-	P2MMLog(0, true, "friendsName: %s",		playerInfo.friendsName);
-	P2MMLog(0, true, "fakeplayer: %i",		playerInfo.fakeplayer);
-	P2MMLog(0, true, "ishltv: %i",			playerInfo.ishltv);
-	P2MMLog(0, true, "isreplay: %i",		playerInfo.isreplay);
-	//P2MMLog(0, true, "customFiles: %llu",	playerInfo.customFiles);
-	P2MMLog(0, true, "filesDownloaded: %s",	playerInfo.filesDownloaded);
+	P2MMLog(INFO, true, "xuid: %llu",			playerInfo.xuid);
+	P2MMLog(INFO, true, "name: %s",			playerInfo.name);
+	P2MMLog(INFO, true, "userID: %i",			playerInfo.userID);
+	P2MMLog(INFO, true, "guid: %s",			playerInfo.guid);
+	P2MMLog(INFO, true, "friendsID: %lu",		playerInfo.friendsID);
+	P2MMLog(INFO, true, "friendsName: %s",		playerInfo.friendsName);
+	P2MMLog(INFO, true, "fakeplayer: %i",		playerInfo.fakeplayer);
+	P2MMLog(INFO, true, "ishltv: %i",			playerInfo.ishltv);
+	P2MMLog(INFO, true, "isreplay: %i",		playerInfo.isreplay);
+	//P2MMLog(INFO, true, "customFiles: %llu",	playerInfo.customFiles);
+	P2MMLog(INFO, true, "filesDownloaded: %s",	playerInfo.filesDownloaded);
 
-	P2MMLog(0, true, "Check if player is banned.");
+	P2MMLog(INFO, true, "Check if player is banned.");
 	for (const auto& i : banList)
 	{
-		P2MMLog(0, true, "username: %s", i.username.c_str());
-		P2MMLog(0, true, "guid: %s", i.guid.c_str());
+		P2MMLog(INFO, true, "username: %s", i.username.c_str());
+		P2MMLog(INFO, true, "guid: %s", i.guid.c_str());
 		//! For some reason this is returning false when it should be true. Will look into it later.
 		if (FSubStr(playerInfo.name, i.username.c_str()) || FSubStr(playerInfo.guid, i.guid.c_str()))
 		{

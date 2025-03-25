@@ -194,26 +194,24 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 		// Unsupported...
 		unsupportedGame = true;
 	}
-	else if ((FStrEq(gameMainDir, "infra")))
-	{
-		this->m_iCurGameIndex = INFRA;
-		P2MMLog(INFO, false, "Currently running Infra.");
-		// Unsupported...
-		unsupportedGame = true;
-	}
-	else if ((FStrEq(gameMainDir, "thestanleyparable")))
-	{
-		this->m_iCurGameIndex = STANLEY_PARABLE;
-		P2MMLog(INFO, false, "Currently running The Stanley Parable.");
-		// Unsupported...for now...
-		unsupportedGame = true;
-	}
-	else if ((FStrEq(gameMainDir, "divinity")))
+	// else if ((FStrEq(gameMainDir, "infra")))
+	// {
+	// 	this->m_iCurGameIndex = INFRA;
+	// 	P2MMLog(INFO, false, "Currently running Infra.");
+	// 	// Unsupported...
+	// 	unsupportedGame = true;
+	// }
+	// else if ((FStrEq(gameMainDir, "thestanleyparable")))
+	// {
+	// 	this->m_iCurGameIndex = STANLEY_PARABLE;
+	// 	P2MMLog(INFO, false, "Currently running The Stanley Parable.");
+	// 	// Unsupported...
+	// 	unsupportedGame = true;
+	// }
+	else if ((std::strstr(gameMainDir, "Divinity")))
 	{
 		this->m_iCurGameIndex = DIVINITY;
 		P2MMLog(INFO, false, "Currently running Portal: Divinity.");
-		// Unsupported...for now...
-		unsupportedGame = true;
 	}
 	else if (!CommandLine()->FindParm("-forcep2mmload"))
 	{
@@ -311,7 +309,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 
 	// Discord RPC
 	P2MMLog(INFO, true, "Checking if Discord RPC should be started...");
-	if (p2mm_discord_rpc.GetBool() && !g_pDiscordIntegration->rpcRunning)
+	if (p2mm_discord_rpc.GetBool() && !g_pDiscordIntegration->m_bRPCRunning)
 	{
 		P2MMLog(INFO, true, "Discord RPC enabled! Starting!");
 		g_pDiscordIntegration->StartDiscordRPC();
@@ -510,7 +508,7 @@ void CP2MMServerPlugin::Unload(void)
 		P2MMLog(INFO, false, "Encountered error when unload plugin! Skipping other patches... :( Exception: \"%s\"", ex.what());
 	}
 
-	if (p2mm_discord_rpc.GetBool() && g_pDiscordIntegration->rpcRunning)
+	if (p2mm_discord_rpc.GetBool() && g_pDiscordIntegration->m_bRPCRunning)
 		g_pDiscordIntegration->ShutdownDiscordRPC();
 
 	m_bPluginLoaded = false;

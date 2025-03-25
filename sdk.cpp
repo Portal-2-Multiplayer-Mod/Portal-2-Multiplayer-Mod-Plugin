@@ -18,7 +18,7 @@ void (__fastcall* CSteam3Server__OnGSClientDenyHelper_orig)(CSteam3Server* thisp
 void __fastcall CSteam3Server__OnGSClientDenyHelper_hook(CSteam3Server* thisptr, void* edx, CBaseClient* cl, void* eDenyReason, const char* pchOptionalText)
 {
 	// If we the game attempts to disconnect with "No Steam Logon", here we just tell it no.
-	if ((int)eDenyReason == 0xC)
+	if (reinterpret_cast<int>(eDenyReason) == 0xC)
 		return;
 
 	CSteam3Server__OnGSClientDenyHelper_orig(thisptr, edx, cl, eDenyReason, pchOptionalText);
@@ -29,7 +29,7 @@ void __fastcall CSteam3Server__OnGSClientDenyHelper_hook(CSteam3Server* thisptr,
 // Last one is for actually specifying the right model as the MSVC compiler inlined the returns
 // of the original functions of these first two hooks. Thanks MSVC for making this hard. :D
 const char* (__cdecl* GetBallBotModel_orig)(bool bLowRes);
-const char* __cdecl GetBallBotModel_hook(bool bLowRes)
+const char* __cdecl GetBallBotModel_hook(const bool bLowRes)
 {
 	switch (g_P2MMServerPlugin.m_iCurGameIndex)
 	{
@@ -41,7 +41,7 @@ const char* __cdecl GetBallBotModel_hook(bool bLowRes)
 }
 
 const char* (__cdecl* GetEggBotModel_orig)(bool bLowRes);
-const char* __cdecl GetEggBotModel_hook(bool bLowRes)
+const char* __cdecl GetEggBotModel_hook(const bool bLowRes)
 {
 	switch (g_P2MMServerPlugin.m_iCurGameIndex)
 	{
@@ -58,7 +58,7 @@ const char* __fastcall CPortal_Player__GetPlayerModelName_hook(CPortal_Player* t
 	switch (g_P2MMServerPlugin.m_iCurGameIndex)
 	{
 	case (PORTAL_STORIES_MEL):
-		if (CBaseEntity__GetTeamNumber((CBasePlayer*)thisptr) == TEAM_BLUE)
+		if (CBaseEntity__GetTeamNumber(reinterpret_cast<CBasePlayer*>(thisptr)) == TEAM_BLUE)
 			return "models/portal_stories/player/mel.mdl";
 		else
 			return "models/player/chell/player.mdl";
@@ -73,7 +73,7 @@ void __fastcall CPortal_Player__PlayerDeathThink_hook(CPortal_Player* thisptr)
 {
 	if (p2mm_instantrespawn.GetBool())
 	{
-		CPortal_Player__RespawnPlayer(ENTINDEX((CBaseEntity*)thisptr));
+		CPortal_Player__RespawnPlayer(ENTINDEX(reinterpret_cast<CBaseEntity*>(thisptr)));
 		return;
 	}
 	CPortal_Player__PlayerDeathThink_orig(thisptr);
@@ -81,20 +81,18 @@ void __fastcall CPortal_Player__PlayerDeathThink_hook(CPortal_Player* thisptr)
 
 // Used to get a VScript game event call.
 void (__cdecl* respawn_orig)(CBaseEntity* pEdict, bool fCopyCorpse);
-void __cdecl respawn_hook(CBaseEntity* pEdict, bool fCopyCorpse)
+void __cdecl respawn_hook(CBaseEntity* pEdict, const bool fCopyCorpse)
 {
 	respawn_orig(pEdict, fCopyCorpse);
 
 	if (g_pScriptVM)
 	{
 		// Handling OnRespawn VScript event
-		HSCRIPT or_func = g_pScriptVM->LookupFunction("OnRespawn");
-		if (or_func)
+		if (HSCRIPT or_func = g_pScriptVM->LookupFunction("OnRespawn"))
 			g_pScriptVM->Call<HSCRIPT>(or_func, nullptr, false, nullptr, INDEXHANDLE(ENTINDEX(pEdict)));
 
 		// Handle VScript game event function
-		HSCRIPT geFunc = g_pScriptVM->LookupFunction("GEPlayerRespawn");
-		if (geFunc)
+		if (HSCRIPT geFunc = g_pScriptVM->LookupFunction("GEPlayerRespawn"))
 			g_pScriptVM->Call<HSCRIPT>(geFunc, nullptr, false, nullptr, INDEXHANDLE(ENTINDEX(pEdict)));
 	}
 }
@@ -114,11 +112,11 @@ CBasePlayer* __cdecl UTIL_GetLocalPlayer()
 //---------------------------------------------------------------------------------
 // Purpose: Gets the player's base class with it's entity index. Thanks to Nanoman2525 for this.
 //---------------------------------------------------------------------------------
-CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
+CBasePlayer* UTIL_PlayerByIndex(const int playerIndex)
 {
 #ifdef _WIN32
-	static auto _PlayerByIndex = reinterpret_cast<CBasePlayer* (__cdecl*)(int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 8B 4D 08 33 C0 85 C9 7E 30"));
-	return _PlayerByIndex(playerIndex);
+	static auto PlayerByIndex_ = reinterpret_cast<CBasePlayer* (__cdecl*)(int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 8B 4D 08 33 C0 85 C9 7E 30"));
+	return PlayerByIndex_(playerIndex);
 #else // Linux support TODO
 	return nullptr;
 #endif
@@ -127,10 +125,10 @@ CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
 //---------------------------------------------------------------------------------
 // Purpose: Show on screen message to players. msg_dest are definSed macros in globals.hpp.
 //---------------------------------------------------------------------------------
-void UTIL_ClientPrint(CBasePlayer* player, int msg_dest, const char* msg_name, const char* param1, const char* param2, const char* param3, const char* param4)
+void UTIL_ClientPrint(CBasePlayer* player, const int msg_dest, const char* msg_name, const char* param1, const char* param2, const char* param3, const char* param4)
 {
-	static auto _ClientPrint = reinterpret_cast<void (__cdecl*)(CBasePlayer*, int, const char*, const char*, const char*, const char*, const char*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 83 EC 20 56 8B 75 08 85 F6 74 4C"));
-	_ClientPrint(player, msg_dest, msg_name, param1, param2, param3, param4);
+	static auto ClientPrint_ = reinterpret_cast<void (__cdecl*)(CBasePlayer*, int, const char*, const char*, const char*, const char*, const char*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 83 EC 20 56 8B 75 08 85 F6 74 4C"));
+	ClientPrint_(player, msg_dest, msg_name, param1, param2, param3, param4);
 }
 
 //---------------------------------------------------------------------------------
@@ -138,8 +136,8 @@ void UTIL_ClientPrint(CBasePlayer* player, int msg_dest, const char* msg_name, c
 //---------------------------------------------------------------------------------
 void UTIL_HudMessage(CBasePlayer* pPlayer, const HudMessageParams& textparms, const char* pMessage)
 {
-	static auto _HudMessage = reinterpret_cast<void (__cdecl*)(CBasePlayer*, const HudMessageParams&, const char*)>(Memory::Scanner::Scan(SERVERDLL, "55 8B EC 83 EC 20 8D 4D ?? E8 ?? ?? ?? ?? 8B 45 ?? 8D 4D ?? 85 C0 74 ?? 50 E8 ?? ?? ?? ?? EB ?? E8 ?? ?? ?? ?? 56"));
-	_HudMessage(pPlayer, textparms, pMessage);
+	static auto HudMessage_ = reinterpret_cast<void (__cdecl*)(CBasePlayer*, const HudMessageParams&, const char*)>(Memory::Scanner::Scan(SERVERDLL, "55 8B EC 83 EC 20 8D 4D ?? E8 ?? ?? ?? ?? 8B 45 ?? 8D 4D ?? 85 C0 74 ?? 50 E8 ?? ?? ?? ?? EB ?? E8 ?? ?? ?? ?? 56"));
+	HudMessage_(pPlayer, textparms, pMessage);
 }
 
 //---------------------------------------------------------------------------------
@@ -147,8 +145,8 @@ void UTIL_HudMessage(CBasePlayer* pPlayer, const HudMessageParams& textparms, co
 //---------------------------------------------------------------------------------
 CBasePlayer* UTIL_GetCommandClient()
 {
-	static auto _GetCommandClient = reinterpret_cast<CBasePlayer* (__cdecl*)()>(Memory::Scanner::Scan(SERVERDLL, "A1 ?? ?? ?? ?? 40 85 C0"));
-	return _GetCommandClient();
+	static auto GetCommandClient_ = reinterpret_cast<CBasePlayer* (__cdecl*)()>(Memory::Scanner::Scan(SERVERDLL, "A1 ?? ?? ?? ?? 40 85 C0"));
+	return GetCommandClient_();
 }
 
 //---------------------------------------------------------------------------------
@@ -156,8 +154,8 @@ CBasePlayer* UTIL_GetCommandClient()
 //---------------------------------------------------------------------------------
 int UTIL_GetCommandClientIndex()
 {
-	static auto _GetCommandClientIndex = reinterpret_cast<int (__cdecl*)()>(Memory::Scanner::Scan(SERVERDLL, "A1 ?? ?? ?? ?? 40 C3"));
-	return _GetCommandClientIndex();
+	static auto GetCommandClientIndex_ = reinterpret_cast<int (__cdecl*)()>(Memory::Scanner::Scan(SERVERDLL, "A1 ?? ?? ?? ?? 40 C3"));
+	return GetCommandClientIndex_();
 }
 
 ///			 CBaseEntity Class Functions				\\\
@@ -167,17 +165,17 @@ int UTIL_GetCommandClientIndex()
 //---------------------------------------------------------------------------------
 void CBaseEntity__RemoveEntity(CBaseEntity* pEntity)
 {
-	static auto _RemoveEntity = reinterpret_cast<void (__cdecl*)(void*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 57 8B 7D 08 85 FF 74 72"));
-	_RemoveEntity((reinterpret_cast<IServerEntity*>(pEntity)->GetNetworkable()));
+	static auto RemoveEntity_ = reinterpret_cast<void (__cdecl*)(void*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 57 8B 7D 08 85 FF 74 72"));
+	RemoveEntity_((reinterpret_cast<IServerEntity*>(pEntity)->GetNetworkable()));
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Get's team number for the supplied CBasePlayer.
+// Purpose: Get team number for the supplied CBasePlayer.
 //---------------------------------------------------------------------------------
 int CBaseEntity__GetTeamNumber(CBasePlayer* pPlayer)
 {
-	static auto _GetTeamNumber = reinterpret_cast<int(__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "8B 81 F4 02 00 00 C3"));
-	return _GetTeamNumber((CBaseEntity*)pPlayer);
+	static auto GetTeamNumber_ = reinterpret_cast<int(__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "8B 81 F4 02 00 00 C3"));
+	return GetTeamNumber_(reinterpret_cast<CBaseEntity*>(pPlayer));
 }
 
 //---------------------------------------------------------------------------------
@@ -196,25 +194,25 @@ HSCRIPT CBaseEntity__GetScriptScope(CBaseEntity* entity)
 //---------------------------------------------------------------------------------
 HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity)
 {
-	static auto _GetScriptInstance = reinterpret_cast<HSCRIPT(__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 51 56 8B F1 83 BE 50"));
-	if (!_GetScriptInstance)
+	static auto GetScriptInstance_ = reinterpret_cast<HSCRIPT(__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 51 56 8B F1 83 BE 50"));
+	if (!GetScriptInstance_)
 	{
 		P2MMLog(WARNING, false, "Could not get script instance for entity!");
 		return nullptr;
 	}
 
-	return _GetScriptInstance(entity);
+	return GetScriptInstance_(entity);
 }
 
 
-///			 CBasePlayer Class Functions				\\\
+///			 CBasePlayer Class Functions			\\\
 
 CON_COMMAND_F(testscore, "testscore", FCVAR_HIDDEN)
 {
 	CBasePlayer__ShowViewPortPanel(V_atoi(args.Arg(1)), args.Arg(2));
 }
 
-void CBasePlayer__ShowViewPortPanel(int playerIndex, const char* name, bool bShow, KeyValues* data)
+void CBasePlayer__ShowViewPortPanel(const int playerIndex, const char* name, const bool bShow, KeyValues* data)
 {
 	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
 	if (!pPlayer)
@@ -222,8 +220,8 @@ void CBasePlayer__ShowViewPortPanel(int playerIndex, const char* name, bool bSho
 		P2MMLog(WARNING, false, "Couldn't get player to display view port panel to! playerIndex: %i", playerIndex);
 		return;
 	}
-	static auto _ShowViewPortPanel = reinterpret_cast<void(__thiscall*)(CBasePlayer*, const char*, bool, KeyValues*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 83 EC 20 53 56 8B F1 57 8D 4D ?? E8 ?? ?? ?? ?? 56"));
-	_ShowViewPortPanel(pPlayer, name, bShow, data);
+	static auto ShowViewPortPanel_ = reinterpret_cast<void(__thiscall*)(CBasePlayer*, const char*, bool, KeyValues*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 83 EC 20 53 56 8B F1 57 8D 4D ?? E8 ?? ?? ?? ?? 56"));
+	ShowViewPortPanel_(pPlayer, name, bShow, data);
 }
 
 
@@ -232,7 +230,7 @@ void CBasePlayer__ShowViewPortPanel(int playerIndex, const char* name, bool bSho
 //---------------------------------------------------------------------------------
 // Purpose: Respawn the a player by their entity index.
 //---------------------------------------------------------------------------------
-void CPortal_Player__RespawnPlayer(int playerIndex)
+void CPortal_Player__RespawnPlayer(const int playerIndex)
 {
 	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
 	if (!pPlayer)
@@ -241,8 +239,8 @@ void CPortal_Player__RespawnPlayer(int playerIndex)
 		return;
 	}
 
-	static auto _RespawnPlayer = reinterpret_cast<void(__thiscall*)(CPortal_Player*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "0F 57 C0 56 8B F1 57 8D 8E"));
-	_RespawnPlayer((CPortal_Player*)pPlayer);
+	static auto RespawnPlayer_ = reinterpret_cast<void(__thiscall*)(CPortal_Player*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "0F 57 C0 56 8B F1 57 8D 8E"));
+	RespawnPlayer_(reinterpret_cast<CPortal_Player*>(pPlayer));
 }
 
 //---------------------------------------------------------------------------------
@@ -251,7 +249,7 @@ void CPortal_Player__RespawnPlayer(int playerIndex)
 //			class. This does the same thing as the FlashlightTurnOn and FlashlightTurnOff
 //			functions in CPortal_Player but done in one function.
 //---------------------------------------------------------------------------------
-void CPortal_Player__SetFlashlightState(int playerIndex, bool enable)
+void CPortal_Player__SetFlashlightState(const int playerIndex, const bool enable)
 {
 	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
 	if (!pPlayer)
@@ -261,9 +259,9 @@ void CPortal_Player__SetFlashlightState(int playerIndex, bool enable)
 	}
 
 	if (enable)
-		reinterpret_cast<void(__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 53 8B D9 8B 83 A8"))((CBaseEntity*)pPlayer, EF_DIMLIGHT);
+		reinterpret_cast<void(__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 53 8B D9 8B 83 A8"))(reinterpret_cast<CBaseEntity*>(pPlayer), EF_DIMLIGHT);
 	else
-		reinterpret_cast<void(__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 53 56 8B 75 08 8B D9 8B 83"))((CBaseEntity*)pPlayer, EF_DIMLIGHT);
+		reinterpret_cast<void(__thiscall*)(CBaseEntity*, int)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 53 56 8B 75 08 8B D9 8B 83"))(reinterpret_cast<CBaseEntity*>(pPlayer), EF_DIMLIGHT);
 }
 
 ///			 CBaseServer Class Functions				\\\
@@ -271,12 +269,12 @@ void CPortal_Player__SetFlashlightState(int playerIndex, bool enable)
 //---------------------------------------------------------------------------------
 // Purpose: Get IClient player class from the server.
 //---------------------------------------------------------------------------------
-IClient* CBaseServer__GetClient(int playerIndex)
+IClient* CBaseServer__GetClient(const int playerIndex)
 {
 	if (!UTIL_PlayerByIndex(playerIndex)) return nullptr;
 
-	static auto _GetClient = reinterpret_cast<IClient * (__thiscall*)(CBaseServer*, int)>(Memory::Scanner::Scan(ENGINEDLL, "55 8B EC 8B 81 ?? ?? ?? ?? 8B 4D ?? 8B 04 88"));
-	return _GetClient(g_P2MMServerPlugin.sv, playerIndex);
+	static auto GetClient_ = reinterpret_cast<IClient * (__thiscall*)(CBaseServer*, int)>(Memory::Scanner::Scan(ENGINEDLL, "55 8B EC 8B 81 ?? ?? ?? ?? 8B 4D ?? 8B 04 88"));
+	return GetClient_(g_P2MMServerPlugin.sv, playerIndex);
 }
 
 ///			 CGameClient Class Functions				\\\
@@ -288,8 +286,8 @@ bool CGameClient__ExecuteStringCommand(IClient* client, const char* pCommandStri
 {
 	if (!client) return false;
 
-	static auto _ExecuteStringCommand = reinterpret_cast<bool(__thiscall*)(IClient*, const char*)>(Memory::Scanner::Scan(ENGINEDLL, "55 8B EC 81 EC 08 05 00 00 56 8B 75"));
-	return _ExecuteStringCommand(client, pCommandString);
+	static auto ExecuteStringCommand_ = reinterpret_cast<bool(__thiscall*)(IClient*, const char*)>(Memory::Scanner::Scan(ENGINEDLL, "55 8B EC 81 EC 08 05 00 00 56 8B 75"));
+	return ExecuteStringCommand_(client, pCommandString);
 }
 
 CON_COMMAND(p2mm_kill, "p2mm_execute")

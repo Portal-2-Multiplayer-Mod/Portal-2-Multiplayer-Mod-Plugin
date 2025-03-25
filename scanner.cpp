@@ -87,7 +87,7 @@ namespace Memory {
 
 	class AVXScanner : public ScannerImplementation {
 	public:
-		uintptr_t Scan(std::span<uint8_t> region, std::string patternString, int offset) {
+		uintptr_t Scan(std::span<uint8_t> region, const std::string patternString, const int offset) {
 			ScanData scanData(patternString);
 
 			const __m256i locatorFirstMask = _mm256_set1_epi8(static_cast<uint8_t>(scanData.pattern[scanData.locatorFirst]));
@@ -118,7 +118,7 @@ namespace Memory {
 			throw std::runtime_error("Unable to find signature");
 		}
 
-		std::vector<uintptr_t> ScanMultiple(std::span<uint8_t> region, std::string patternString, int offset) {
+		std::vector<uintptr_t> ScanMultiple(std::span<uint8_t> region, const std::string patternString, const int offset) {
 			ScanData scanData(patternString);
 
 			std::vector<uintptr_t> matches;
@@ -184,7 +184,7 @@ namespace Memory {
 
 	class SSEScanner : public ScannerImplementation {
 	public:
-		uintptr_t Scan(std::span<uint8_t> region, std::string patternString, int offset) {
+		uintptr_t Scan(std::span<uint8_t> region, const std::string patternString, const int offset) {
 			ScanData scanData(patternString);
 
 			const __m128i locatorFirstMask = _mm_set1_epi8(static_cast<uint8_t>(scanData.pattern[scanData.locatorFirst]));
@@ -214,7 +214,7 @@ namespace Memory {
 			throw std::runtime_error("Unable to find signature");
 		}
 
-		std::vector<uintptr_t> ScanMultiple(std::span<uint8_t> region, std::string patternString, int offset) {
+		std::vector<uintptr_t> ScanMultiple(std::span<uint8_t> region, const std::string patternString, const int offset) {
 			ScanData scanData(patternString);
 
 			std::vector<uintptr_t> matches;
@@ -280,7 +280,7 @@ namespace Memory {
 
 	class GenericScanner : public ScannerImplementation {
 	public:
-		uintptr_t Scan(std::span<uint8_t> region, std::string patternString, int offset) {
+		uintptr_t Scan(std::span<uint8_t> region, const std::string patternString, const int offset) {
 			ScanData scanData(patternString);
 
 			for (size_t blockOffset = 0; blockOffset < region.size() - scanData.pattern.size(); blockOffset++) {
@@ -297,7 +297,7 @@ namespace Memory {
 			throw std::runtime_error("Unable to find signature");
 		}
 
-		std::vector<uintptr_t> ScanMultiple(std::span<uint8_t> region, std::string patternString, int offset) {
+		std::vector<uintptr_t> ScanMultiple(std::span<uint8_t> region, const std::string patternString, const int offset) {
 			ScanData scanData(patternString);
 
 			std::vector<uintptr_t> matches;
@@ -317,7 +317,7 @@ namespace Memory {
 		}
 
 	private:
-		inline bool InnerCompare(std::span<uint8_t> region, ScanData& scanData) {
+		inline bool InnerCompare(const std::span<uint8_t> region, ScanData& scanData) {
 			for (size_t offset = 0; offset < region.size(); offset++) {
 				if (region[offset] != scanData.pattern[offset] && scanData.mask[offset] == MASK_FULL) {
 					return false;

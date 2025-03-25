@@ -22,7 +22,7 @@
 
 #include <comdef.h> 
 
-// Stand in class definitions, AKA gaslighing the compiler.
+// Forward references for class types unable to be accessed directly.
 class IClient;
 class CBasePlayer;
 class CPortal_Player;
@@ -155,7 +155,7 @@ public:
 
 	int GetRecipientCount() const override { return recipientCount; }
 
-	int GetRecipientIndex(int slot) const override
+	int GetRecipientIndex(const int slot) const override
 	{
 		return (slot < 0 || slot >= recipientCount) ? -1 : recipients[slot];
 	}
@@ -189,11 +189,11 @@ inline bool FSubStr(const char* sz1, const char* search)
 //---------------------------------------------------------------------------------
 // Purpose: Entity edict to entity index. Taken from utils.h.
 //---------------------------------------------------------------------------------
-inline int EDICTINDEX(edict_t* pEdict)
+inline int EDICTINDEX(const edict_t* pEdict)
 {
 	if (!pEdict)
 		return 0;
-	int edictIndex = pEdict - g_pGlobals->pEdicts;
+	const int edictIndex = pEdict - g_pGlobals->pEdicts;
 	Assert(edictIndex < MAX_EDICTS && edictIndex >= 0);
 	return edictIndex;
 }
@@ -210,7 +210,7 @@ inline int ENTINDEX(CBaseEntity* pEnt)
 //---------------------------------------------------------------------------------
 // Purpose: Entity index to entity edict. Taken from utils.h.
 //---------------------------------------------------------------------------------
-inline edict_t* INDEXENT(int iEdictNum)
+inline edict_t* INDEXENT(const int iEdictNum)
 {
 	Assert(iEdictNum >= 0 && iEdictNum < MAX_EDICTS);
 	if (g_pGlobals->pEdicts)

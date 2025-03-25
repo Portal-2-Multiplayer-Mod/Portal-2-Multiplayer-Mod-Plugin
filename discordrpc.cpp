@@ -19,7 +19,6 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-
 /**
  * @brief  Log Discord GameSDK logs to the console.
  *		   This is mainly a developer mode only logging system and only the warning and error logs should be shown.
@@ -28,16 +27,16 @@
  * @param pMsgFormat Log message.
  * @param ... Formatting arguments.
  */
-static void DiscordLog(LogLevel level, bool dev, const char* pMsgFormat, ...)
+static void DiscordLog(const LogLevel level, const bool dev, const char* pMsgFormat, ...)
 {
 	if (dev && !p2mm_developer.GetBool()) return; // Stop debug and info messages when p2mm_developer isn't enabled.
 
 	// Take our log message and format any arguments it has into the message.
-	va_list argptr;
+	va_list argPtr;
 	char szFormattedText[1024] = { 0 };
-	va_start(argptr, pMsgFormat);
-	V_vsnprintf(szFormattedText, sizeof(szFormattedText), pMsgFormat, argptr);
-	va_end(argptr);
+	va_start(argPtr, pMsgFormat);
+	V_vsnprintf(szFormattedText, sizeof(szFormattedText), pMsgFormat, argPtr);
+	va_end(argPtr);
 
 	// Add a header to the log message.
 	char completeMsg[1024] = { 0 };
@@ -51,8 +50,11 @@ static void DiscordLog(LogLevel level, bool dev, const char* pMsgFormat, ...)
 	case (WARNING):
 		ConColorMsg(P2MM_DISCORD_CONSOLE_COLOR_WARNING, completeMsg);
 		return;
+	case (ERRORR):
+		Warning(completeMsg);
+		return;
 	default:
-		Warning("(P2:MM DISCORD): DiscordLog level out of range, \"%i\". Defaulting to level 0.\n", level);
+		Warning("(P2:MM DISCORD): DiscordLog level out of range, \"%i\". Defaulting to level INFO.\n", level);
 		ConColorMsg(P2MM_DISCORD_CONSOLE_COLOR_NORMAL, completeMsg);
 	}
 }
@@ -85,12 +87,6 @@ static void DumpDiscordRPCValues(const DiscordRichPresence* rpc)
 /// Discord Webhooks
 ///-----------------------------------------------------------------------------
 
-/**
- * @brief 
- * @param var 
- * @param pOldValue 
- * @param flOldValue 
- */
 static void WebhookCheck(IConVar* var, const char* pOldValue, float flOldValue)
 {
 	// Make sure people know that the chat is being recorded if webhook is set
@@ -132,8 +128,7 @@ static std::string DefaultFooter()
 		footer = std::string("Players: ") + curPlayerCount + "/" + maxPlayerCount + std::string(" (1 Bot) || Current Map : ") + CURMAPFILENAME;
 	else if (GetBotCount() > 1)
 		footer = std::string("Players: ") + curPlayerCount + "/" + maxPlayerCount + std::string(" (") + std::to_string(GetBotCount()) + std::string(" Bots) || Current Map : ") + CURMAPFILENAME;
-		
-
+	
 	return footer;
 }
 
@@ -209,7 +204,8 @@ static unsigned SendWebHook(void* webhookParams)
 // Send a embed message to Discord via a webhook
 void CDiscordIntegration::SendWebHookEmbed(const std::string& title, const std::string& description, const int color, const bool hasFooter)
 {
-	if (!p2mm_discord_webhooks.GetBool()) return;
+	if (!p2mm_discord_webhooks.GetBool())
+		return;
 
 	// Allocate memory for the parameters
 	WebHookParams* webhookParams = new WebHookParams;
@@ -228,6 +224,7 @@ void CDiscordIntegration::SendWebHookEmbed(const std::string& title, const std::
 		webhookParams->footer = std::string(p2mm_discord_webhooks_customfooter.GetString());
 	}
 
+	// Debug logging.
 	DiscordLog(INFO, true, "Embed webhookParams:");
 	DiscordLog(INFO, true, std::string("title: " + title).c_str());
 	DiscordLog(INFO, true, std::string("description: " + description).c_str());
@@ -286,12 +283,12 @@ static void HandleDiscordReady(const DiscordUser* connectedUser)
 		connectedUser->userId);
 }
 
-static void HandleDiscordDisconnected(int errcode, const char* message)
+static void HandleDiscordDisconnected(const int errcode, const char* message)
 {
 	DiscordLog(WARNING, false, "Discord: Disconnected (%d: %s)\n", errcode, message);
 }
 
-static void HandleDiscordError(int errcode, const char* message)
+static void HandleDiscordError(const int errcode, const char* message)
 {
 	DiscordLog(WARNING, false, "Discord: Error (%d: %s)\n", errcode, message);
 }
@@ -316,10 +313,10 @@ static void HandleDiscordJoinRequest(const DiscordUser* request)
 //---------------------------------------------------------------------------------
 bool CDiscordIntegration::StartDiscordRPC()
 {
-	DiscordLog(INFO, false, "Starting up Discord RPC!");
+	DiscordLog(INFO, false, "Starting up Discord RPC...");
 
 	DiscordLog(INFO, true, "Setting Discord event handlers...");
-	DiscordEventHandlers* handlers = new DiscordEventHandlers;
+	const auto handlers = new DiscordEventHandlers;
 	handlers->ready = HandleDiscordReady;
 	handlers->disconnected = HandleDiscordDisconnected;
 	handlers->errored = HandleDiscordError;
@@ -327,28 +324,29 @@ bool CDiscordIntegration::StartDiscordRPC()
 	handlers->spectateGame = HandleDiscordSpectate;
 	handlers->joinRequest = HandleDiscordJoinRequest;
 
+	// Associating this Source Engine game with the Discord RPC.
 	DiscordLog(INFO, true, "Associating the plugin with the current Portal 2 branch game then initialising RPC...");
 	char appid[255];
 	V_snprintf(appid, 255, "%d", engineServer->GetAppID());
 	Discord_Initialize("1201562647880015954", handlers, 1, appid);
 
-	// Change the default Portal 2 large images with ones associated with different mods.
+	// Set the RPC large image with ones associated with different mods supported by P2:MM. This won't be changed at all later in the code.
 	switch (g_P2MMServerPlugin.m_iCurGameIndex)
 	{
 	case (PORTAL_STORIES_MEL):
-		RPC.largeImageKey = "p2mmmellogo";
+		RPC.largeImageKey = "p2mmlogomel";
 		RPC.largeImageText = "Portal Stories: Mel";
 		break;
 	case (APERTURE_TAG):
-		RPC.largeImageKey = "p2mmtaglogo";
+		RPC.largeImageKey = "p2mmlogotag";
 		RPC.largeImageText = "Aperture Tag";
 		break;	
-	case (PORTAL_RELOADED):
-		RPC.largeImageKey = "p2mmreloadedlogo";
-		RPC.largeImageText = "Portal Reloaded";
-		break;
+	// case (PORTAL_RELOADED):
+	// 	RPC.largeImageKey = "p2mmlogoreloaded";
+	// 	RPC.largeImageText = "Portal Reloaded";
+	// 	break;
 	case (DIVINITY):
-		RPC.largeImageKey = "p2mmdivinitylogo";
+		RPC.largeImageKey = "p2mmlogodivinity";
 		RPC.largeImageText = "Portal: Divinity";
 		break;
 	default:
@@ -357,6 +355,7 @@ bool CDiscordIntegration::StartDiscordRPC()
 		break;
 	}
 
+	// Update the RPC with the default settings.
 	UpdateDiscordRPC();
 
 	DiscordLog(INFO, false, "Discord RPC activated!");
@@ -378,8 +377,9 @@ void CDiscordIntegration::ShutdownDiscordRPC()
 
 void CDiscordIntegration::UpdateDiscordRPC()
 {
-	bool bActiveGame = IsGameActive();
-	bool bGameShutdown = IsGameShutdown();
+	// Get states of the game so we can determine what it is currently doing.
+	const bool bActiveGame = IsGameActive();
+	const bool bGameShutdown = IsGameShutdown();
 
 	// Log game states checked for RPC.
 	DiscordLog(INFO, true, "Updating Discord RPC!");
@@ -400,6 +400,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 	RPC.spectateSecret = "";
 	RPC.instance = 0;
 
+	// Game is unloading set the state to say its shutting down.
 	if (g_P2MMServerPlugin.m_bPluginUnloading)
 	{
 		RPC.state = "See you around!";
@@ -409,15 +410,20 @@ void CDiscordIntegration::UpdateDiscordRPC()
 		return;
 	}
 
+	// Host is on the main menu.
 	if (!bActiveGame || bGameShutdown)
 	{
 		RPC.state = "In the Main Menu...";
 		RPC.details = "Main Menu";
 	}
 
+	// Set the RPC state for the current map.
 	if (bActiveGame && !(g_P2MMServerPlugin.m_bPluginUnloading || bGameShutdown))
 	{
-		const MapParams* map = nullptr;
+		// Get map RPC info based on its file name in a vector of maps based on the current game being run.
+		// Have to strcat, or snprintf, to the different arrays depending on how that map and its type are presented.
+		// If a map is not found in a list or in one of the supported games, its labeled as a miscellaneous map.
+		const MapParams* map;
 		char state[128] = { 0 };
 		char details[128] = "Map: ";
 		char smallImageKey[32] = { 0 };
@@ -492,7 +498,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 			V_snprintf(smallImageKey, sizeof(smallImageKey), "aptagchapter%i", map->chapter);
 			V_strcat(smallImageText, map->chapterName, sizeof(smallImageText));
 			break;
-		case (PORTAL_RELOADED):
+		// case (PORTAL_RELOADED):
 			// Portal Reloaded support will not happen for some time, this will remain commented out.
 			// if (std::strstr(CURMAPFILENAME, "sp_"))
 			// 	*map = *InReloadedCampaignMap(true);
@@ -503,7 +509,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 			// V_strcat(details, map->mapName, sizeof(details));
 			// V_snprintf(smallImageKey, sizeof(smallImageKey), "reloadedchapter%i", map->chapter);
 			// V_strcat(smallImageText, map->chapterName, sizeof(smallImageText));
-			break;
+			// break;
 		case (DIVINITY):
 			if (std::strstr(CURMAPFILENAME, "adv"))
 				map = InDivinityCampaignMap(true);
@@ -521,7 +527,8 @@ void CDiscordIntegration::UpdateDiscordRPC()
 			V_strcat(smallImageText, CURMAPFILENAME, sizeof(smallImageText));
 			break;
 		}
-		
+
+		// Set bot count before the player count if there are any bots.
 		if (GetBotCount() == 1) 
 			V_strcat(state, "1 Bot | Players: ", sizeof(state));
 		else if (GetBotCount() > 1) 
@@ -529,6 +536,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 		else 
 			V_strcat(state, "Players: ", sizeof(state));
 
+		// Set gather map RPC data and set it in the RPC struct.
 		RPC.state = state;
 		RPC.details = details;
 		RPC.smallImageKey = smallImageKey;
@@ -536,7 +544,8 @@ void CDiscordIntegration::UpdateDiscordRPC()
 		RPC.partySize = CURPLAYERCOUNT();
 		RPC.instance = 1;
 	}
-	
+
+	// Dump log data for developer logs and then update the RPC for Discord.
 	DumpDiscordRPCValues(&RPC);
 	Discord_UpdatePresence(&RPC);
 }

@@ -19,7 +19,7 @@
 //---------------------------------------------------------------------------------
 void P2MMLog(const LogLevel level, const bool dev, const char* pMsgFormat, ...)
 {
-	if (dev && !p2mm_developer.GetBool() && level != 2) return; // Stop developer messages when p2mm_developer isn't enabled.
+	if (dev && !p2mm_developer.GetBool() && level != ERRORR) return; // Stop developer messages when p2mm_developer isn't enabled.
 
 	// Take our log message and format any arguments it has into the message.
 	va_list argptr;
@@ -45,7 +45,7 @@ void P2MMLog(const LogLevel level, const bool dev, const char* pMsgFormat, ...)
 		Error(completeMsg);
 		return;
 	default:
-		Warning("(P2:MM PLUGIN): P2MMLog level set outside of 0-1, \"%i\". Defaulting to level 0.\n", level);
+		Warning("(P2:MM PLUGIN): P2MMLog level set outside of 0-1, \"%i\". Defaulting to level INFO.\n", level);
 		ConColorMsg(P2MM_PLUGIN_CONSOLE_COLOR, completeMsg);
 	}
 }
@@ -53,13 +53,13 @@ void P2MMLog(const LogLevel level, const bool dev, const char* pMsgFormat, ...)
 //---------------------------------------------------------------------------------
 // Purpose: Get the player's entity index by their userid.
 //---------------------------------------------------------------------------------
-int UserIDToPlayerIndex(int userid)
+int UserIDToPlayerIndex(const int userid)
 {
 	for (int i = 1; i <= MAX_PLAYERS; i++)
 	{
-		edict_t* pEdict = nullptr;
+		const edict_t* pEdict = nullptr;
 		if (i >= 0 && i < g_pGlobals->maxEntities)
-			pEdict = (edict_t*)(g_pGlobals->pEdicts + i);
+			pEdict = (g_pGlobals->pEdicts + i);
 
 		if (engineServer->GetPlayerUserId(pEdict) == userid)
 			return i;
@@ -70,18 +70,18 @@ int UserIDToPlayerIndex(int userid)
 //---------------------------------------------------------------------------------
 // Purpose: Gets player username by their entity index.
 //---------------------------------------------------------------------------------
-const char* GetPlayerName(int playerIndex)
+const char* GetPlayerName(const int playerIndex)
 {
 	if (playerIndex <= 0 || playerIndex > MAX_PLAYERS)
 	{
-		P2MMLog(INFO, true, "Invalid index passed to GetPlayerName: %i!", playerIndex);
+		P2MMLog(WARNING, true, "Invalid index passed to GetPlayerName: %i! Returning ""!", playerIndex);
 		return "";
 	}
 
 	player_info_t playerInfo;
 	if (!engineServer->GetPlayerInfo(playerIndex, &playerInfo))
 	{
-		P2MMLog(INFO, true, "Couldn't retrieve playerInfo of player index \"%i\" in GetPlayerName!", playerIndex);
+		P2MMLog(WARNING, true, R"(Couldn't retrieve playerInfo of player index in GetPlayerName: %i! Returning ""!)", playerIndex);
 		return "";
 	}
 
@@ -144,7 +144,7 @@ const char* GetConVarString(const char* cvName)
 //---------------------------------------------------------------------------------
 // Purpose: Self-explanatory.
 //---------------------------------------------------------------------------------
-void SetConVarInt(const char* cvName, int newValue)
+void SetConVarInt(const char* cvName, const int newValue)
 {
 	ConVar* pVar = g_pCVar->FindVar(cvName);
 	if (!pVar)
@@ -163,7 +163,7 @@ void SetConVarString(const char* cvName, const char* newValue)
 	ConVar* pVar = g_pCVar->FindVar(cvName);
 	if (!pVar)
 	{
-		P2MMLog(WARNING, false, "Could not set ConVar: \"%s\"!", cvName);
+		P2MMLog(WARNING, false, R"(Could not set ConVar: "%s"!)", cvName);
 		return;
 	}
 	pVar->SetValue(newValue);
@@ -173,12 +173,12 @@ void SetConVarString(const char* cvName, const char* newValue)
 //---------------------------------------------------------------------------------
 // Purpose: Returns true if player is a bot.
 //---------------------------------------------------------------------------------
-bool IsBot(int playerIndex)
+bool IsBot(const int playerIndex)
 {
 	player_info_t playerInfo;
 	if (!engineServer->GetPlayerInfo(playerIndex, &playerInfo))
 	{
-		P2MMLog(INFO, true, "Couldn't retrieve player info of player index \"%i\" in IsBot!", playerIndex);
+		P2MMLog(WARNING, true, R"(Couldn't retrieve player info of player index "%i" in IsBot!)", playerIndex);
 		return false;
 	}
 
@@ -215,7 +215,7 @@ int CURPLAYERCOUNT()
 //---------------------------------------------------------------------------------
 // Purpose: Entity index to script handle.
 //---------------------------------------------------------------------------------
-HSCRIPT INDEXHANDLE(int iEdictNum)
+HSCRIPT INDEXHANDLE(const int iEdictNum)
 {
 	edict_t* pEdict = INDEXENT(iEdictNum);
 	if (!pEdict->GetUnknown())
@@ -470,7 +470,7 @@ const std::vector<MapParams> MEL_ADVANCED_CAMPAIGN_MAPS =
 };
 
 // Check to see which Mel map is being played.
-const MapParams* InMelCampaignMap(bool advanced)
+const MapParams* InMelCampaignMap(const bool advanced)
 {
 	if (advanced)
 	{

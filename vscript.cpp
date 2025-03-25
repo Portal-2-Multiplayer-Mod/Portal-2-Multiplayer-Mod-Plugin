@@ -72,7 +72,7 @@ static bool IsDedicatedServer()
 // Create a entity using CreateByClassname, then use this function on its handle.
 // Note: Not all entities will work even after being initialized with this function.
 //---------------------------------------------------------------------------------
-static void InitializeEntity(HSCRIPT ent)
+static void InitializeEntity(const HSCRIPT ent)
 {
 	static uintptr_t func = (uintptr_t)Memory::Scanner::Scan<void*>(SERVERDLL, "E8 ?? ?? ?? ?? 8B 4D 18 8B 57 5C", 1);
 	static auto GetCBaseEntityScriptDesc = reinterpret_cast<ScriptClassDesc_t* (__cdecl*)()>(*reinterpret_cast<uintptr_t*>(func) + func + sizeof(func));
@@ -89,7 +89,7 @@ static void InitializeEntity(HSCRIPT ent)
 // Purpose: Sends a raw message to the chat HUD. Specifying no playerIndex or 0 sends to all players.
 //			Supports printing localization strings but those that require formatting can't be formatted.
 //---------------------------------------------------------------------------------
-static void SendToChat(int playerIndex, const char* msg)
+static void SendToChat(const int playerIndex, const char* msg)
 {
 	if (!msg) return;
 
@@ -130,7 +130,7 @@ static const char* GetLastMap()
 // Purpose: Get or set the state of whether the first map was run or not.
 // Set false/true = 0/1 | -1 to get state.
 //---------------------------------------------------------------------------------
-static bool FirstRunState(int state)
+static bool FirstRunState(const int state)
 {
 	if (state == 0 || state == 1)
 		return g_P2MMServerPlugin.m_bFirstMapRan = !!state;
@@ -172,7 +172,7 @@ static void CallFirstRunPrompt()
 //			Specifying no playerIndex or 0 sends to all players.
 //			Supports printing localization strings but those that require formatting can't be formatted.
 //---------------------------------------------------------------------------------
-static void ConsolePrint(int playerIndex, const char* msg)
+static void ConsolePrint(const int playerIndex, const char* msg)
 {
 	if (!msg) return;
 
@@ -208,7 +208,7 @@ static void ConsolePrint(int playerIndex, const char* msg)
 //			Specifying no playerIndex or 0 sends to all players.
 //			Supports printing localization strings but those that require formatting can't be formatted.
 //---------------------------------------------------------------------------------
-static void ClientPrint(int playerIndex, const char* msg)
+static void ClientPrint(const int playerIndex, const char* msg)
 {
 	if (!msg) return;
 
@@ -249,9 +249,9 @@ static void ClientPrint(int playerIndex, const char* msg)
 //---------------------------------------------------------------------------------
 static void HudPrint
 	(
-	int playerIndex, const char* msg, 
-	Vector posChannel, int effect, float fxTime,
-	Vector RGB1, int alpha1, Vector RGB2, int alpha2,
+	const int playerIndex, const char* msg, 
+	Vector posChannel, const int effect, const float fxTime,
+	Vector RGB1, const int alpha1, Vector RGB2, const int alpha2,
 	Vector showTimes
 	)
 {
@@ -302,7 +302,7 @@ static int GetMaxPlayers()
 //---------------------------------------------------------------------------------
 // Purpose: Enable or disable displaying the score board for a player.
 //---------------------------------------------------------------------------------
-static void ShowScoreboard(int playerIndex, bool bEnable)
+static void ShowScoreboard(const int playerIndex, const bool bEnable)
 {
 	CBasePlayer__ShowViewPortPanel(playerIndex, "scores", bEnable);
 }

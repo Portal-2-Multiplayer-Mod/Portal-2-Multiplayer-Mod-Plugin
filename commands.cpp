@@ -307,7 +307,7 @@ CON_COMMAND_F(p2mm_helloworld2, "Hello World 2: Electric Boogaloo!", FCVAR_HIDDE
 ConVar p2mm_gelocity_laps_default("p2mm_gelocity_laps_default", "3", FCVAR_NONE, "Set the default amount of laps for a Gelocity race.", true, 1, true, 300);
 ConVar p2mm_gelocity_music_default("p2mm_gelocity_music_default", "0", FCVAR_NONE, "Set the default music track for a Gelocity race.", true, 0, true, 5);
 
-static void GelocityTournament(IConVar* var, const char* pOldValue, float flOldValue)
+static void GelocityTournament(IConVar* var, const char* pOldValue, const float flOldValue)
 {
 	// Check if host is in a gelocity map.
 	if (!InGelocityMap())
@@ -516,7 +516,7 @@ CON_COMMAND(p2mm_gelocity_start, "Starts the Gelocity race.")
 std::vector<RemovePlayerInfo> banList;
 
 // Have to make a ConCommand to remove the player becase 
-void RemovePlayerOperation(bool bBanning, int userid)
+void RemovePlayerOperation(const bool bBanning, const int userid)
 {
 	RemovePlayerInfo bannedPlayer;
 	bannedPlayer.userID = userid;

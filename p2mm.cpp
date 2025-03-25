@@ -153,7 +153,7 @@ const char* CP2MMServerPlugin::GetPluginDescription(void)
 // Purpose: Called when the plugin is loaded, initialization process.
 //			Loads the interfaces we need from the engine and applies our patches.
 //---------------------------------------------------------------------------------
-bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameServerFactory)
+bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInterfaceFn gameServerFactory)
 {
 	if (m_bPluginLoaded)
 	{
@@ -520,7 +520,7 @@ void CP2MMServerPlugin::Unload(void)
 //---------------------------------------------------------------------------------
 // Purpose: For ClientCommand.
 //---------------------------------------------------------------------------------
-void CP2MMServerPlugin::SetCommandClient(int index)
+void CP2MMServerPlugin::SetCommandClient(const int index)
 {
 	m_iClientCommandIndex = index;
 }
@@ -1032,7 +1032,7 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 //---------------------------------------------------------------------------------
 // Purpose: Called every server frame, used for the VScript loop. Warning: Don't do too intensive tasks with this!
 //---------------------------------------------------------------------------------
-void CP2MMServerPlugin::GameFrame(bool simulating)
+void CP2MMServerPlugin::GameFrame(const bool simulating)
 {
 	if (HSCRIPT loop_func = g_pScriptVM->LookupFunction("P2MMLoop"); p2mm_loop.GetBool())
 		g_pScriptVM->Call(loop_func, nullptr, false, nullptr);
@@ -1055,7 +1055,7 @@ void CP2MMServerPlugin::LevelShutdown(void)
 	CDiscordIntegration::UpdateDiscordRPC();
 }
 
-PLUGIN_RESULT CP2MMServerPlugin::ClientConnect(bool* bAllowConnect, edict_t* pEntity, const char* pszName, const char* pszAddress, char* reject, int maxrejectlen)
+PLUGIN_RESULT CP2MMServerPlugin::ClientConnect(bool* bAllowConnect, edict_t* pEntity, const char* pszName, const char* pszAddress, char* reject, const int maxrejectlen)
 {
 	P2MMLog(INFO, true, "Player Joined! playerInfo:");
 	player_info_t playerInfo;

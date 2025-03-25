@@ -78,34 +78,34 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Portal 2|Win32'">
-    <OutDir>.\Release\.\</OutDir>
+    <OutDir>.\Build\.\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Aperture Tag|Win32'">
-    <OutDir>.\Release\.\</OutDir>
+    <OutDir>.\Build\.\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Divinity|Win32'">
-    <OutDir>.\Release\.\</OutDir>
+    <OutDir>.\Build\.\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Vanilla|Win32'">
-    <OutDir>.\Release\.\</OutDir>
+    <OutDir>.\Build\.\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Portal Stories Mel|Win32'">
-    <OutDir>.\Release\.\</OutDir>
+    <OutDir>.\Build\.\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Portal 2|Win32'">
-    <IntDir>.\Release\.\</IntDir>
+    <IntDir>.\Build\.\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Aperture Tag|Win32'">
-    <IntDir>.\Release\.\</IntDir>
+    <IntDir>.\Build\.\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Divinity|Win32'">
-    <IntDir>.\Release\.\</IntDir>
+    <IntDir>.\Build\.\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Vanilla|Win32'">
-    <IntDir>.\Release\.\</IntDir>
+    <IntDir>.\Build\.\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Portal Stories Mel|Win32'">
-    <IntDir>.\Release\.\</IntDir>
+    <IntDir>.\Build\.\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Portal 2|Win32'">
     <TargetName>p2mm</TargetName>

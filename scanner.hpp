@@ -32,11 +32,11 @@ namespace Memory {
 
 	class Scanner {
 	public:
-		template<typename T = void*> static T Scan(std::span<uint8_t> region, std::string pattern, int offset = 0) {
+		template<typename T = void*> static T Scan(const std::span<uint8_t> region, const std::string pattern, const int offset = 0) {
 			return reinterpret_cast<T>(Scanner::Implementation().get()->Scan(region, pattern, offset));
 		}
 
-		static std::vector<uintptr_t> ScanMultiple(std::span<uint8_t> region, std::string pattern, int offset = 0) {
+		static std::vector<uintptr_t> ScanMultiple(const std::span<uint8_t> region, std::string pattern, const int offset = 0) {
 			return Scanner::Implementation().get()->ScanMultiple(region, pattern, offset);
 		}
 

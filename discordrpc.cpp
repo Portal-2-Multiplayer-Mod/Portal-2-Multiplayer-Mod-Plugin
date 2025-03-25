@@ -104,6 +104,8 @@ ConVar p2mm_discord_webhooks_url("p2mm_discord_webhooks_url", "", FCVAR_HIDDEN, 
 ConVar p2mm_discord_webhooks_defaultfooter("p2mm_discord_webhooks_defaultfooter", "1", FCVAR_NONE, "Enable or disable the default embed footer for webhooks.", true, 0, true, 1);
 ConVar p2mm_discord_webhooks_customfooter("p2mm_discord_webhooks_customfooter", "", FCVAR_NONE, "Set a custom embed footer for webhook messages.");
 
+static CURL* curl = nullptr;
+
 // Parameters that are sent through to the Discord webhook.
 struct WebHookParams
 {
@@ -133,30 +135,24 @@ static std::string DefaultFooter()
 }
 
 // Thread sending a curl request to the specified Discord WebHook
-static unsigned SendWebHook(void* webhookParams)
+static unsigned SendWebHook(void* webHookParams)
 {
+	const WebHookParams* params = static_cast<WebHookParams*>(webHookParams);
+	
 	if (FStrEq(p2mm_discord_webhooks_url.GetString(), ""))
 	{
-		DiscordLog(WARNING, false, "Webhook for \"p2mm_discord_webhooks_url\" has not been specified.");
+		DiscordLog(WARNING, false, "Webhook for \"p2mm_discord_webhooks_url\" has not been specified! Can't send webhook embed!");
 		return 1;
 	}
-
-	CURL* curl = curl_easy_init();
-	curl_global_init(CURL_GLOBAL_DEFAULT);
 
 	if (!curl)
 	{
-		DiscordLog(WARNING, false, "Failed to initialize curl request!");
+		DiscordLog(WARNING, false, "CURL failed to initialize previously! Can not send webhook embed!");
 		return 1;
 	}
-
-	curl_easy_setopt(curl, CURLOPT_URL, p2mm_discord_webhooks_url.GetString());
-	curl_easy_setopt(curl, CURLOPT_POST, 1L);
-
+	
 	// Create the JSON payload
-	WebHookParams* params = static_cast<WebHookParams*>(webhookParams);
-
-	std::string jsonPayload = std::string(
+	const auto jsonPayload = std::string(
 		R"({ "content": null, "embeds" : [ {"title": ")" +
 		params->title + R"(", "description" : ")" +
 		params->description + R"(", "color" : )" +
@@ -170,14 +166,12 @@ static unsigned SendWebHook(void* webhookParams)
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonPayload);
 
 	// Set the Content-Type header
-	struct curl_slist* headers = nullptr;
+	curl_slist* headers = nullptr;
 	headers = curl_slist_append(headers, "Content-Type: application/json");
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
-	CURLcode curlCode = curl_easy_perform(curl);
-
 	// Perform the request and check for errors
-	switch (curlCode)
+	switch (CURLcode curlCode = curl_easy_perform(curl))
 	{
 	case (CURLE_OK):
 		DiscordLog(INFO, true, "Sent webhook curl request!");
@@ -192,11 +186,9 @@ static unsigned SendWebHook(void* webhookParams)
 
 	// Cleanup curl request
 	curl_slist_free_all(headers);
-	curl_easy_cleanup(curl);
-	curl_global_cleanup();
 
 	// Free the message parameters from memory
-	delete webhookParams;
+	delete webHookParams;
 
 	return 0;
 }
@@ -207,8 +199,13 @@ void CDiscordIntegration::SendWebHookEmbed(const std::string& title, const std::
 	if (!p2mm_discord_webhooks.GetBool())
 		return;
 
-	// Allocate memory for the parameters
-	WebHookParams* webhookParams = new WebHookParams;
+	// Allocate memory for the parameters.
+	const auto webhookParams = new WebHookParams;
+	if (!webhookParams)
+	{
+		DiscordLog(ERRORR, false, "Failed to initialize webhookParams struct!");
+		return;
+	}
 	webhookParams->title = title;	
 	webhookParams->description = description;
 	webhookParams->color = color;
@@ -245,10 +242,10 @@ void CDiscordIntegration::SendWebHookEmbed(const std::string& title, const std::
 static void RPCState(IConVar* var, const char* pOldValue, float flOldValue)
 {
 	if (!g_P2MMServerPlugin.m_bPluginLoaded) return;
-	ConVar* cvRPC = dynamic_cast<ConVar*>(var);
-	if (cvRPC->GetBool() && !g_pDiscordIntegration->rpcRunning)
+	const auto cvRPC = dynamic_cast<ConVar*>(var);
+	if (cvRPC->GetBool() && !g_pDiscordIntegration->m_bRPCRunning)
 		g_pDiscordIntegration->StartDiscordRPC();
-	if (!cvRPC->GetBool() && g_pDiscordIntegration->rpcRunning)
+	if (!cvRPC->GetBool() && g_pDiscordIntegration->m_bRPCRunning)
 		g_pDiscordIntegration->ShutdownDiscordRPC();
 }
 ConVar p2mm_discord_rpc("p2mm_discord_rpc", "1", FCVAR_NONE, "Enable or disable Discord RPC with P2:MM.", true, 0, true, 1, RPCState);
@@ -256,8 +253,7 @@ ConVar p2mm_discord_rpc("p2mm_discord_rpc", "1", FCVAR_NONE, "Enable or disable 
 static DiscordRichPresence RPC;
 CDiscordIntegration::CDiscordIntegration()
 {
-	this->rpcRunning = false; // Flag bool for whether the RPC is running.
-
+	// Initialize RPC parameters to defaults.
 	RPC.state = "";
 	RPC.details = "Starting up...";
 	RPC.startTimestamp = time(nullptr);
@@ -273,6 +269,28 @@ CDiscordIntegration::CDiscordIntegration()
 	RPC.joinSecret = "";
 	RPC.spectateSecret = "";
 	RPC.instance = 0;
+
+	this->m_bRPCRunning = false; // Flag bool for whether the RPC is running.
+
+	// Initialize curl requests for the webhook embeds.
+	curl = curl_easy_init();
+	curl_global_init(CURL_GLOBAL_DEFAULT);
+	if (!curl)
+	{
+		DiscordLog(WARNING, false, "Failed to initialize curl request!");
+		return;
+	}
+
+	// Set options for curl requests.
+	curl_easy_setopt(curl, CURLOPT_URL, p2mm_discord_webhooks_url.GetString());
+	curl_easy_setopt(curl, CURLOPT_POST, 1L);
+}
+
+CDiscordIntegration::~CDiscordIntegration()
+{
+	// Clean up and shut down using curl requests.
+	curl_easy_cleanup(curl);
+	curl_global_cleanup();
 }
 
 static void HandleDiscordReady(const DiscordUser* connectedUser)
@@ -359,7 +377,7 @@ bool CDiscordIntegration::StartDiscordRPC()
 	UpdateDiscordRPC();
 
 	DiscordLog(INFO, false, "Discord RPC activated!");
-	this->rpcRunning = true;
+	this->m_bRPCRunning = true;
 	return true;
 }
 
@@ -371,8 +389,21 @@ void CDiscordIntegration::ShutdownDiscordRPC()
 	DiscordLog(INFO, false, "Shutting down Discord RPC...");
 	Discord_ClearPresence();
 	Discord_Shutdown();
-	this->rpcRunning = false;
+	this->m_bRPCRunning = false;
 	DiscordLog(INFO, false, "Shutdown Discord RPC!");
+}
+
+/**
+ * @brief Set miscellaneous RPC data for a map.
+ * @param details details RPC array.
+ * @param smallImageKey smallImageKey RPC array.
+ * @param smallImageText smallImageText RPC array.
+ */
+static void MiscMapRPC(char* details, char* smallImageKey, char* smallImageText)
+{
+	V_strcat(details, CURMAPFILENAME, sizeof(details));
+	V_strcat(smallImageKey, "miscmap", sizeof(smallImageKey));
+	V_strcat(smallImageText, CURMAPFILENAME, sizeof(smallImageText));
 }
 
 void CDiscordIntegration::UpdateDiscordRPC()
@@ -415,6 +446,9 @@ void CDiscordIntegration::UpdateDiscordRPC()
 	{
 		RPC.state = "In the Main Menu...";
 		RPC.details = "Main Menu";
+		DumpDiscordRPCValues(&RPC);
+		Discord_UpdatePresence(&RPC);
+		return;
 	}
 
 	// Set the RPC state for the current map.
@@ -429,12 +463,16 @@ void CDiscordIntegration::UpdateDiscordRPC()
 		char smallImageKey[32] = { 0 };
 		char smallImageText[128] = { 0 };
 		switch (g_P2MMServerPlugin.m_iCurGameIndex)
-		{
+			{
 		case (PORTAL_2):
 			if (std::strstr(CURMAPFILENAME, "sp_"))
 			{
 				map = InP2CampaignMap();
-				if (!map) break;
+				if (!map)
+				{
+					MiscMapRPC(details, smallImageKey, smallImageText);
+					break;
+				}
 
 				V_strcat(details, map->mapName, sizeof(details));
 				V_snprintf(smallImageKey, 32, "p2spchapter%i", map->chapter);
@@ -443,7 +481,11 @@ void CDiscordIntegration::UpdateDiscordRPC()
 			else if (std::strstr(CURMAPFILENAME, "gelocity"))
 			{
 				map = InGelocityMap();
-				if (!map) break;
+				if (!map)
+				{
+					MiscMapRPC(details, smallImageKey, smallImageText);
+					break;
+				}
 
 				V_strcat(details, map->mapName, sizeof(details));
 				V_strcat(smallImageKey, "race", sizeof(smallImageKey));
@@ -466,9 +508,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 				map = InP2CampaignMap(true);
 				if (!map)
 				{
-					V_strcat(details, CURMAPFILENAME, sizeof(details));
-					V_strcat(smallImageKey, "miscmap", sizeof(smallImageKey));
-					V_strcat(smallImageText, CURMAPFILENAME, sizeof(smallImageText));
+					MiscMapRPC(details, smallImageKey, smallImageText);
 					break;
 				}
 
@@ -484,7 +524,11 @@ void CDiscordIntegration::UpdateDiscordRPC()
 				map = InMelCampaignMap(true);
 			else
 				map = InMelCampaignMap();
-			if (!map) break;
+			if (!map)
+			{
+				MiscMapRPC(details, smallImageKey, smallImageText);
+				break;
+			}
 
 			V_strcat(details, map->mapName, sizeof(details));
 			V_snprintf(smallImageKey, sizeof(smallImageKey), "melchapter%i", map->chapter);
@@ -492,7 +536,11 @@ void CDiscordIntegration::UpdateDiscordRPC()
 			break;
 		case (APERTURE_TAG):
 			map = InApertureTagCampaignMap();
-			if (!map) break;
+			if (!map)
+			{
+				MiscMapRPC(details, smallImageKey, smallImageText);
+				break;
+			}
 			
 			V_strcat(details, map->mapName, sizeof(details));
 			V_snprintf(smallImageKey, sizeof(smallImageKey), "aptagchapter%i", map->chapter);
@@ -514,17 +562,20 @@ void CDiscordIntegration::UpdateDiscordRPC()
 			if (std::strstr(CURMAPFILENAME, "adv"))
 				map = InDivinityCampaignMap(true);
 			else
-				map = InMelCampaignMap();
-			if (!map) break;
+				map = InDivinityCampaignMap();
+			if (!map)
+			{
+				MiscMapRPC(details, smallImageKey, smallImageText);
+				break;
+			}
 			
 			V_strcat(details, map->mapName, sizeof(details));
 			V_snprintf(smallImageKey, sizeof(smallImageKey), "divinitychapter%i", map->chapter);
 			V_strcat(smallImageText, map->chapterName, sizeof(smallImageText));
 			break;
 		default:
-			V_strcat(details, CURMAPFILENAME, sizeof(details));
-			V_strcat(smallImageKey, "miscmap", sizeof(smallImageKey));
-			V_strcat(smallImageText, CURMAPFILENAME, sizeof(smallImageText));
+			// Any other map will be a miscellaneous map.
+			MiscMapRPC(details, smallImageKey, smallImageText);
 			break;
 		}
 

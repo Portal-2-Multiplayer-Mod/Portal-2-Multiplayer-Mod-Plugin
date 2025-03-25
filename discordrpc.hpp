@@ -16,12 +16,13 @@
 class CDiscordIntegration {
 public:
 	CDiscordIntegration();
+	~CDiscordIntegration();
 
 	static void SendWebHookEmbed(const std::string& title = "Unknown", const std::string& description = "*Insert Yapping Here*", int color = EMBED_COLOR_PLAYER, bool hasFooter = true);
 	bool StartDiscordRPC();
 	void ShutdownDiscordRPC();
 	static void UpdateDiscordRPC();
 
-	bool rpcRunning;
+	bool m_bRPCRunning;
 };
 extern CDiscordIntegration* g_pDiscordIntegration;

@@ -357,11 +357,15 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 
 	// Make sure -allowspectators is there so we get our 33 max players.
 	if (!CommandLine()->FindParm("-allowspectators"))
+	{
+		Log(INFO, true, R"(Missing "-allowspectators" launch parameter, adding!)");
 		CommandLine()->AppendParm("-allowspectators", "");
+	}
 
 	// big ol' try catch because game has a TerminateProcess handler for exceptions...
 	// why this wasn't here is mystifying, - 10/2024 NULLderef
-	try {
+	try
+	{
 		// Byte patches
 
 		// "Steam not running." error fix for dedicated servers. This only works for dedicated servrs when the plugin file is named "ghostinj" and server is run with -usegh.
@@ -373,10 +377,12 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 		Memory::ReplacePattern("server", "0F B6 87 04 05 00 00 8B 16", "EB 14 87 04 05 00 00 8B 16");
 
 		// Partner disconnects.
+		Log(INFO, true, "Patching partner disconnect event...");
 		Memory::ReplacePattern("server", "51 50 FF D2 83 C4 10 E8", "51 50 90 90 83 C4 10 E8");
 		Memory::ReplacePattern("server", "74 28 3B 75 FC", "EB 28 3B 75 FC");
 
 		// Max players -> 33
+		Log(INFO, true, "Patching patching max players...");
 		Memory::ReplacePattern("server", "83 C0 02 89 01", "83 C0 20 89 01");
 		Memory::ReplacePattern("engine", "85 C0 78 13 8B 17", "31 C0 04 21 8B 17");
 		uintptr_t svPtr = *static_cast<uintptr_t*>(Memory::Scanner::Scan<void*>(ENGINEDLL, "74 0A B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B E5", 3));
@@ -386,32 +392,27 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 		this->sv = reinterpret_cast<CBaseServer*>(svPtr);
 
 		// Prevent disconnect by "STEAM validation rejected".
+		Log(INFO, true, R"(Patching "STEAM validation rejected" disconnection...)");
 		Memory::ReplacePattern("engine", "01 74 7D 8B", "01 EB 7D 8B");
 
-		// Fix sv_password.
+		// Fix sv_password so passwords can be used on servers.
+		Log(INFO, true, "Fixing sv_password...");
 		Memory::ReplacePattern("engine", "0F 95 C1 51 8D 4D E8", "03 C9 90 51 8D 4D E8");
 
-		// runtime max 0.03 -> 0.05
+		// Increase runtime max form 0.03 to 0.05.
+		// Helps add some more leeway to some things we do in VScript without the engine complaining and shutting down the rest of the script.
+		Log(INFO, true, "Patching max runtime for VScript...");
 		Memory::ReplacePattern("vscript", "00 00 00 E0 51 B8 9E 3F", "9a 99 99 99 99 99 a9 3f");
 
-		// MinHook initialization and hooking
+		// MinHook initialization and hooking.
 		Log(INFO, true, "Initializing MinHook and hooking functions...");
 		MH_Initialize();
 
 		// NoSteamLogon disconnect hook patch.
+		Log(INFO, true, "Hooking CSteam3Server::OnGSClientDenyHelper...");
 		MH_CreateHook(
 			(LPVOID)Memory::Scanner::Scan<void*>(ENGINEDLL, "55 8B EC 83 EC 08 53 56 57 8B F1 E8 ?? ?? ?? ?? 8B"),
 			&CSteam3Server__OnGSClientDenyHelper_hook, reinterpret_cast<void**>(&CSteam3Server__OnGSClientDenyHelper_orig)
-		);
-
-		// Hook onto the function which defines what Atlas's and PBody's models are.
-		MH_CreateHook(
-			Memory::Rel32(Memory::Scanner::Scan(SERVERDLL, "E8 ?? ?? ?? ?? 83 C4 40 50", 1)),
-			&GetBallBotModel_hook, reinterpret_cast<void**>(&GetBallBotModel_orig)
-		);
-		MH_CreateHook(
-			Memory::Rel32(Memory::Scanner::Scan(SERVERDLL, "E8 ?? ?? ?? ?? 83 C4 04 50 8B 45 10 8B 10", 1)),
-			&GetEggBotModel_hook, reinterpret_cast<void**>(&GetEggBotModel_orig)
 		);
 
 		// For p2mm_instantrespawn.
@@ -421,6 +422,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 		);
 
 		// "respawn" function hook for getting a VScript "game event" call out of it.
+		Log(INFO, true, "Hooking respawn function call...");
 		MH_CreateHook(
 			Memory::Scanner::Scan(SERVERDLL, "55 8B EC A1 ?? ?? ?? ?? 80 78 ?? ?? 75 ?? 80 78"),
 			&respawn_hook, reinterpret_cast<void**>(&respawn_orig)
@@ -436,15 +438,34 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 		switch (g_P2MMServerPlugin.m_iCurGameIndex)
 		{
 		case PORTAL_STORIES_MEL:
+			// Valve's compiler for P2 inlined the GetBallBotModel and GetEggBotModel functions here,
+			// so this also needs to be forced to return a different string.
+			Log(INFO, true, "Hooking CPortal_Player::GetPlayerModelName...");
 			MH_CreateHook(
 				Memory::Scanner::Scan(SERVERDLL, "55 8B EC 81 EC 10 01 00 00 53 8B 1D"),
 				&CPortal_Player__GetPlayerModelName_hook, reinterpret_cast<void**>(&CPortal_Player__GetPlayerModelName_orig)
 			);
+			
+			// Hook onto the function which defines what Atlas's and PBody's models are.
+			Log(INFO, true, "Hooking GetBallBotModel...");
+			MH_CreateHook(
+				Memory::Rel32(Memory::Scanner::Scan(SERVERDLL, "E8 ?? ?? ?? ?? 83 C4 40 50", 1)),
+				&GetBallBotModel_hook, reinterpret_cast<void**>(&GetBallBotModel_orig)
+			);
+			Log(INFO, true, "Hooking GetEggBotModel...");
+			MH_CreateHook(
+				Memory::Rel32(Memory::Scanner::Scan(SERVERDLL, "E8 ?? ?? ?? ?? 83 C4 04 50 8B 45 10 8B 10", 1)),
+				&GetEggBotModel_hook, reinterpret_cast<void**>(&GetEggBotModel_orig)
+			);
+			break;
 		}
-
+		
+		Log(INFO, true, "Enabling hooks...");
 		MH_EnableHook(MH_ALL_HOOKS);
-	} catch (const std::exception& ex) {
-		Log(INFO, false, "Failed to load plugin! :( Exception: \"%s\"", ex.what());
+	} catch (const std::exception& ex)
+	{
+		assert(0 && "Failed to implement patch or hook!");
+		Log(INFO, false, R"(Failed to load plugin! :( Exception: "%s")", ex.what());
 		this->m_bNoUnload = true;
 		return false;
 	}
@@ -465,7 +486,7 @@ void CP2MMServerPlugin::Unload(void)
 	if (m_bNoUnload)
 	{
 		m_bNoUnload = false;
-		MessageBox(this->m_hWnd, "P2:MM ran into a error when starting! Please check the console for more info!", "P2:MM Startup Error", MB_OK | MB_ICONERROR);
+		MessageBox(this->m_hWnd, "P2:MM ran into a error when starting!\nPlease check the console for more info!", "P2:MM Startup Error", MB_OK | MB_ICONERROR);
 		return;
 	}
 
@@ -480,16 +501,20 @@ void CP2MMServerPlugin::Unload(void)
 	Log(INFO, true, "Unblocking console commands...");
 	for (const char* conCommand : forbiddenConCommands)
 	{
-		ConCommandBase* commandBase = g_pCVar->FindCommandBase(conCommand);
-		if (commandBase)
+		if (ConCommandBase* commandBase = g_pCVar->FindCommandBase(conCommand))
 			commandBase->AddFlags(FCVAR_GAMEDLL);
 	}
 
 	// Remove -allowspectators so max player count is indeed back to 2 and not 3.
 	if (CommandLine()->FindParm("-allowspectators"))
+	{
+		Log(INFO, true, R"(Removing "-allowspectators" launch parameter"...)");
 		CommandLine()->RemoveParm("-allowspectators");
+	}
 
+	Log(INFO, true, "Unregistering ConVars...");
 	ConVar_Unregister();
+	
 	Log(INFO, true, "Disconnecting tier libraries...");
 	DisconnectTier2Libraries();
 	DisconnectTier1Libraries();
@@ -507,21 +532,26 @@ void CP2MMServerPlugin::Unload(void)
 		Memory::ReplacePattern("server", "EB 14 87 04 05 00 00 8B 16", "0F B6 87 04 05 00 00 8B 16");
 
 		// Partner disconnects
+		Log(INFO, true, "Un-patching partner disconnect event...");
 		Memory::ReplacePattern("server", "51 50 90 90 83 C4 10 E8", "51 50 FF D2 83 C4 10 E8");
 		Memory::ReplacePattern("server", "EB 28 3B 75 FC", "74 28 3B 75 FC");
 
 		// Max players -> 2
+		Log(INFO, true, "Un-patching max players...");
 		Memory::ReplacePattern("server", "83 C0 20 89 01", "83 C0 02 89 01");
 		Memory::ReplacePattern("engine", "31 C0 04 21 8B 17", "85 C0 78 13 8B 17");
 		*reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(this->sv) + 0x228) = 2;
 
 		// Disconnect by "STEAM validation rejected"
+		Log(INFO, true, R"(Un-patching "STEAM validation rejected" disconnection...)");
 		Memory::ReplacePattern("engine", "01 EB 7D 8B", "01 74 7D 8B");
 
 		// sv_password
+		Log(INFO, true, "Unfixing sv_password...");
 		Memory::ReplacePattern("engine", "03 C9 90 51 8D 4D E8", "0F 95 C1 51 8D 4D E8");
 
 		// runtime max 0.05 -> 0.03
+		Log(INFO, true, "Un-patching max runtime for VScript...");
 		Memory::ReplacePattern("vscript", "00 00 00 00 00 00 E0 3F", "00 00 00 E0 51 B8 9E 3F");
 
 		Log(INFO, true, "Disconnecting hooked functions and initializing MinHook...");
@@ -530,7 +560,9 @@ void CP2MMServerPlugin::Unload(void)
 	}
 	catch (const std::exception& ex)
 	{
-		Log(INFO, false, "Encountered error when unload plugin! Skipping other patches... :( Exception: \"%s\"", ex.what());
+		assert(0 && "Failed to fully unload!");
+		Log(INFO, false, R"(Encountered error when unload plugin! :( Exception: "%s")", ex.what());
+		Log(ERRORR, false, "P2:MM failed to unload!\nGame has to be shutdown as possibly some other patches/hooks are still connected which can cause issues!");
 	}
 
 	if (p2mm_discord_rpc.GetBool() && CDiscordIntegration::DiscordRPCRunning())

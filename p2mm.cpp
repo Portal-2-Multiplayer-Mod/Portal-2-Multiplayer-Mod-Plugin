@@ -376,12 +376,8 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 	try
 	{
 		// Byte patches
-
-		// "Steam not running." error fix for dedicated servers. This only works for dedicated servrs when the plugin file is named "ghostinj" and server is run with -usegh.
-		if (engineServer->IsDedicatedServer())
-			Memory::ReplacePattern("engine", "75 ?? 68 ?? ?? ?? ?? FF 15 ?? ?? ?? ?? 83 C4 ?? 5F C3 56", "EB ?? 68 ?? ?? ?? ?? FF 15 ?? ?? ?? ?? 83 C4 ?? 5F C3 56");
 		Log(INFO, true, "Patching Portal 2...");
-
+		
 		// Linked portal doors event crash patch.
 		if (!this->m_bP2SMPluginLoaded)
 		{
@@ -543,12 +539,8 @@ void CP2MMServerPlugin::Unload(void)
 	try
 	{
 		// Undo byte patches
-	
-		// "Steam not running." error fix for dedicated servers. This only works for dedicated servrs when the plugin file is named "ghostinj" and server is run with -usegh.
-		if (engineServer->IsDedicatedServer())
-			Memory::ReplacePattern("engine", "EB ?? 68 ?? ?? ?? ?? FF 15 ?? ?? ?? ?? 83 C4 ?? 5F C3 56", "75 ?? 68 ?? ?? ?? ?? FF 15 ?? ?? ?? ?? 83 C4 ?? 5F C3 56");
 		Log(INFO, true, "Un-patching Portal 2...");
-
+		
 		// Linked portal doors event crash patch
 		if (!this->m_bP2SMPluginLoaded)
 		{

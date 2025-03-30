@@ -62,6 +62,8 @@ public:
 	bool		m_bSeenFirstRunPrompt;
 	bool		m_bFirstMapRan;
 
+	bool		m_bP2SMPluginLoaded;
+
 	CBaseServer* sv; // Pointer to the server.
 
 private:

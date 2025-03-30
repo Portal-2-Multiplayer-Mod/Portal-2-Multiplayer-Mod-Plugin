@@ -123,6 +123,7 @@ CP2MMServerPlugin::CP2MMServerPlugin()
 	this->m_bPluginLoaded = false;
 	this->m_bPluginUnloading = false;		// For Discord RPC.
 	this->m_bNoUnload = false;				// If we fail to load, we don't want to run anything on Unload().
+	this->m_bP2SMPluginLoaded = false;		// Some functions that the Portal 2 SourceMod++ plugin does match some fixes 
 
 	// Current Portal 2 branch based game being run.
 	// Helps when checking for specific game related things instead of getting the game directory everytime.
@@ -331,6 +332,14 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 	MathLib_Init(2.2f, 2.2f, 0.0f, 2.0f);
 	ConVar_Register(0);
 
+	// Check if Portal 2 SourceMod++ plugin is loaded. If it is, some functionality will not be enabled in P2:MM as P2SM++ will take priority.
+	Log(INFO, true, "Checking if Portal 2 SourceMod++ is loaded...");
+	if (g_pCVar->FindVar("p2sm_developer"))
+	{
+		this->m_bP2SMPluginLoaded = true;
+		Log(WARNING, true, "Portal 2 SourceMod++ is loaded! Letting P2SM++ have priority over some patches!");
+	}
+	
 	// Enable Discord RPC if it is not disabled by the host.
 	Log(INFO, true, "Checking if Discord RPC should be started...");
 	if (p2mm_discord_rpc.GetBool() && !CDiscordIntegration::DiscordRPCRunning() /*&& !this->m_bP2SMPluginLoaded*/)
@@ -373,8 +382,12 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 			Memory::ReplacePattern("engine", "75 ?? 68 ?? ?? ?? ?? FF 15 ?? ?? ?? ?? 83 C4 ?? 5F C3 56", "EB ?? 68 ?? ?? ?? ?? FF 15 ?? ?? ?? ?? 83 C4 ?? 5F C3 56");
 		Log(INFO, true, "Patching Portal 2...");
 
-		// Linked portal doors event crash patch
-		Memory::ReplacePattern("server", "0F B6 87 04 05 00 00 8B 16", "EB 14 87 04 05 00 00 8B 16");
+		// Linked portal doors event crash patch.
+		if (!this->m_bP2SMPluginLoaded)
+		{
+			Log(INFO, true, "Fixing linked portal doors...");
+			Memory::ReplacePattern("server", "0F B6 87 04 05 00 00 8B 16", "EB 14 87 04 05 00 00 8B 16");
+		}
 
 		// Partner disconnects.
 		Log(INFO, true, "Patching partner disconnect event...");
@@ -416,10 +429,14 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 		);
 
 		// For p2mm_instantrespawn.
-		MH_CreateHook(
-			Memory::Scanner::Scan(SERVERDLL, "53 8B DC 83 EC 08 83 E4 F0 83 C4 04 55 8B 6B ?? 89 6C 24 ?? 8B EC A1 ?? ?? ?? ?? F3 0F 10 40 ?? F3 0F 58 05 ?? ?? ?? ?? 83 EC 28 56 57 6A 00 51 8B F1 F3 0F 11 04 24 E8 ?? ?? ?? ?? 6A 03"),
-			&CPortal_Player__PlayerDeathThink_hook, reinterpret_cast<void**>(&CPortal_Player__PlayerDeathThink_orig)
-		);
+		if (!this->m_bP2SMPluginLoaded)
+		{
+			Log(INFO, true, "Hooking CPortal_Player::PlayerDeathThink...");
+			MH_CreateHook(
+				Memory::Scanner::Scan(SERVERDLL, "53 8B DC 83 EC 08 83 E4 F0 83 C4 04 55 8B 6B ?? 89 6C 24 ?? 8B EC A1 ?? ?? ?? ?? F3 0F 10 40 ?? F3 0F 58 05 ?? ?? ?? ?? 83 EC 28 56 57 6A 00 51 8B F1 F3 0F 11 04 24 E8 ?? ?? ?? ?? 6A 03"),
+				&CPortal_Player__PlayerDeathThink_hook, reinterpret_cast<void**>(&CPortal_Player__PlayerDeathThink_orig)
+			);
+		}
 
 		// "respawn" function hook for getting a VScript "game event" call out of it.
 		Log(INFO, true, "Hooking respawn function call...");
@@ -429,10 +446,14 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 		);
 		
 		// UTIL_GetLocalPlayer dedicated server hook crash fix.
-		MH_CreateHook(
-			Memory::Scanner::Scan(SERVERDLL, "8B 15 ?? ?? ?? ?? 8B 4A ?? 33 C0"),
-			&UTIL_GetLocalPlayer, reinterpret_cast<void**>(&UTIL_GetLocalPlayer_orig)
-		);
+		if (!this->m_bP2SMPluginLoaded)
+		{
+			Log(INFO, true, "Hooking UTIL_GetLocalPlayer...");
+			MH_CreateHook(
+				Memory::Scanner::Scan(SERVERDLL, "8B 15 ?? ?? ?? ?? 8B 4A ?? 33 C0"),
+				&UTIL_GetLocalPlayer, reinterpret_cast<void**>(&UTIL_GetLocalPlayer_orig)
+			);
+		}
 
 		// Game-specific hooks
 		switch (g_P2MMServerPlugin.m_iCurGameIndex)
@@ -529,7 +550,11 @@ void CP2MMServerPlugin::Unload(void)
 		Log(INFO, true, "Un-patching Portal 2...");
 
 		// Linked portal doors event crash patch
-		Memory::ReplacePattern("server", "EB 14 87 04 05 00 00 8B 16", "0F B6 87 04 05 00 00 8B 16");
+		if (!this->m_bP2SMPluginLoaded)
+		{
+			Log(INFO, true, "Unfixing linked portal doors...");
+			Memory::ReplacePattern("server", "EB 14 87 04 05 00 00 8B 16", "0F B6 87 04 05 00 00 8B 16");
+		}
 
 		// Partner disconnects
 		Log(INFO, true, "Un-patching partner disconnect event...");

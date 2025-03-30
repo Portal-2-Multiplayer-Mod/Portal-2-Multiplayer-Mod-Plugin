@@ -105,6 +105,8 @@ ConVar p2mm_discord_webhooks_defaultfooter("p2mm_discord_webhooks_defaultfooter"
 ConVar p2mm_discord_webhooks_customfooter("p2mm_discord_webhooks_customfooter", "", FCVAR_NONE, "Set a custom embed footer for webhook messages.");
 
 static CURL* curl = nullptr;
+static bool bRPCRunning = false; // Flag bool for whether the RPC is running.
+static DiscordRichPresence RPC;
 
 // Parameters that are sent through to the Discord webhook.
 struct WebHookParams
@@ -232,7 +234,6 @@ void CDiscordIntegration::SendWebHookEmbed(const std::string& title, const std::
 	CreateSimpleThread(SendWebHook, webhookParams);
 }
 
-
 ///-----------------------------------------------------------------------------
 /// Discord Rich Presence
 /// OLD API Source: https://github.com/discord/discord-rpc
@@ -243,50 +244,33 @@ static void RPCState(IConVar* var, const char* pOldValue, float flOldValue)
 {
 	if (!g_P2MMServerPlugin.m_bPluginLoaded) return;
 	const auto cvRPC = dynamic_cast<ConVar*>(var);
-	if (cvRPC->GetBool() && !g_pDiscordIntegration->m_bRPCRunning)
-		g_pDiscordIntegration->StartDiscordRPC();
-	if (!cvRPC->GetBool() && g_pDiscordIntegration->m_bRPCRunning)
-		g_pDiscordIntegration->ShutdownDiscordRPC();
+	if (cvRPC->GetBool() && bRPCRunning)
+		CDiscordIntegration::StartDiscordRPC();
+	if (!cvRPC->GetBool() && bRPCRunning)
+		CDiscordIntegration::ShutdownDiscordRPC();
 }
 ConVar p2mm_discord_rpc("p2mm_discord_rpc", "1", FCVAR_NONE, "Enable or disable Discord RPC with P2:MM.", true, 0, true, 1, RPCState);
 
-static DiscordRichPresence RPC;
-CDiscordIntegration::CDiscordIntegration()
+bool CDiscordIntegration::StartDiscordWebHooks()
 {
-	// Initialize RPC parameters to defaults.
-	RPC.state = "";
-	RPC.details = "Starting up...";
-	RPC.startTimestamp = time(nullptr);
-	RPC.endTimestamp = 0;
-	RPC.largeImageKey = "p2mmlogo";
-	RPC.largeImageText = "Portal 2";
-	RPC.smallImageKey = "wave";
-	RPC.smallImageText = "Welcome to P2:MM!";
-	RPC.partyId = "";
-	RPC.partySize = 0;
-	RPC.partyMax = 0;
-	RPC.matchSecret = "";
-	RPC.joinSecret = "";
-	RPC.spectateSecret = "";
-	RPC.instance = 0;
-
-	this->m_bRPCRunning = false; // Flag bool for whether the RPC is running.
-
 	// Initialize curl requests for the webhook embeds.
 	curl = curl_easy_init();
 	curl_global_init(CURL_GLOBAL_DEFAULT);
 	if (!curl)
 	{
 		DiscordLog(WARNING, false, "Failed to initialize curl request!");
-		return;
+		curl = nullptr;
+		return false;
 	}
 
 	// Set options for curl requests.
 	curl_easy_setopt(curl, CURLOPT_URL, p2mm_discord_webhooks_url.GetString());
 	curl_easy_setopt(curl, CURLOPT_POST, 1L);
+	
+	return true;
 }
 
-CDiscordIntegration::~CDiscordIntegration()
+void CDiscordIntegration::ShutdownDiscordWebHooks()
 {
 	// Clean up and shut down using curl requests.
 	curl_easy_cleanup(curl);
@@ -333,6 +317,23 @@ bool CDiscordIntegration::StartDiscordRPC()
 {
 	DiscordLog(INFO, false, "Starting up Discord RPC...");
 
+	// Initialize RPC parameters to defaults.
+	RPC.state = "";
+	RPC.details = "Starting up...";
+	RPC.startTimestamp = time(nullptr);
+	RPC.endTimestamp = 0;
+	RPC.largeImageKey = "p2mmlogo";
+	RPC.largeImageText = "Portal 2";
+	RPC.smallImageKey = "wave";
+	RPC.smallImageText = "Welcome to P2:MM!";
+	RPC.partyId = "";
+	RPC.partySize = 0;
+	RPC.partyMax = 0;
+	RPC.matchSecret = "";
+	RPC.joinSecret = "";
+	RPC.spectateSecret = "";
+	RPC.instance = 0;
+
 	DiscordLog(INFO, true, "Setting Discord event handlers...");
 	const auto handlers = new DiscordEventHandlers;
 	handlers->ready = HandleDiscordReady;
@@ -377,7 +378,7 @@ bool CDiscordIntegration::StartDiscordRPC()
 	UpdateDiscordRPC();
 
 	DiscordLog(INFO, false, "Discord RPC activated!");
-	this->m_bRPCRunning = true;
+	bRPCRunning = true;
 	return true;
 }
 
@@ -389,7 +390,7 @@ void CDiscordIntegration::ShutdownDiscordRPC()
 	DiscordLog(INFO, false, "Shutting down Discord RPC...");
 	Discord_ClearPresence();
 	Discord_Shutdown();
-	this->m_bRPCRunning = false;
+	bRPCRunning = false;
 	DiscordLog(INFO, false, "Shutdown Discord RPC!");
 }
 
@@ -602,4 +603,9 @@ void CDiscordIntegration::UpdateDiscordRPC()
 	// Dump log data for developer logs and then update the RPC for Discord.
 	DumpDiscordRPCValues(&RPC);
 	Discord_UpdatePresence(&RPC);
+}
+
+bool CDiscordIntegration::DiscordRPCRunning()
+{
+	return bRPCRunning;
 }

@@ -41,7 +41,6 @@ IFileSystem* g_pFileSystem = nullptr; // Access interface for Valve's file syste
 //---------------------------------------------------------------------------------
 // Class declarations/creations
 //---------------------------------------------------------------------------------
-CDiscordIntegration* g_pDiscordIntegration = new CDiscordIntegration;
 
 //---------------------------------------------------------------------------------
 // The plugin is a static singleton that is exported as an interface
@@ -169,28 +168,29 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 		Log(WARNING, false, "Failed to find game window Valve001!");
 
 	// Determine which Portal 2 branch game we are running and if its supported.
+	// TODO: Rework this to be a switch case then if and else if statements.
 	bool unsupportedGame = false;
 	const char* gameMainDir = GetGameMainDir();
 	Log(INFO, true, "Determining which Portal 2 branch game is being run...");
 	if ((FStrEq(gameMainDir, "portal2")))
 	{
 		this->m_iCurGameIndex = PORTAL_2;
-		Log(INFO, false, "Currently running Portal 2.");
+		Log(INFO, false, "Currently running Portal 2!");
 	}
 	else if ((FStrEq(gameMainDir, "portal_stories")))
 	{
 		this->m_iCurGameIndex = PORTAL_STORIES_MEL;
-		Log(INFO, false, "Currently running Portal Stories: Mel.");
+		Log(INFO, false, "Currently running Portal Stories: Mel!");
 	}
 	else if ((FStrEq(gameMainDir, "aperturetag")))
 	{
 		this->m_iCurGameIndex = APERTURE_TAG;
-		Log(INFO, false, "Currently running Aperture Tag.");
+		Log(INFO, false, "Currently running Aperture Tag!");
 	}
 	else if ((FStrEq(gameMainDir, "portalreloaded")))
 	{
 		this->m_iCurGameIndex = PORTAL_RELOADED;
-		Log(INFO, false, "Currently running Portal Reloaded.");
+		Log(INFO, false, "Currently running Portal Reloaded!");
 		// Unsupported...
 		unsupportedGame = true;
 	}
@@ -211,7 +211,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 	else if ((std::strstr(gameMainDir, "Divinity")))
 	{
 		this->m_iCurGameIndex = DIVINITY;
-		Log(INFO, false, "Currently running Portal: Divinity.");
+		Log(INFO, false, "Currently running Portal: Divinity!");
 	}
 	else if (!CommandLine()->FindParm("-forcep2mmload"))
 	{
@@ -228,8 +228,8 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 	}
 	if (unsupportedGame && CommandLine()->FindParm("-forcep2mmload"))
 	{
-		MessageBox(this->m_hWnd, "P2:MM is being run with a unsupported Source Engine/Portal 2 branch game! \"-forcep2mmload\" has been specified to override stopping the game from proceeding to load. Proceed with caution as crashes and bugs could occur!", "Unsupported P2:MM Game", MB_OK | MB_ICONEXCLAMATION);
-		Log(WARNING, false, "P2:MM is being run with a unsupported Source Engine/Portal 2 branch game! \"-forcep2mmload\" has been specified to override stopping the game from proceeding to load. Proceed with caution as crashes and bugs could occur!");
+		MessageBox(this->m_hWnd, "P2:MM is being run with a unsupported Source Engine/Portal 2 branch game!\n\"-forcep2mmload\" has been specified to stop the plugin shutting down the game.\nProceed with caution as crashes and bugs could occur!", "Unsupported P2:MM Game", MB_OK | MB_ICONEXCLAMATION);
+		Log(WARNING, false, R"(P2:MM is being run with a unsupported Source Engine/Portal 2 branch game! "-forcep2mmload" has been specified to stop the plugin shutting down the game. Proceed with caution as crashes and bugs could occur!)");
 	}
 
 	Log(INFO, true, "Connecting tier libraries...");
@@ -238,6 +238,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 
 	// Make sure that all the interfaces needed are loaded and usable.
 	Log(INFO, true, "Loading interfaces...");
+	Log(INFO, true, "Loading engineServer...");
 	engineServer = static_cast<IVEngineServer*>(interfaceFactory(INTERFACEVERSION_VENGINESERVER, 0));
 	if (!engineServer)
 	{
@@ -247,72 +248,95 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 		return false;
 	}
 
+	Log(INFO, true, "Loading engineClient...");
 	engineClient = static_cast<IVEngineClient*>(interfaceFactory(VENGINE_CLIENT_INTERFACE_VERSION, 0));
 	if (!engineClient)
 	{
+		assert(0 && "Unable to load engineClient!");
 		Log(WARNING, false, "Unable to load engineClient!");
 		this->m_bNoUnload = true;
 		return false;
 	}
 
+	Log(INFO, true, "Loading g_pPlayerInfoManager...");
 	g_pPlayerInfoManager = static_cast<IPlayerInfoManager*>(gameServerFactory(INTERFACEVERSION_PLAYERINFOMANAGER, 0));
 	if (!g_pPlayerInfoManager)
 	{
+		assert(0 && "Unable to load g_pPlayerInfoManager!");
 		Log(WARNING, false, "Unable to load g_pPlayerInfoManager!");
 		this->m_bNoUnload = true;
 		return false;
 	}
 
+	Log(INFO, true, "Loading g_pScriptVM...");
 	g_pScriptVM = static_cast<IScriptVM*>(interfaceFactory(VSCRIPT_INTERFACE_VERSION, 0));
 	if (!g_pScriptVM)
 	{
+		assert(0 && "Unable to load g_pScriptVM!");
 		Log(WARNING, false, "Unable to load g_pScriptVM!");
 		this->m_bNoUnload = true;
 		return false;
 	}
 
+	Log(INFO, true, "Loading g_pServerTools...");
 	g_pServerTools = static_cast<IServerTools*>(gameServerFactory(VSERVERTOOLS_INTERFACE_VERSION, 0));
 	if (!g_pServerTools)
 	{
+		assert(0 && "Unable to load g_pServerTools!");
 		Log(WARNING, false, "Unable to load g_pServerTools!");
 		this->m_bNoUnload = true;
 		return false;
 	}
 
+	Log(INFO, true, "Loading g_pGameEventManager...");
 	g_pGameEventManager = static_cast<IGameEventManager2*>(interfaceFactory(INTERFACEVERSION_GAMEEVENTSMANAGER2, 0));
 	if (!g_pGameEventManager)
 	{
+		assert(0 && "Unable to load g_pGameEventManager!");
 		Log(WARNING, false, "Unable to load g_pGameEventManager!");
 		this->m_bNoUnload = true;
 		return false;
 	}
 
+	Log(INFO, true, "Loading g_pPluginHelpers...");
 	g_pPluginHelpers = static_cast<IServerPluginHelpers*>(interfaceFactory(INTERFACEVERSION_ISERVERPLUGINHELPERS, 0));
 	if (!g_pPluginHelpers)
 	{
+		assert(0 && "Unable to load g_pPluginHelpers!");
 		Log(WARNING, false, "Unable to load g_pPluginHelpers!");
 		this->m_bNoUnload = true;
 		return false;
 	}
 
+	Log(INFO, true, "Loading g_pFileSystem...");
 	g_pFileSystem = static_cast<IFileSystem*>(interfaceFactory(FILESYSTEM_INTERFACE_VERSION, 0));
 	if (!g_pFileSystem)
 	{
+		assert(0 && "Unable to load g_pFileSystem!");
 		Log(WARNING, false, "Unable to load g_pFileSystem!");
 		this->m_bNoUnload = true;
 		return false;
 	}
 
+	Log(INFO, true, "Loading g_pGlobals...");
 	g_pGlobals = g_pPlayerInfoManager->GetGlobalVars();
+	if (!g_pGlobals)
+	{
+		assert(0 && "Unable to load g_pGlobals!");
+		Log(WARNING, false, "Unable to load g_pGlobals!");
+		this->m_bNoUnload = true;
+		return false;
+	}
+	
 	MathLib_Init(2.2f, 2.2f, 0.0f, 2.0f);
 	ConVar_Register(0);
 
-	if (p2mm_discord_rpc.GetBool() && !g_pDiscordIntegration->m_bRPCRunning)
 	// Enable Discord RPC if it is not disabled by the host.
 	Log(INFO, true, "Checking if Discord RPC should be started...");
+	if (p2mm_discord_rpc.GetBool() && !CDiscordIntegration::DiscordRPCRunning() /*&& !this->m_bP2SMPluginLoaded*/)
 	{
-		g_pDiscordIntegration->StartDiscordRPC();
 		Log(INFO, true, "Discord RPC enabled! Starting!");
+		CDiscordIntegration::StartDiscordRPC();
 	}
 
 	// Add listener for all used game events.
@@ -320,7 +344,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 	for (const char* gameEvent : gameEventList)
 	{
 		g_pGameEventManager->AddListener(this, gameEvent, true);
-		Log(INFO, true, "Listener for game event \"%s\" has been added!", gameEvent);
+		Log(INFO, true, R"(Listener for game event "%s" has been added!)", gameEvent);
 	}
 
 	// Block ConCommands that clients shouldn't execute.
@@ -425,7 +449,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 		return false;
 	}
 
-	g_pDiscordIntegration->UpdateDiscordRPC();
+	CDiscordIntegration::UpdateDiscordRPC();
 	
 	Log(INFO, false, "Loaded plugin! Yay! :D");
 	m_bPluginLoaded = true;
@@ -441,12 +465,13 @@ void CP2MMServerPlugin::Unload(void)
 	if (m_bNoUnload)
 	{
 		m_bNoUnload = false;
+		MessageBox(this->m_hWnd, "P2:MM ran into a error when starting! Please check the console for more info!", "P2:MM Startup Error", MB_OK | MB_ICONERROR);
 		return;
 	}
 
 	Log(INFO, false, "Unloading Plugin...");
 	this->m_bPluginUnloading = true;
-	g_pDiscordIntegration->UpdateDiscordRPC();
+	CDiscordIntegration::UpdateDiscordRPC();
 
 	Log(INFO, true, "Removing listeners for game events...");
 	g_pGameEventManager->RemoveListener(this);
@@ -508,8 +533,8 @@ void CP2MMServerPlugin::Unload(void)
 		Log(INFO, false, "Encountered error when unload plugin! Skipping other patches... :( Exception: \"%s\"", ex.what());
 	}
 
-	if (p2mm_discord_rpc.GetBool() && g_pDiscordIntegration->m_bRPCRunning)
-		g_pDiscordIntegration->ShutdownDiscordRPC();
+	if (p2mm_discord_rpc.GetBool() && CDiscordIntegration::DiscordRPCRunning())
+		CDiscordIntegration::ShutdownDiscordRPC();
 
 	m_bPluginLoaded = false;
 	Log(INFO, false, "Plugin unloaded! Goodbye!");
@@ -1056,21 +1081,22 @@ void CP2MMServerPlugin::LevelShutdown(void)
 //---------------------------------------------------------------------------------
 // Purpose: Called when a client is in the process of joining the server.
 //			Here we check if they are on the ban list or not, and stop their connection if they are.
+//			!WARNING!: The player entity has yet to be fully spawned in so manipulation to the entity is not possible.
 //---------------------------------------------------------------------------------
 PLUGIN_RESULT CP2MMServerPlugin::ClientConnect(bool* bAllowConnect, edict_t* pEntity, const char* pszName, const char* pszAddress, char* reject, const int maxrejectlen)
 {
-	Log(INFO, true, "Player Joined! playerInfo:");
+	Log(INFO, true, "Player Joined (ClientConnect)! playerInfo:");
 	player_info_t playerInfo;
-	engineServer->GetPlayerInfo(1,			&playerInfo);
-	Log(INFO, true, "xuid: %llu",			playerInfo.xuid);
-	Log(INFO, true, "name: %s",			playerInfo.name);
-	Log(INFO, true, "userID: %i",			playerInfo.userID);
-	Log(INFO, true, "guid: %s",			playerInfo.guid);
-	Log(INFO, true, "friendsID: %lu",		playerInfo.friendsID);
-	Log(INFO, true, "friendsName: %s",		playerInfo.friendsName);
-	Log(INFO, true, "fakeplayer: %i",		playerInfo.fakeplayer);
-	Log(INFO, true, "ishltv: %i",			playerInfo.ishltv);
-	Log(INFO, true, "isreplay: %i",		playerInfo.isreplay);
+	engineServer->GetPlayerInfo(1,				&playerInfo);
+	Log(INFO, true, "xuid: %llu",	 playerInfo.xuid);
+	Log(INFO, true, "name: %s",		 playerInfo.name);
+	Log(INFO, true, "userID: %i",	 playerInfo.userID);
+	Log(INFO, true, "guid: %s",		 playerInfo.guid);
+	Log(INFO, true, "friendsID: %lu", playerInfo.friendsID);
+	Log(INFO, true, "friendsName: %s",playerInfo.friendsName);
+	Log(INFO, true, "fakeplayer: %i", playerInfo.fakeplayer);
+	Log(INFO, true, "ishltv: %i",	 playerInfo.ishltv);
+	Log(INFO, true, "isreplay: %i",	 playerInfo.isreplay);
 	//Log(INFO, true, "customFiles: %llu",	playerInfo.customFiles);
 	Log(INFO, true, "filesDownloaded: %s",	playerInfo.filesDownloaded);
 
@@ -1093,13 +1119,22 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientConnect(bool* bAllowConnect, edict_t* pEn
 }
 
 //---------------------------------------------------------------------------------
+// Purpose: Called when a player is fully connected to the server.
+//			Here we check if they are on the ban list or not, and stop their connection if they are.
+//			!WARNING!: The player entity has yet to be fully spawned in so manipulation to the entity is not possible.
+//---------------------------------------------------------------------------------
+void CP2MMServerPlugin::ClientFullyConnect(edict_t* pEntity)
+{
+	Log(INFO, true, "Player Joined (ClientFullyConnect)!");
+}
+
+//---------------------------------------------------------------------------------
 // Purpose: Unused callbacks
 //---------------------------------------------------------------------------------
 #pragma region UNUSED_CALLBACKS
 void CP2MMServerPlugin::Pause(void) {}
 void CP2MMServerPlugin::UnPause(void) {}
 void CP2MMServerPlugin::ClientDisconnect(edict_t* pEntity) {}
-void CP2MMServerPlugin::ClientFullyConnect(edict_t* pEntity) {} // Purpose: Called when a player is fully connected to the server. Player entity still has not spawned in so manipulation is not possible.
 void CP2MMServerPlugin::ClientPutInServer(edict_t* pEntity, char const* playername) {}
 void CP2MMServerPlugin::ClientSettingsChanged(edict_t* pEdict) {}
 PLUGIN_RESULT CP2MMServerPlugin::NetworkIDValidated(const char* pszUserName, const char* pszNetworkID) { return PLUGIN_CONTINUE; }

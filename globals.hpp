@@ -37,7 +37,7 @@ class CBaseClient;
 #define P2MM_DISCORD_CONSOLE_COLOR_NORMAL Color(59, 239, 230, 255) // Even Lighter Blue
 #define P2MM_DISCORD_CONSOLE_COLOR_WARNING Color(255, 150, 0, 255) // Orange
 
-#define CURMAPFILENAME STRING(g_pGlobals->mapname)
+#define CUR_MAPFILE_NAME STRING(g_pGlobals->mapname)
 #define MAX_PLAYERS g_pGlobals->maxClients
 
 // Used for autocomplete console commands.
@@ -139,7 +139,7 @@ int					CURPLAYERCOUNT();
 HSCRIPT				INDEXHANDLE(int iEdictNum);
 
 // Logging function.
-void P2MMLog(LogLevel level, bool dev, const char* pMsgFormat, ...);
+void Log(LogLevel level, bool dev, const char* pMsgFormat, ...);
 
 //---------------------------------------------------------------------------------
 // Player recipient filter.

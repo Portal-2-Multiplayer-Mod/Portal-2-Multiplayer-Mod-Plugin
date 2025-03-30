@@ -406,10 +406,10 @@ namespace Memory {
 		void* addr = Memory::Scanner::Scan<void*>(Memory::Modules::Get(target_module), patternBytes);
 		if (!addr)
 		{
-			P2MMLog(WARNING, false, "Failed to replace pattern! Turn on p2mm_developer for more info...");
-			P2MMLog(WARNING, true, "Target Module: %s", target_module.c_str());
-			P2MMLog(WARNING, true, "Pattern Bytes To Find: %s", patternBytes.c_str());
-			P2MMLog(WARNING, true, "Bytes To Replace Pattern Bytes With: %s", replace_with.c_str());
+			Log(WARNING, false, "Failed to replace pattern! Turn on p2mm_developer for more info...");
+			Log(WARNING, true, "Target Module: %s", target_module.c_str());
+			Log(WARNING, true, "Pattern Bytes To Find: %s", patternBytes.c_str());
+			Log(WARNING, true, "Bytes To Replace Pattern Bytes With: %s", replace_with.c_str());
 			return;
 		}
 

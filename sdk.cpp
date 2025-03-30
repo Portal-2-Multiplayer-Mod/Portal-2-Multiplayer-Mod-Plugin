@@ -110,7 +110,7 @@ CBasePlayer* __cdecl UTIL_GetLocalPlayer()
 ///			 Interfaced UTIL Functions			\\\
 
 //---------------------------------------------------------------------------------
-// Purpose: Gets the player's base class with it's entity index. Thanks to Nanoman2525 for this.
+// Purpose: Get the player's base class with it's entity index. Thanks to Nanoman2525 for this.
 //---------------------------------------------------------------------------------
 CBasePlayer* UTIL_PlayerByIndex(const int playerIndex)
 {
@@ -197,7 +197,7 @@ HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity)
 	static auto GetScriptInstance_ = reinterpret_cast<HSCRIPT(__thiscall*)(CBaseEntity*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 51 56 8B F1 83 BE 50"));
 	if (!GetScriptInstance_)
 	{
-		P2MMLog(WARNING, false, "Could not get script instance for entity!");
+		Log(WARNING, false, "Could not get script instance for entity!");
 		return nullptr;
 	}
 
@@ -217,7 +217,7 @@ void CBasePlayer__ShowViewPortPanel(const int playerIndex, const char* name, con
 	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
 	if (!pPlayer)
 	{
-		P2MMLog(WARNING, false, "Couldn't get player to display view port panel to! playerIndex: %i", playerIndex);
+		Log(WARNING, false, "Couldn't get player to display view port panel to! playerIndex: %i", playerIndex);
 		return;
 	}
 	static auto ShowViewPortPanel_ = reinterpret_cast<void(__thiscall*)(CBasePlayer*, const char*, bool, KeyValues*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 83 EC 20 53 56 8B F1 57 8D 4D ?? E8 ?? ?? ?? ?? 56"));
@@ -235,7 +235,7 @@ void CPortal_Player__RespawnPlayer(const int playerIndex)
 	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
 	if (!pPlayer)
 	{
-		P2MMLog(WARNING, false, "Couldn't get player to respawn! playerIndex: %i", playerIndex);
+		Log(WARNING, false, "Couldn't get player to respawn! playerIndex: %i", playerIndex);
 		return;
 	}
 
@@ -254,7 +254,7 @@ void CPortal_Player__SetFlashlightState(const int playerIndex, const bool enable
 	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
 	if (!pPlayer)
 	{
-		P2MMLog(WARNING, true, "Couldn't get player to set flashlight state! playerIndex: %i enable: %i", playerIndex, !!enable);
+		Log(WARNING, true, "Couldn't get player to set flashlight state! playerIndex: %i enable: %i", playerIndex, !!enable);
 		return;
 	}
 

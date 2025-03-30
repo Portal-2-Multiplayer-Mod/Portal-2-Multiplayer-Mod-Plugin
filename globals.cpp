@@ -17,16 +17,16 @@
 // Max character limit of 1024 characters.	
 // level:	0 = Msg/DevMsg, 1 = Warning/DevWarning, 2 = Error WILL STOP ENGINE!
 //---------------------------------------------------------------------------------
-void P2MMLog(const LogLevel level, const bool dev, const char* pMsgFormat, ...)
+void Log(const LogLevel level, const bool dev, const char* pMsgFormat, ...)
 {
 	if (dev && !p2mm_developer.GetBool() && level != ERRORR) return; // Stop developer messages when p2mm_developer isn't enabled.
 
 	// Take our log message and format any arguments it has into the message.
-	va_list argptr;
+	va_list argPtr;
 	char szFormattedText[1024] = { 0 };
-	va_start(argptr, pMsgFormat);
-	V_vsnprintf(szFormattedText, sizeof(szFormattedText), pMsgFormat, argptr);
-	va_end(argptr);
+	va_start(argPtr, pMsgFormat);
+	V_vsnprintf(szFormattedText, sizeof(szFormattedText), pMsgFormat, argPtr);
+	va_end(argPtr);
 
 	// Add a header to the log message.
 	char completeMsg[1024] = { 0 };
@@ -45,7 +45,7 @@ void P2MMLog(const LogLevel level, const bool dev, const char* pMsgFormat, ...)
 		Error(completeMsg);
 		return;
 	default:
-		Warning("(P2:MM PLUGIN): P2MMLog level set outside of 0-1, \"%i\". Defaulting to level INFO.\n", level);
+		Warning("(P2:MM PLUGIN): Log level set outside of INFO-ERROR, \"%i\". Defaulting to level INFO.\n", level);
 		ConColorMsg(P2MM_PLUGIN_CONSOLE_COLOR, completeMsg);
 	}
 }
@@ -68,20 +68,20 @@ int UserIDToPlayerIndex(const int userid)
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Gets player username by their entity index.
+// Purpose: Get player username by their entity index.
 //---------------------------------------------------------------------------------
 const char* GetPlayerName(const int playerIndex)
 {
 	if (playerIndex <= 0 || playerIndex > MAX_PLAYERS)
 	{
-		P2MMLog(WARNING, true, "Invalid index passed to GetPlayerName: %i! Returning ""!", playerIndex);
+		Log(WARNING, true, "Invalid index passed to GetPlayerName: %i! Returning ""!", playerIndex);
 		return "";
 	}
 
 	player_info_t playerInfo;
 	if (!engineServer->GetPlayerInfo(playerIndex, &playerInfo))
 	{
-		P2MMLog(WARNING, true, R"(Couldn't retrieve playerInfo of player index in GetPlayerName: %i! Returning ""!)", playerIndex);
+		Log(WARNING, true, R"(Couldn't retrieve playerInfo of player index in GetPlayerName: %i! Returning ""!)", playerIndex);
 		return "";
 	}
 
@@ -89,13 +89,13 @@ const char* GetPlayerName(const int playerIndex)
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Gets the account ID component of player SteamID by the player's entity index.
+// Purpose: Get the account ID component of player SteamID by the player's entity index.
 //---------------------------------------------------------------------------------
 int GetSteamID(const int playerIndex)
 {
 	edict_t* pEdict = nullptr;
 	if (playerIndex >= 0 && playerIndex < MAX_PLAYERS)
-		pEdict = (edict_t*)(g_pGlobals->pEdicts + playerIndex);
+		pEdict = (g_pGlobals->pEdicts + playerIndex);
 
 	if (!pEdict)
 		return -1;
@@ -119,7 +119,7 @@ int GetConVarInt(const char* cvName)
 	const ConVar* pVar = g_pCVar->FindVar(cvName);
 	if (!pVar)
 	{
-		P2MMLog(WARNING, false, R"(Could not find ConVar: "%s"! Returning ""!)", cvName);
+		Log(WARNING, false, R"(Could not find ConVar: "%s"! Returning ""!)", cvName);
 		return -1;
 	}
 
@@ -134,7 +134,7 @@ const char* GetConVarString(const char* cvName)
 	const ConVar* pVar = g_pCVar->FindVar(cvName);
 	if (!pVar)
 	{
-		P2MMLog(WARNING, false, R"(Could not find ConVar: "%s"! Returning ""!)", cvName);
+		Log(WARNING, false, R"(Could not find ConVar: "%s"! Returning ""!)", cvName);
 		return "";
 	}
 
@@ -149,7 +149,7 @@ void SetConVarInt(const char* cvName, const int newValue)
 	ConVar* pVar = g_pCVar->FindVar(cvName);
 	if (!pVar)
 	{
-		P2MMLog(WARNING, false, "Could not set ConVar: \"%s\"!", cvName);
+		Log(WARNING, false, "Could not set ConVar: \"%s\"!", cvName);
 		return;
 	}
 	pVar->SetValue(newValue);
@@ -163,7 +163,7 @@ void SetConVarString(const char* cvName, const char* newValue)
 	ConVar* pVar = g_pCVar->FindVar(cvName);
 	if (!pVar)
 	{
-		P2MMLog(WARNING, false, R"(Could not set ConVar: "%s"!)", cvName);
+		Log(WARNING, false, R"(Could not set ConVar: "%s"!)", cvName);
 		return;
 	}
 	pVar->SetValue(newValue);
@@ -178,7 +178,7 @@ bool IsBot(const int playerIndex)
 	player_info_t playerInfo;
 	if (!engineServer->GetPlayerInfo(playerIndex, &playerInfo))
 	{
-		P2MMLog(WARNING, true, R"(Couldn't retrieve player info of player index "%i" in IsBot!)", playerIndex);
+		Log(WARNING, true, R"(Couldn't retrieve player info of player index "%i" in IsBot!)", playerIndex);
 		return false;
 	}
 
@@ -248,7 +248,7 @@ const MapParams* InGelocityMap()
 {
 	for (const auto& gelocityMap : gelocityMaps)
 	{
-		if (FStrEq(CURMAPFILENAME, gelocityMap.mapFile))
+		if (FStrEq(CUR_MAPFILE_NAME, gelocityMap.mapFile))
 			return &gelocityMap;
 	}
 
@@ -395,7 +395,7 @@ const MapParams* InP2CampaignMap(const bool mpMaps)
 	{
 		for (const auto& mpCampaignMap : MP_CAMPAIGN_MAPS)
 		{
-			if (FStrEq(CURMAPFILENAME, mpCampaignMap.mapFile))
+			if (FStrEq(CUR_MAPFILE_NAME, mpCampaignMap.mapFile))
 				return &mpCampaignMap;
 		}
 	}
@@ -403,7 +403,7 @@ const MapParams* InP2CampaignMap(const bool mpMaps)
 	{
 		for (const auto& spCampaignMap : SP_CAMPAIGN_MAPS)
 		{
-			if (FStrEq(CURMAPFILENAME, spCampaignMap.mapFile))
+			if (FStrEq(CUR_MAPFILE_NAME, spCampaignMap.mapFile))
 				return &spCampaignMap;
 		}
 	}
@@ -476,7 +476,7 @@ const MapParams* InMelCampaignMap(const bool advanced)
 	{
 		for (const auto& melAdvancedCampaignMap : MEL_ADVANCED_CAMPAIGN_MAPS)
 		{
-			if (FStrEq(CURMAPFILENAME, melAdvancedCampaignMap.mapFile))
+			if (FStrEq(CUR_MAPFILE_NAME, melAdvancedCampaignMap.mapFile))
 				return &melAdvancedCampaignMap;
 		}
 	}
@@ -484,7 +484,7 @@ const MapParams* InMelCampaignMap(const bool advanced)
 	{
 		for (const auto& melStoryCampaignMap : MEL_STORY_CAMPAIGN_MAPS)
 		{
-			if (FStrEq(CURMAPFILENAME, melStoryCampaignMap.mapFile))
+			if (FStrEq(CUR_MAPFILE_NAME, melStoryCampaignMap.mapFile))
 				return &melStoryCampaignMap;
 		}
 	}
@@ -535,7 +535,7 @@ const MapParams* InApertureTagCampaignMap()
 {
 	for (const auto& apertureTagCampaignMap : APERTURE_TAG_CAMPAIGN_MAPS)
 	{
-		if (FStrEq(CURMAPFILENAME, apertureTagCampaignMap.mapFile))
+		if (FStrEq(CUR_MAPFILE_NAME, apertureTagCampaignMap.mapFile))
 			return &apertureTagCampaignMap;
 	}
 	
@@ -587,7 +587,7 @@ const MapParams* InApertureTagCampaignMap()
 // 	{
 // 		for (const auto& portalReloadedSPCampaignMap : PORTAL_RELOADED_SP_CAMPAIGN_MAPS)
 // 		{
-// 			if (FStrEq(CURMAPFILENAME, portalReloadedSPCampaignMap.mapFile))
+// 			if (FStrEq(CUR_MAPFILE_NAME, portalReloadedSPCampaignMap.mapFile))
 // 				return &portalReloadedSPCampaignMap;
 // 		}
 // 	}
@@ -595,7 +595,7 @@ const MapParams* InApertureTagCampaignMap()
 // 	{
 // 		for (const auto& portalReloadedMPCampaignMap : PORTAL_RELOADED_MP_CAMPAIGN_MAPS)
 // 		{
-// 			if (FStrEq(CURMAPFILENAME, portalReloadedMPCampaignMap.mapFile))
+// 			if (FStrEq(CUR_MAPFILE_NAME, portalReloadedMPCampaignMap.mapFile))
 // 				return &portalReloadedMPCampaignMap;
 // 		}
 // 	}
@@ -631,7 +631,7 @@ const MapParams* InDivinityCampaignMap(const bool advanced)
 	{
 		for (const auto& divinityAdvancedMap : DIVINITY_ADVANCED_MAPS)
 		{
-			if (FStrEq(CURMAPFILENAME, divinityAdvancedMap.mapFile))
+			if (FStrEq(CUR_MAPFILE_NAME, divinityAdvancedMap.mapFile))
 				return &divinityAdvancedMap;
 		}
 	}
@@ -639,7 +639,7 @@ const MapParams* InDivinityCampaignMap(const bool advanced)
 	{
 		for (const auto& divinityCampaignMap : DIVINITY_CAMPAIGN_MAPS)
 		{
-			if (FStrEq(CURMAPFILENAME, divinityCampaignMap.mapFile))
+			if (FStrEq(CUR_MAPFILE_NAME, divinityCampaignMap.mapFile))
 				return &divinityCampaignMap;
 		}
 	}

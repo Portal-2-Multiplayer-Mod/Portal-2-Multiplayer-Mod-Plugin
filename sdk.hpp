@@ -47,7 +47,7 @@ extern void (__cdecl* respawn_orig)(CBaseEntity* pEdict, bool fCopyCorpse);
 void __cdecl respawn_hook(CBaseEntity* pEdict, bool fCopyCorpse);
 
 // UTIL_GetLocalPlayer Dedicated Server Fix Hook.
-// Hook does follow naming convention so it can be used like a function.
+// Hook does follow original naming convention so it can be used like a function.
 extern CBasePlayer* (__cdecl* UTIL_GetLocalPlayer_orig)();
 CBasePlayer* __cdecl UTIL_GetLocalPlayer();
 

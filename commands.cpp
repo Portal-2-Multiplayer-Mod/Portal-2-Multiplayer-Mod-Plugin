@@ -113,7 +113,7 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 	// Make sure the CON_COMMAND was executed correctly.
 	if (args.ArgC() < 2 || FStrEq(args.Arg(1), ""))
 	{
-		P2MMLog(WARNING, false, "p2mm_map called incorrectly! Usage: \"p2mm_map (map to start)\"");
+		Log(WARNING, false, "p2mm_map called incorrectly! Usage: \"p2mm_map (map to start)\"");
 		UpdateMapsList();
 		return;
 	}
@@ -121,8 +121,8 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 	// A check done by the menu to request to use the last recorded map in the p2mm_lastmap ConVar.
 	char requestedMap[256] = { 0 };
 	V_strcpy(requestedMap, args.Arg(1));
-	P2MMLog(INFO, true, "Requested Map: %s", requestedMap);
-	P2MMLog(INFO, true, "p2mm_lastmap: %s", p2mm_lastmap.GetString());
+	Log(INFO, true, "Requested Map: %s", requestedMap);
+	Log(INFO, true, "p2mm_lastmap: %s", p2mm_lastmap.GetString());
 	if (FStrEq(requestedMap, "P2MM_LASTMAP"))
 	{
 		if (!engineServer->IsMapValid(p2mm_lastmap.GetString()))
@@ -138,14 +138,14 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 			char completePVCmd[sizeof("playvol \"#music/mainmenu/portal2_background0%d\" 0.35") + sizeof(iAct)] = { 0 };
 			V_snprintf(completePVCmd, sizeof(completePVCmd), "playvol \"#music/mainmenu/portal2_background0%i\" 0.35", iAct);
 
-			P2MMLog(WARNING, false, "p2mm_map was called with P2MM_LASTMAP, but p2mm_lastmap is empty or invalid!");
+			Log(WARNING, false, "p2mm_map was called with P2MM_LASTMAP, but p2mm_lastmap is empty or invalid!");
 			engineClient->ExecuteClientCmd("disconnect \"There is no last map recorded or the map doesn't exist! Please start a play session with the other options first.\"");
 			engineClient->ExecuteClientCmd(completePVCmd);
 			UpdateMapsList();
 			return;
 		}
 		V_strcpy(requestedMap, p2mm_lastmap.GetString());
-		P2MMLog(INFO, true, "P2MM_LASTMAP called! Running Last Map: \"%s\"", requestedMap);
+		Log(INFO, true, "P2MM_LASTMAP called! Running Last Map: \"%s\"", requestedMap);
 	}
 	p2mm_lastmap.SetValue(""); // Set last map ConVar to blank so it doesn't trigger level changes where we don't want it to trigger.
 
@@ -160,14 +160,14 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 	// Check if the supplied map is a valid map.
 	if (!engineServer->IsMapValid(requestedMap))
 	{
-		P2MMLog(WARNING, false, "p2mm_map was given a non-valid map or one that doesn't exist! \"%s\"", requestedMap);
+		Log(WARNING, false, "p2mm_map was given a non-valid map or one that doesn't exist! \"%s\"", requestedMap);
 		UpdateMapsList();
 		return;
 	}
 
 	// Check if the user requested it to start in splitscreen or not.
 	const std::string mapString = p2mm_splitscreen.GetBool() ? "ss_map " : "map ";
-	P2MMLog(INFO, true, "Map String: %s", mapString.c_str());
+	Log(INFO, true, "Map String: %s", mapString.c_str());
 
 	// Set first run flag on and set the last map ConVar value so the system.
 	// can change from mp_coop_community_hub to the requested map.
@@ -176,8 +176,8 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 	g_P2MMServerPlugin.m_bSeenFirstRunPrompt = false;
 	if (!FSubStr(requestedMap, "mp_coop"))
 	{
-		P2MMLog(INFO, true, R"("mp_coop" not found, single player map being run. Full ExecuteClientCmd: "%s")", std::string(mapString + "mp_coop_community_hub").c_str());
-		P2MMLog(INFO, true, "requestedMap: \"%s\"", requestedMap);
+		Log(INFO, true, R"("mp_coop" not found, single player map being run. Full ExecuteClientCmd: "%s")", std::string(mapString + "mp_coop_community_hub").c_str());
+		Log(INFO, true, "requestedMap: \"%s\"", requestedMap);
 		p2mm_lastmap.SetValue(requestedMap);
 		engineClient->ExecuteClientCmd(std::string(mapString + "mp_coop_community_hub").c_str());
 
@@ -186,8 +186,8 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 	}
 	else
 	{
-		P2MMLog(INFO, true, R"("mp_coop" found, multiplayer map being run. Full ExecuteClientCmd: "%s")", std::string(mapString + requestedMap).c_str());
-		P2MMLog(INFO, true, "requestedMap: \"%s\"", requestedMap);
+		Log(INFO, true, R"("mp_coop" found, multiplayer map being run. Full ExecuteClientCmd: "%s")", std::string(mapString + requestedMap).c_str());
+		Log(INFO, true, "requestedMap: \"%s\"", requestedMap);
 		engineClient->ExecuteClientCmd(std::string(mapString + requestedMap).c_str());
 
 		std::string initMapStr = std::string("Server has started with map: `" + std::string(requestedMap) + "`");
@@ -202,13 +202,13 @@ CON_COMMAND(p2mm_updatemaplist, "Manually updates the list of available maps tha
 
 CON_COMMAND(p2mm_maplist, "Lists available maps that can be loaded with p2mm_map.")
 {
-	P2MMLog(INFO, false, "AVAILABLE MAPS:");
-	P2MMLog(INFO, false, "----------------------------------------");
+	Log(INFO, false, "AVAILABLE MAPS:");
+	Log(INFO, false, "----------------------------------------");
 	for (const std::string& map : mapList)
 	{
-		P2MMLog(INFO, false, map.c_str());
+		Log(INFO, false, map.c_str());
 	}
-	P2MMLog(INFO, false, "----------------------------------------");
+	Log(INFO, false, "----------------------------------------");
 }
 
 
@@ -257,7 +257,7 @@ CON_COMMAND_F(p2mm_toggle_dev_cc_cvars, "Toggle showing any ConVars and ConComma
 		m_ConVarConCommandsShown = true;
 	}
 
-	P2MMLog(INFO, false, "%s %i ConVars/ConCommands!", m_ConVarConCommandsShown ? "Unhid" : "Hid", iToggleCount);
+	Log(INFO, false, "%s %i ConVars/ConCommands!", m_ConVarConCommandsShown ? "Unhid" : "Hid", iToggleCount);
 }
 
 //---------------------------------------------------------------------------------
@@ -312,8 +312,8 @@ static void GelocityTournament(IConVar* var, const char* pOldValue, const float 
 	// Check if host is in a gelocity map.
 	if (!InGelocityMap())
 	{
-		P2MMLog(INFO, false, "Gelocity tournament mode ConVar was changed from %i to %i.", static_cast<int>(flOldValue), dynamic_cast<ConVar*>(var)->GetBool());
-		P2MMLog(WARNING, false, "Mode will take effect when Gelocity map is loaded.");
+		Log(INFO, false, "Gelocity tournament mode ConVar was changed from %i to %i.", static_cast<int>(flOldValue), dynamic_cast<ConVar*>(var)->GetBool());
+		Log(WARNING, false, "Mode will take effect when Gelocity map is loaded.");
 		return;
 	}
 
@@ -322,14 +322,14 @@ static void GelocityTournament(IConVar* var, const char* pOldValue, const float 
 	g_pScriptVM->GetValue("b_RaceStarted", &raceStartedScript);
 	if (raceStartedScript.m_bool)
 	{
-		P2MMLog(WARNING, false, "Race is currently in progress!");
+		Log(WARNING, false, "Race is currently in progress!");
 		return;
 	}
 
-	P2MMLog(INFO, false, "Gelocity tournament mode ConVar was changed from %i to %i!", static_cast<int>(flOldValue), dynamic_cast<ConVar*>(var)->GetBool());
-	P2MMLog(WARNING, false, "Restarting map based on tournament mode change!");
+	Log(INFO, false, "Gelocity tournament mode ConVar was changed from %i to %i!", static_cast<int>(flOldValue), dynamic_cast<ConVar*>(var)->GetBool());
+	Log(WARNING, false, "Restarting map based on tournament mode change!");
 
-	engineClient->ExecuteClientCmd(std::string("changelevel " + std::string(CURMAPFILENAME)).c_str());
+	engineClient->ExecuteClientCmd(std::string("changelevel " + std::string(CUR_MAPFILE_NAME)).c_str());
 }
 ConVar p2mm_gelocity_tournamentmode("p2mm_gelocity_tournamentmode", "0", FCVAR_NONE, "Turn on or off tournament mode.", true, 0, true, 1, GelocityTournament);
 
@@ -339,10 +339,10 @@ static void GelocityButtons(IConVar* var, const char* pOldValue, float flOldValu
 	if (!InGelocityMap())
 	{
 		if (!dynamic_cast<ConVar*>(var)->GetBool())
-			P2MMLog(INFO, false, "Unlocked buttons...");
+			Log(INFO, false, "Unlocked buttons...");
 		else
-			P2MMLog(INFO, false, "Locked buttons...");
-		P2MMLog(WARNING, false, "Mode will take effect when Gelocity map is loaded.");
+			Log(INFO, false, "Locked buttons...");
+		Log(WARNING, false, "Mode will take effect when Gelocity map is loaded.");
 		return;
 	}
 
@@ -355,7 +355,7 @@ static void GelocityButtons(IConVar* var, const char* pOldValue, float flOldValu
 			"EntFire(\"music_button_1\", \"Unlock\");"
 			"EntFire(\"music_button_2\", \"Unlock\");", false
 		);
-		P2MMLog(INFO, false, "Unlocked buttons...");
+		Log(INFO, false, "Unlocked buttons...");
 	}
 	else
 	{
@@ -365,7 +365,7 @@ static void GelocityButtons(IConVar* var, const char* pOldValue, float flOldValu
 			"EntFire(\"music_button_1\", \"Lock\");"
 			"EntFire(\"music_button_2\", \"Lock\");", false
 		);
-		P2MMLog(INFO, false, "Locked buttons...");
+		Log(INFO, false, "Locked buttons...");
 	}
 }
 ConVar p2mm_gelocity_lockbuttons("p2mm_gelocity_lockbuttons", "0", FCVAR_NONE, "Toggle the state of the music and lap buttons.", true, 0, true, 1, GelocityButtons);
@@ -375,7 +375,7 @@ CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race. Specify 0 
 	// Check if host is in a gelocity map.
 	if (!InGelocityMap())
 	{
-		P2MMLog(WARNING, false, "Not currently in a Gelocity map!");
+		Log(WARNING, false, "Not currently in a Gelocity map!");
 		return;
 	}
 
@@ -384,7 +384,7 @@ CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race. Specify 0 
 	g_pScriptVM->GetValue("bRaceStarted", &raceStartedScript);
 	if (raceStartedScript.m_bool)
 	{
-		P2MMLog(WARNING, false, "Race is currently in progress!");
+		Log(WARNING, false, "Race is currently in progress!");
 		return;
 	}
 
@@ -395,12 +395,12 @@ CON_COMMAND(p2mm_gelocity_laps, "Set lap count for the Gelocity Race. Specify 0 
 	{
 		ScriptVariant_t raceLaps;
 		g_pScriptVM->GetValue("iGameLaps", &raceLaps);
-		P2MMLog(INFO, false, "Current race laps: %i", raceLaps.m_int);
+		Log(INFO, false, "Current race laps: %i", raceLaps.m_int);
 		return;
 	}
 	else if (V_atoi(args.Arg(1)) < 1 || V_atoi(args.Arg(1)) > 300)
 	{
-		P2MMLog(WARNING, false, "Value out of bounds! Lap counter goes from 1-300!");
+		Log(WARNING, false, "Value out of bounds! Lap counter goes from 1-300!");
 		return;
 	}
 
@@ -431,7 +431,7 @@ CON_COMMAND(p2mm_gelocity_music, "Set the music track for the Gelocity Race. 0-5
 	// Check if host is in a gelocity map.
 	if (!InGelocityMap())
 	{
-		P2MMLog(WARNING, false, "Not currently in a Gelocity map!");
+		Log(WARNING, false, "Not currently in a Gelocity map!");
 		return;
 	}
 
@@ -440,7 +440,7 @@ CON_COMMAND(p2mm_gelocity_music, "Set the music track for the Gelocity Race. 0-5
 	g_pScriptVM->GetValue("bFinalLap", &finalLapScript);
 	if (finalLapScript.m_bool)
 	{
-		P2MMLog(WARNING, false, "ITS THE FINAL LAP! LET THE INTENSE FINAL LAP MUSIC PLAY!");
+		Log(WARNING, false, "ITS THE FINAL LAP! LET THE INTENSE FINAL LAP MUSIC PLAY!");
 		return;
 	}
 
@@ -449,12 +449,12 @@ CON_COMMAND(p2mm_gelocity_music, "Set the music track for the Gelocity Race. 0-5
 	{
 		ScriptVariant_t iMusicTrack;
 		g_pScriptVM->GetValue("iMusicTrack", &iMusicTrack);
-		P2MMLog(INFO, false, "Current music track: %i", iMusicTrack.m_int);
+		Log(INFO, false, "Current music track: %i", iMusicTrack.m_int);
 		return;
 	}
 	else if (V_atoi(args.Arg(1)) < 0 || V_atoi(args.Arg(1)) > 5)
 	{
-		P2MMLog(WARNING, false, "Value out of bounds! Music tracks goes from 0-5!");
+		Log(WARNING, false, "Value out of bounds! Music tracks goes from 0-5!");
 		return;
 	}
 
@@ -480,12 +480,12 @@ CON_COMMAND(p2mm_gelocity_music, "Set the music track for the Gelocity Race. 0-5
 	if (V_atoi(args.Arg(1)) == 0)
 	{
 		UTIL_HudMessage(NULL, musicMessage, std::string("No Music").c_str());
-		P2MMLog(INFO, false, "Music turned off!", V_atoi(args.Arg(1)));
+		Log(INFO, false, "Music turned off!", V_atoi(args.Arg(1)));
 	}
 	else
 	{
 		UTIL_HudMessage(NULL, musicMessage, std::string("Music Track: " + std::string(args.Arg(1))).c_str());
-		P2MMLog(INFO, false, "Set music track to %i!", V_atoi(args.Arg(1)));
+		Log(INFO, false, "Set music track to %i!", V_atoi(args.Arg(1)));
 	}
 }
 
@@ -494,7 +494,7 @@ CON_COMMAND(p2mm_gelocity_start, "Starts the Gelocity race.")
 	// Check if host is in a gelocity map.
 	if (!InGelocityMap())
 	{
-		P2MMLog(WARNING, false, "Not currently in a Gelocity map!");
+		Log(WARNING, false, "Not currently in a Gelocity map!");
 		return;
 	}
 
@@ -503,7 +503,7 @@ CON_COMMAND(p2mm_gelocity_start, "Starts the Gelocity race.")
 	g_pScriptVM->GetValue("b_RaceStarted", &raceStartedScript);
 	if (raceStartedScript.m_bool)
 	{
-		P2MMLog(WARNING, false, "Race is currently in progress!");
+		Log(WARNING, false, "Race is currently in progress!");
 		return;
 	}
 
@@ -532,7 +532,7 @@ void RemovePlayerOperation(const bool bBanning, const int userid)
 		{
 			if (FStrEq(i.username.c_str(), bannedPlayer.username.c_str()))
 			{
-				P2MMLog(WARNING, false, "Ban called on player that is already banned!");
+				Log(WARNING, false, "Ban called on player that is already banned!");
 				UTIL_ClientPrint(UTIL_PlayerByIndex(0), HUD_PRINTTALK, "\x03(P2:MM): This player is already banned!");
 				return;
 			}
@@ -557,10 +557,10 @@ void RemovePlayerOperation(const bool bBanning, const int userid)
 	}
 	engineClient->ExecuteClientCmd("gameui_hide");
 
-	P2MMLog(INFO, true, "Banning?: %i", bBanning);
-	P2MMLog(INFO, true, "userID: %i", bannedPlayer.userID);
-	P2MMLog(INFO, true, "username: %s", bannedPlayer.username.c_str());
-	P2MMLog(INFO, true, "guid: %s", bannedPlayer.guid.c_str());
+	Log(INFO, true, "Banning?: %i", bBanning);
+	Log(INFO, true, "userID: %i", bannedPlayer.userID);
+	Log(INFO, true, "username: %s", bannedPlayer.username.c_str());
+	Log(INFO, true, "guid: %s", bannedPlayer.guid.c_str());
 }
 
 // Display UI for either banning or kicking so host can ban or kick a player.
@@ -568,7 +568,7 @@ void RemovePlayerUI(const int playerIndex, const bool bBanning)
 {
 	if (!IsGameActive())
 	{
-		P2MMLog(WARNING, false, "Game session is not currently running!");
+		Log(WARNING, false, "Game session is not currently running!");
 		return;
 	}
 
@@ -624,7 +624,7 @@ CON_COMMAND(unban, "Unban a player from the P2:MM play session.")
 {
 	if (!IsGameActive())
 	{
-		P2MMLog(WARNING, false, "Game session is not currently running!");
+		Log(WARNING, false, "Game session is not currently running!");
 		return;
 	}
 

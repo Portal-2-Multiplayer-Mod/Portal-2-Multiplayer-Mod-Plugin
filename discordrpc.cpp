@@ -124,12 +124,12 @@ static std::string DefaultFooter()
 
 	const std::string curPlayerCount = std::to_string(CURPLAYERCOUNT());
 	const std::string maxPlayerCount = std::to_string(MAX_PLAYERS);
-	std::string footer = std::string("Players: ") + curPlayerCount + "/" + maxPlayerCount + std::string(" || Current Map: ") + CURMAPFILENAME;
+	std::string footer = std::string("Players: ") + curPlayerCount + "/" + maxPlayerCount + std::string(" || Current Map: ") + CUR_MAPFILE_NAME;
 
 	if (GetBotCount() == 1)
-		footer = std::string("Players: ") + curPlayerCount + "/" + maxPlayerCount + std::string(" (1 Bot) || Current Map : ") + CURMAPFILENAME;
+		footer = std::string("Players: ") + curPlayerCount + "/" + maxPlayerCount + std::string(" (1 Bot) || Current Map : ") + CUR_MAPFILE_NAME;
 	else if (GetBotCount() > 1)
-		footer = std::string("Players: ") + curPlayerCount + "/" + maxPlayerCount + std::string(" (") + std::to_string(GetBotCount()) + std::string(" Bots) || Current Map : ") + CURMAPFILENAME;
+		footer = std::string("Players: ") + curPlayerCount + "/" + maxPlayerCount + std::string(" (") + std::to_string(GetBotCount()) + std::string(" Bots) || Current Map : ") + CUR_MAPFILE_NAME;
 	
 	return footer;
 }
@@ -401,13 +401,16 @@ void CDiscordIntegration::ShutdownDiscordRPC()
  */
 static void MiscMapRPC(char* details, char* smallImageKey, char* smallImageText)
 {
-	V_strcat(details, CURMAPFILENAME, sizeof(details));
+	V_strcat(details, CUR_MAPFILE_NAME, sizeof(details));
 	V_strcat(smallImageKey, "miscmap", sizeof(smallImageKey));
-	V_strcat(smallImageText, CURMAPFILENAME, sizeof(smallImageText));
+	V_strcat(smallImageText, CUR_MAPFILE_NAME, sizeof(smallImageText));
 }
 
 void CDiscordIntegration::UpdateDiscordRPC()
 {
+	if (!p2mm_discord_rpc.GetBool())
+		return;
+	
 	// Get states of the game so we can determine what it is currently doing.
 	const bool bActiveGame = IsGameActive();
 	const bool bGameShutdown = IsGameShutdown();
@@ -465,7 +468,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 		switch (g_P2MMServerPlugin.m_iCurGameIndex)
 			{
 		case (PORTAL_2):
-			if (std::strstr(CURMAPFILENAME, "sp_"))
+			if (std::strstr(CUR_MAPFILE_NAME, "sp_"))
 			{
 				map = InP2CampaignMap();
 				if (!map)
@@ -478,7 +481,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 				V_snprintf(smallImageKey, 32, "p2spchapter%i", map->chapter);
 				V_strcat(smallImageText, map->chapterName, sizeof(smallImageText));
 			}
-			else if (std::strstr(CURMAPFILENAME, "gelocity"))
+			else if (std::strstr(CUR_MAPFILE_NAME, "gelocity"))
 			{
 				map = InGelocityMap();
 				if (!map)
@@ -491,11 +494,11 @@ void CDiscordIntegration::UpdateDiscordRPC()
 				V_strcat(smallImageKey, "race", sizeof(smallImageKey));
 				V_strcat(smallImageText, map->mapName, sizeof(smallImageText));
 			}
-			else if (std::strstr(CURMAPFILENAME, "workshop/"))
+			else if (std::strstr(CUR_MAPFILE_NAME, "workshop/"))
 			{
 				V_strcat(smallImageKey, "workshop", sizeof(smallImageKey));
 				V_strcat(smallImageText, "Workshop Map", sizeof(smallImageText));
-				const char* lastForwardSlash = std::strrchr(CURMAPFILENAME, '/');
+				const char* lastForwardSlash = std::strrchr(CUR_MAPFILE_NAME, '/');
 				if (!lastForwardSlash)
 				{
 					V_strcpy(details, "Playing A Workshop Map");
@@ -518,9 +521,9 @@ void CDiscordIntegration::UpdateDiscordRPC()
 			}
 			break;
 		case (PORTAL_STORIES_MEL):
-			if (FStrEq(CURMAPFILENAME, "mp_coop_community_hub")) break;
+			if (FStrEq(CUR_MAPFILE_NAME, "mp_coop_community_hub")) break;
 
-			if (std::strstr(CURMAPFILENAME, "sp_"))
+			if (std::strstr(CUR_MAPFILE_NAME, "sp_"))
 				map = InMelCampaignMap(true);
 			else
 				map = InMelCampaignMap();
@@ -548,7 +551,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 			break;
 		// case (PORTAL_RELOADED):
 			// Portal Reloaded support will not happen for some time, this will remain commented out.
-			// if (std::strstr(CURMAPFILENAME, "sp_"))
+			// if (std::strstr(CUR_MAPFILE_NAME, "sp_"))
 			// 	*map = *InReloadedCampaignMap(true);
 			// else
 			// 	*map = *InReloadedCampaignMap();
@@ -559,7 +562,7 @@ void CDiscordIntegration::UpdateDiscordRPC()
 			// V_strcat(smallImageText, map->chapterName, sizeof(smallImageText));
 			// break;
 		case (DIVINITY):
-			if (std::strstr(CURMAPFILENAME, "adv"))
+			if (std::strstr(CUR_MAPFILE_NAME, "adv"))
 				map = InDivinityCampaignMap(true);
 			else
 				map = InDivinityCampaignMap();

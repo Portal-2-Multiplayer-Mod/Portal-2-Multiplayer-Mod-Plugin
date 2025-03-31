@@ -269,16 +269,6 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 		return false;
 	}
 
-	Log(INFO, true, "Loading g_pScriptVM...");
-	g_pScriptVM = static_cast<IScriptVM*>(interfaceFactory(VSCRIPT_INTERFACE_VERSION, 0));
-	if (!g_pScriptVM)
-	{
-		assert(0 && "Unable to load g_pScriptVM!");
-		Log(WARNING, false, "Unable to load g_pScriptVM!");
-		this->m_bNoUnload = true;
-		return false;
-	}
-
 	Log(INFO, true, "Loading g_pServerTools...");
 	g_pServerTools = static_cast<IServerTools*>(gameServerFactory(VSERVERTOOLS_INTERFACE_VERSION, 0));
 	if (!g_pServerTools)
@@ -603,6 +593,8 @@ void CP2MMServerPlugin::SetCommandClient(const int index)
 void RegisterFuncsAndRun();
 void CP2MMServerPlugin::ServerActivate(edict_t* pEdictList, int edictCount, int clientMax)
 {
+	Log(INFO, true, "edictCount: %i", edictCount);
+	Log(INFO, true, "clientMax: %i", clientMax);
 	RegisterFuncsAndRun();
 }
 
@@ -1063,22 +1055,22 @@ void CP2MMServerPlugin::FireGameEvent(IGameEvent* event)
 //---------------------------------------------------------------------------------
 void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 {
-	int userid = engineServer->GetPlayerUserId(pEntity);
-	int entindex = UserIDToPlayerIndex(userid);
+	const int userID = engineServer->GetPlayerUserId(pEntity);
+	const int entIndex = UserIDToPlayerIndex(userID);
 
 	if (p2mm_spew_gameevent_info.GetBool())
 	{
 		Log(INFO, true, "ClientActive Called!");
-		Log(INFO, true, "userid: %i", userid);
-		Log(INFO, true, "entindex: %i", entindex);
+		Log(INFO, true, "userid: %i", userID);
+		Log(INFO, true, "entindex: %i", entIndex);
 	}
 
 	// Make sure people know that the chat is being recorded if webhook is set
 	if (p2mm_discord_webhooks.GetBool())
 	{
-		if (CBasePlayer* pPlayer = UTIL_PlayerByIndex(entindex))
+		if (CBasePlayer* pPlayer = UTIL_PlayerByIndex(entIndex))
 		{
-			Log(INFO, true, "Warning for enabled webhooks sent to player index %i.", entindex);
+			Log(INFO, true, "Warning for enabled webhooks sent to player index %i.", entIndex);
 			UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, "This lobby has Discord Webhook Integration enabled. All of your in-game messages may be sent to a Discord channel.");
 		}
 	}
@@ -1086,15 +1078,15 @@ void CP2MMServerPlugin::ClientActive(edict_t* pEntity)
 	if (g_pScriptVM)
 	{
 		// Handling OnPlayerJoin VScript event
-		if (HSCRIPT opj_func = g_pScriptVM->LookupFunction("OnPlayerJoin"))
+		if (const HSCRIPT opjFunc = g_pScriptVM->LookupFunction("OnPlayerJoin"))
 		{
-			if (HSCRIPT playerHandle = INDEXHANDLE(entindex))
-				g_pScriptVM->Call<HSCRIPT>(opj_func, nullptr, false, nullptr, playerHandle);
+			if (const HSCRIPT playerHandle = INDEXHANDLE(entIndex))
+				g_pScriptVM->Call<HSCRIPT>(opjFunc, nullptr, false, nullptr, playerHandle);
 		}
 
 		// Handle VScript game event function
-		if (HSCRIPT geFunc = g_pScriptVM->LookupFunction("GEClientActive"))
-			g_pScriptVM->Call<int, int>(geFunc, nullptr, false, nullptr, userid, entindex);
+		if (const HSCRIPT geFunc = g_pScriptVM->LookupFunction("GEClientActive"))
+			g_pScriptVM->Call<int, int>(geFunc, nullptr, false, nullptr, userID, entIndex);
 	}
 
 	// Update Discord RPC to update player count.
@@ -1175,6 +1167,7 @@ PLUGIN_RESULT CP2MMServerPlugin::ClientConnect(bool* bAllowConnect, edict_t* pEn
 void CP2MMServerPlugin::ClientFullyConnect(edict_t* pEntity)
 {
 	Log(INFO, true, "Player Joined (ClientFullyConnect)!");
+	p2mm_lastmap.SetValue(CUR_MAPFILE_NAME);
 }
 
 //---------------------------------------------------------------------------------

@@ -127,18 +127,6 @@ static const char* GetLastMap()
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Get or set the state of whether the first map was run or not.
-// Set false/true = 0/1 | -1 to get state.
-//---------------------------------------------------------------------------------
-static bool FirstRunState(const int state)
-{
-	if (state == 0 || state == 1)
-		return g_P2MMServerPlugin.m_bFirstMapRan = !!state;
-	
-	return g_P2MMServerPlugin.m_bFirstMapRan;
-}
-
-//---------------------------------------------------------------------------------
 // Purpose: Shows the first run prompt if enabled in config.nut.
 //---------------------------------------------------------------------------------
 static void CallFirstRunPrompt()
@@ -309,10 +297,13 @@ static void ShowScoreboard(const int playerIndex, const bool bEnable)
 
 void RegisterFuncsAndRun()
 {
+	// The IScriptVM interface has to be retrieved later than when starting the plugin as it isn't available yet in memory until map is loading.
+	Log(INFO, true, "Loading g_pScriptVM...");
 	g_pScriptVM = **Memory::Scanner::Scan<IScriptVM***>(SERVERDLL, "8B 1D ?? ?? ?? ?? 57 85 DB", 2);
 	if (!g_pScriptVM)
 	{
-		Log(WARNING, false, "Could not register or run our VScript functions!");
+		assert(0 && "Unable to load g_pScriptVM!");
+		Log(ERRORR, false, "P2:MM was unable to load g_pScriptVM!\nThis is required for P2:MM to run!\nPlease report!");
 		return;
 	}
 
@@ -328,7 +319,6 @@ void RegisterFuncsAndRun()
 	ScriptRegisterFunction	   (g_pScriptVM, GetGameMainDir, "Returns the current game directory. Ex. portal2");
 	ScriptRegisterFunction	   (g_pScriptVM, GetGameRootDir, "Returns the current root game directory. Ex. Portal 2");
 	ScriptRegisterFunction	   (g_pScriptVM, GetLastMap, "Returns the last map recorded by the Last Map system.");
-	ScriptRegisterFunction	   (g_pScriptVM, FirstRunState, "Get or set the state of whether the first map was run or not. Set false/true = 0/1 | -1 to get state.");
 	ScriptRegisterFunction	   (g_pScriptVM, CallFirstRunPrompt, "Shows the first run prompt if enabled in config.nut.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, GetConVarInt, "GetConVarInt", "Get the integer value of a ConVar.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, GetConVarString, "GetConVarString", "Get the string value of a ConVar.");

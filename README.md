@@ -27,7 +27,6 @@ void        SendToChat(const char* msg, int playerIndex);              | "Sends 
 const char* GetGameMainDir();                                          | "Returns the current game directory. Ex. portal2"
 const char* GetGameRootDir();                                          | "Returns the current root game directory. Ex. Portal 2"
 const char* GetLastMap();                                              | "Returns the last map recorded by the Last Map system."
-bool        FirstRunState();                                           | "Get or set the state of whether the first map was run or not. Set false/true = 0/1 | -1 to get state."
 void        CallFirstRunPrompt();                                      | "Shows the first run prompt if enabled in config.nut."
 int         GetConVarInt(const char* cvName);                          | "Get the integer value of a ConVar."
 const char* GetConVarString(const char* cvName);                       | "Get the string value of a ConVar."

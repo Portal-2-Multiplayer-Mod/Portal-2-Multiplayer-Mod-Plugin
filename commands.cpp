@@ -44,7 +44,8 @@ static std::vector<std::string> mapList; // List of maps for the p2mm_map comman
 static std::vector<std::string> workshopMapList; // List of all workshop map for the p2mm_map auto complete.
 
 // Update the map list available to p2mm_map by scanning for all map files in SearchPath.
-void UpdateMapsList() {
+void UpdateMapsList()
+{
 	mapList.clear();
 	CUtlVector<CUtlString> outList;
 	AddFilesToList(outList, "maps", "GAME", "bsp");
@@ -64,11 +65,10 @@ void UpdateMapsList() {
 		fixedRelativePath.erase(0, strlen("maps/"));
 
 		// Remove the whole "workshop/(workshop id)" part if there isn't multiple workshop maps of the same file name.
-		size_t lastSlashPos = fixedRelativePath.find_last_of('/');
-		if (lastSlashPos != std::string::npos && fixedRelativePath.rfind("workshop/") != std::string::npos)
+		if (const size_t lastSlashPos = fixedRelativePath.find_last_of('/'); lastSlashPos != std::string::npos && fixedRelativePath.rfind("workshop/") != std::string::npos)
 		{
 			fixedRelativePath.erase(0, strlen("workshop/"));
-			workshopMapList.push_back(fixedRelativePath);
+			workshopMapList.push_back(fixedRelativePath); // Save workshop maps onto a separate list for checking in p2mm_map.
 		}
 
 		// Push the map string on to the list to display available options for the command.
@@ -80,12 +80,11 @@ void UpdateMapsList() {
 static int p2mm_map_CompletionFunc(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH])
 {
 	// If the map list is empty, generate it.
-	if (mapList.empty()) {
+	if (mapList.empty())
 		UpdateMapsList();
-	}
 
 	// Assemble together the current state of the inputted command.
-	const char* conCommand = "p2mm_map ";
+	const auto conCommand = "p2mm_map ";
 	const char* match = (V_strstr(partial, conCommand) == partial) ? partial + V_strlen(conCommand) : partial;
 
 	// Go through the map list searching for matches with the assembled inputted command.
@@ -106,11 +105,10 @@ static int p2mm_map_CompletionFunc(const char* partial, char commands[COMMAND_CO
 CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested map.", FCVAR_NONE, p2mm_map_CompletionFunc)
 {
 	// If the map list is empty, generate it.
-	if (mapList.empty()) {
+	if (mapList.empty())
 		UpdateMapsList();
-	}
 
-	// Make sure the CON_COMMAND was executed correctly.
+	// Make sure the CONCOMMAND was executed correctly.
 	if (args.ArgC() < 2 || FStrEq(args.Arg(1), ""))
 	{
 		Log(WARNING, false, "p2mm_map called incorrectly! Usage: \"p2mm_map (map to start)\"");
@@ -129,18 +127,18 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 		{
 			// Running disconnect to make the error screen appear causes the music to stop, don't let that to happen, so here it is started it again.
 
-			// Get the current act so we can start the right main menu music
+			// Get the current act so we can start the right main menu music.
 			int iAct = ConVarRef("ui_lastact_played").GetInt();
 			if (iAct > 5) iAct = 5;
 			else if (iAct < 1) iAct = 1;
 
 			// Put the command to start the music and the act number together.
-			char completePVCmd[sizeof("playvol \"#music/mainmenu/portal2_background0%d\" 0.35") + sizeof(iAct)] = { 0 };
-			V_snprintf(completePVCmd, sizeof(completePVCmd), "playvol \"#music/mainmenu/portal2_background0%i\" 0.35", iAct);
+			char completePvCmd[sizeof("playvol \"#music/mainmenu/portal2_background0%d\" 0.35") + sizeof(iAct)] = { 0 };
+			V_snprintf(completePvCmd, sizeof(completePvCmd), R"(playvol "#music/mainmenu/portal2_background0%i" 0.35)", iAct);
 
 			Log(WARNING, false, "p2mm_map was called with P2MM_LASTMAP, but p2mm_lastmap is empty or invalid!");
 			engineClient->ExecuteClientCmd("disconnect \"There is no last map recorded or the map doesn't exist! Please start a play session with the other options first.\"");
-			engineClient->ExecuteClientCmd(completePVCmd);
+			engineClient->ExecuteClientCmd(completePvCmd);
 			UpdateMapsList();
 			return;
 		}
@@ -150,7 +148,7 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 	p2mm_lastmap.SetValue(""); // Set last map ConVar to blank so it doesn't trigger level changes where we don't want it to trigger.
 
 	// Check if the requested map is a workshop map.
-	std::string tempMapStr = requestedMap;
+	const std::string tempMapStr = requestedMap;
 	for (const std::string& map : workshopMapList)
 	{
 		if (tempMapStr == map)
@@ -168,46 +166,27 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 	// Check if the user requested it to start in splitscreen or not.
 	const std::string mapString = p2mm_splitscreen.GetBool() ? "ss_map " : "map ";
 	Log(INFO, true, "Map String: %s", mapString.c_str());
-
-	// Set first run flag on and set the last map ConVar value so the system.
-	// can change from mp_coop_community_hub to the requested map.
-	// Also set m_bSeenFirstRunPrompt back to false so the prompt can be triggered again.
+	
 	g_P2MMServerPlugin.m_bFirstMapRan = true;
 	g_P2MMServerPlugin.m_bSeenFirstRunPrompt = false;
-	if (!FSubStr(requestedMap, "mp_coop"))
-	{
-		Log(INFO, true, R"("mp_coop" not found, single player map being run. Full ExecuteClientCmd: "%s")", std::string(mapString + "mp_coop_community_hub").c_str());
-		Log(INFO, true, "requestedMap: \"%s\"", requestedMap);
-		p2mm_lastmap.SetValue(requestedMap);
-		engineClient->ExecuteClientCmd(std::string(mapString + "mp_coop_community_hub").c_str());
 
-		std::string initMapStr = std::string("Server has started with map: `" + std::string(requestedMap) + "`");
-		CDiscordIntegration::SendWebHookEmbed("Server", initMapStr, EMBED_COLOR_SERVER, false);
-	}
-	else
-	{
-		Log(INFO, true, R"("mp_coop" found, multiplayer map being run. Full ExecuteClientCmd: "%s")", std::string(mapString + requestedMap).c_str());
-		Log(INFO, true, "requestedMap: \"%s\"", requestedMap);
-		engineClient->ExecuteClientCmd(std::string(mapString + requestedMap).c_str());
-
-		std::string initMapStr = std::string("Server has started with map: `" + std::string(requestedMap) + "`");
-		CDiscordIntegration::SendWebHookEmbed("Server", initMapStr, EMBED_COLOR_SERVER, false);
-	}
+	// Load the map and send webhook.
+	engineClient->ExecuteClientCmd(std::string(mapString + requestedMap + " *mp").c_str());
+	const auto initMapStr = std::string("Server has started with map: `" + std::string(requestedMap) + "`");
+	CDiscordIntegration::SendWebHookEmbed("Server", initMapStr, EMBED_COLOR_SERVER, false);
 }
 
-CON_COMMAND(p2mm_updatemaplist, "Manually updates the list of available maps that can be loaded with p2mm_map.")
+CON_COMMAND_F(p2mm_updatemaplist, "Manually updates the list of available maps that can be loaded with p2mm_map.", FCVAR_HIDDEN)
 {
 	UpdateMapsList();
 }
 
-CON_COMMAND(p2mm_maplist, "Lists available maps that can be loaded with p2mm_map.")
+CON_COMMAND_F(p2mm_maplist, "Lists available maps that can be loaded with p2mm_map.", FCVAR_HIDDEN)
 {
 	Log(INFO, false, "AVAILABLE MAPS:");
 	Log(INFO, false, "----------------------------------------");
 	for (const std::string& map : mapList)
-	{
 		Log(INFO, false, map.c_str());
-	}
 	Log(INFO, false, "----------------------------------------");
 }
 

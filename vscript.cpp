@@ -119,14 +119,6 @@ static void SendToChat(const int playerIndex, const char* msg)
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: Returns the last map recorded by the launcher's Last Map System.
-//---------------------------------------------------------------------------------
-static const char* GetLastMap()
-{
-	return p2mm_lastmap.GetString();
-}
-
-//---------------------------------------------------------------------------------
 // Purpose: Shows the first run prompt if enabled in config.nut.
 //---------------------------------------------------------------------------------
 static void CallFirstRunPrompt()
@@ -318,7 +310,6 @@ void RegisterFuncsAndRun()
 	ScriptRegisterFunction	   (g_pScriptVM, SendToChat, "Sends a raw message to the chat HUD. Specifying no playerIndex or 0 sends to all players. Supports printing localization strings but those that require formatting can't be formatted.");
 	ScriptRegisterFunction	   (g_pScriptVM, GetGameMainDir, "Returns the current game directory. Ex. portal2");
 	ScriptRegisterFunction	   (g_pScriptVM, GetGameRootDir, "Returns the current root game directory. Ex. Portal 2");
-	ScriptRegisterFunction	   (g_pScriptVM, GetLastMap, "Returns the last map recorded by the Last Map system.");
 	ScriptRegisterFunction	   (g_pScriptVM, CallFirstRunPrompt, "Shows the first run prompt if enabled in config.nut.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, GetConVarInt, "GetConVarInt", "Get the integer value of a ConVar.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, GetConVarString, "GetConVarString", "Get the string value of a ConVar.");

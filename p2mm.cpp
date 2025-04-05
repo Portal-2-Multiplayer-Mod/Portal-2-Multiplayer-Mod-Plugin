@@ -1100,7 +1100,7 @@ void CP2MMServerPlugin::GameFrame(const bool simulating)
 {
 	if (const HSCRIPT loopFunc = g_pScriptVM->LookupFunction("P2MMLoop"); p2mm_loop.GetBool())
 		g_pScriptVM->Call(loopFunc, nullptr, false, nullptr);
-
+	
 	// Handle VScript game event function
 	if (const HSCRIPT gfFunc = g_pScriptVM->LookupFunction("GEGameFrame"))
 		g_pScriptVM->Call<bool>(gfFunc, nullptr, false, nullptr, simulating);

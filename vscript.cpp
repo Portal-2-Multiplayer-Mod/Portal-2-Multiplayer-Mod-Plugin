@@ -17,13 +17,14 @@
 //---------------------------------------------------------------------------------
 static void printlP2MM(const int level, const bool dev, const char* pMsgFormat)
 {
-	if (dev && !p2mm_developer.GetBool()) return;
+	if (dev && !p2mm_developer.GetBool())
+		return;
 
-	va_list argptr;
+	va_list argPtr;
 	char szFormattedText[1024] = { 0 };
-	va_start(argptr, pMsgFormat);
-	V_vsnprintf(szFormattedText, sizeof(szFormattedText), pMsgFormat, argptr);
-	va_end(argptr);
+	va_start(argPtr, pMsgFormat);
+	V_vsnprintf(szFormattedText, sizeof(szFormattedText), pMsgFormat, argPtr);
+	va_end(argPtr);
 
 	char completeMsg[1024];
 	V_snprintf(completeMsg, sizeof(completeMsg), "(P2:MM VSCRIPT): %s\n", szFormattedText);
@@ -69,7 +70,7 @@ static bool IsDedicatedServer()
 
 //---------------------------------------------------------------------------------
 // Purpose: Initializes, spawns, then activates an entity in the map.
-// Create a entity using CreateByClassname, then use this function on its handle.
+// Create a entity using CreateByClassname in VScript, then use this function on its handle.
 // Note: Not all entities will work even after being initialized with this function.
 //---------------------------------------------------------------------------------
 static void InitializeEntity(const HSCRIPT ent)
@@ -91,7 +92,8 @@ static void InitializeEntity(const HSCRIPT ent)
 //---------------------------------------------------------------------------------
 static void SendToChat(const int playerIndex, const char* msg)
 {
-	if (!msg) return;
+	if (!msg)
+		return;
 
 	if (!playerIndex)
 	{

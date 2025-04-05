@@ -75,15 +75,16 @@ static bool IsDedicatedServer()
 //---------------------------------------------------------------------------------
 static void InitializeEntity(const HSCRIPT ent)
 {
-	static uintptr_t func = (uintptr_t)Memory::Scanner::Scan<void*>(SERVERDLL, "E8 ?? ?? ?? ?? 8B 4D 18 8B 57 5C", 1);
-	static auto GetCBaseEntityScriptDesc = reinterpret_cast<ScriptClassDesc_t* (__cdecl*)()>(*reinterpret_cast<uintptr_t*>(func) + func + sizeof(func));
-	if (void* pEntity = reinterpret_cast<void*>(g_pScriptVM->GetInstanceValue(ent, GetCBaseEntityScriptDesc())))
-	{
-		g_pServerTools->DispatchSpawn(pEntity);
+	// Get the entity of the instance.
+	const auto pEntity = static_cast<CBaseEntity*>(HSCRIPTENT(ent));
+	if (!pEntity)
+		return;
 
-		static auto Activate = *reinterpret_cast<void(__thiscall**)(void*)>(*reinterpret_cast<uintptr_t*>(pEntity) + 148);
-		Activate(pEntity);
-	}
+	// Spawn the new entity into the world.
+	g_pServerTools->DispatchSpawn(pEntity);
+	// Call the entities Activate class function to make it fully work.
+	static auto Activate = *reinterpret_cast<void(__thiscall**)(void*)>(*reinterpret_cast<uintptr_t*>(pEntity) + 148);
+	Activate(pEntity);
 }
 
 //---------------------------------------------------------------------------------

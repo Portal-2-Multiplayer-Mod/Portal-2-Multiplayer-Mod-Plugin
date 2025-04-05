@@ -224,6 +224,23 @@ inline edict_t* INDEXENT(const int iEdictNum)
 }
 
 //---------------------------------------------------------------------------------
+// Purpose: VScript instance to void*. void* because we can not assume that the returned instance is a CBaseEntity* because VScript instances can be 
+//---------------------------------------------------------------------------------
+inline void* HSCRIPTENT(const HSCRIPT ent)
+{
+	if (!ent)
+		return nullptr;
+
+	static uintptr_t func = reinterpret_cast<uintptr_t>(Memory::Scanner::Scan<void*>(SERVERDLL, "E8 ?? ?? ?? ?? 8B 4D 18 8B 57 5C", 1));
+	static auto GetCBaseEntityScriptDesc = reinterpret_cast<ScriptClassDesc_t* (__cdecl*)()>(*reinterpret_cast<uintptr_t*>(func) + func + sizeof(func));
+	void* pEntity = g_pScriptVM->GetInstanceValue(ent, GetCBaseEntityScriptDesc());
+	if (!pEntity)
+		return nullptr;
+	
+	return pEntity;
+}
+
+//---------------------------------------------------------------------------------
 // Purpose: Returns the current game directory. Ex. portal2
 //---------------------------------------------------------------------------------
 inline const char* GetGameMainDir()

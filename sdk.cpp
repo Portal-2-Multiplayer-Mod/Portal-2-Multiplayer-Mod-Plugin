@@ -103,7 +103,9 @@ CBasePlayer* __cdecl UTIL_GetLocalPlayer()
 {
 	if (engineServer->IsDedicatedServer())
 		return nullptr;
-	return UTIL_GetLocalPlayer_orig();
+	CBasePlayer* player = UTIL_GetLocalPlayer_orig();
+	if(!player) player = UTIL_PlayerByIndex(1);
+	return player;
 }
 
 

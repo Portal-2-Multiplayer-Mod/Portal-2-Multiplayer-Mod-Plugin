@@ -403,6 +403,11 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 		Log(INFO, true, "Patching max runtime for VScript...");
 		Memory::ReplacePattern("vscript", "00 00 00 E0 51 B8 9E 3F", "9a 99 99 99 99 99 a9 3f");
 
+		// Disabling adding a flag to the player that disables prediction when using entity game_ui.
+		// TODO: figure out how to unpatch this
+		Log(INFO, true, "Fixing game_ui...");
+		Memory::ReplacePattern("server", "E8 ?? ?? ?? ?? 6A 00 51 8B 0D ?? ?? ?? ?? F3 0F 10 41 0C 8B CE F3 0F 11 04 24 E8 ?? ?? ?? ?? 8B 87 2C 0B 00 00", "E9 00 00 00 00");
+
 		// MinHook initialization and hooking.
 		Log(INFO, true, "Initializing MinHook and hooking functions...");
 		MH_Initialize();

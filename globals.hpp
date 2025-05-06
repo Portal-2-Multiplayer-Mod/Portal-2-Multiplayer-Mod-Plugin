@@ -74,7 +74,7 @@ enum : std::uint8_t
 };
 
 // iCurGameIndex enum.
-enum : std::uint8_t
+inline enum GameIndexes : std::uint8_t
 {
 	PORTAL_2 = 0,
 	PORTAL_STORIES_MEL,
@@ -83,7 +83,7 @@ enum : std::uint8_t
 	INFRA,
 	STANLEY_PARABLE,
 	DIVINITY
-};
+} GameIndex;
 
 // ClientPrint msg_dest macros.
 enum : std::uint8_t
@@ -224,7 +224,7 @@ inline edict_t* INDEXENT(const int iEdictNum)
 }
 
 //---------------------------------------------------------------------------------
-// Purpose: VScript instance to void*. void* because we can not assume that the returned instance is a CBaseEntity* because VScript instances can be 
+// Purpose: VScript instance to void*. void* because we can not assume that the returned instance is a CBaseEntity* because VScript instances can be a different class type.
 //---------------------------------------------------------------------------------
 inline void* HSCRIPTENT(const HSCRIPT ent)
 {

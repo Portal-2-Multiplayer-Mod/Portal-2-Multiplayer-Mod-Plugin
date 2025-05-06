@@ -129,8 +129,10 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 
 			// Get the current act so we can start the right main menu music.
 			int iAct = ConVarRef("ui_lastact_played").GetInt();
-			if (iAct > 5) iAct = 5;
-			else if (iAct < 1) iAct = 1;
+			if (iAct > 5)
+				iAct = 5;
+			else if (iAct < 1)
+				iAct = 1;
 
 			// Put the command to start the music and the act number together.
 			char completePvCmd[sizeof("playvol \"#music/mainmenu/portal2_background0%d\" 0.35") + sizeof(iAct)] = { 0 };
@@ -142,6 +144,7 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 			UpdateMapsList();
 			return;
 		}
+		
 		V_strcpy(requestedMap, p2mm_lastmap.GetString());
 		Log(INFO, true, "P2MM_LASTMAP called! Running Last Map: \"%s\"", requestedMap);
 	}
@@ -204,13 +207,13 @@ CON_COMMAND(p2mm_respawnall, "Respawns all players.")
 	}
 }
 
-static bool m_ConVarConCommandsShown = false; // Bool to track if the hidden ConVars and ConCommands are showing.
+static bool cvccShown = false; // Bool to track if the hidden ConVars and ConCommands are showing.
 static std::vector<ConCommandBase*> toggledCVCCs; // List of toggled ConVars and ConCommands with the FCVAR_DEVELOPMENTONLY and FCVAR_HIDDEN ConVar flags removed.
 CON_COMMAND_F(p2mm_toggle_dev_cc_cvars, "Toggle showing any ConVars and ConCommands that have the FCVAR_DEVELOPMENTONLY and FCVAR_HIDDEN ConVar flags.", FCVAR_HIDDEN)
 {
 	int iToggleCount = 0; // To tell the user how many ConVars and ConCommands where toggle to show or hide.
 
-	if (m_ConVarConCommandsShown)
+	if (cvccShown)
 	{
 		// Hide the ConVars and ConCommands
 		for (ConCommandBase* pCommandVarName : toggledCVCCs)
@@ -219,11 +222,11 @@ CON_COMMAND_F(p2mm_toggle_dev_cc_cvars, "Toggle showing any ConVars and ConComma
 			iToggleCount++;
 		}
 		toggledCVCCs.clear();
-		m_ConVarConCommandsShown = false;
+		cvccShown = false;
 	}
 	else
 	{
-		// Unhide the ConVars and ConCommands
+		// Remove development and hidden flags from the ConVars and ConCommands
 		FOR_ALL_CONSOLE_COMMANDS(pCommandVarName)
 		{
 			if (pCommandVarName->IsFlagSet(FCVAR_DEVELOPMENTONLY) || pCommandVarName->IsFlagSet(FCVAR_HIDDEN))
@@ -233,10 +236,10 @@ CON_COMMAND_F(p2mm_toggle_dev_cc_cvars, "Toggle showing any ConVars and ConComma
 				toggledCVCCs.push_back(pCommandVarName);
 			}
 		}
-		m_ConVarConCommandsShown = true;
+		cvccShown = true;
 	}
 
-	Log(INFO, false, "%s %i ConVars/ConCommands!", m_ConVarConCommandsShown ? "Unhid" : "Hid", iToggleCount);
+	Log(INFO, false, "%s %i ConVars/ConCommands!", cvccShown ? "Unhid" : "Hid", iToggleCount);
 }
 
 //---------------------------------------------------------------------------------

@@ -138,7 +138,7 @@ CP2MMServerPlugin::CP2MMServerPlugin()
 //---------------------------------------------------------------------------------
 CP2MMServerPlugin::~CP2MMServerPlugin()
 {
-	m_nDebugID = EVENT_DEBUG_ID_SHUTDOWN;
+	this->m_nDebugID = EVENT_DEBUG_ID_SHUTDOWN;
 }
 
 //---------------------------------------------------------------------------------
@@ -164,9 +164,10 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 
 	Log(INFO, false, "Loading plugin...");
 
+	Log(INFO, true, "Grabbing game window handle...");
 	this->m_hWnd = FindWindow("Valve001", nullptr);
 	if (!this->m_hWnd)
-		Log(WARNING, false, "Failed to find game window Valve001!");
+		Log(WARNING, false, "Failed to find game window!");
 
 	// Determine which Portal 2 branch game we are running and if its supported.
 	// TODO: Rework this to be a switch case then if and else if statements.
@@ -209,6 +210,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 	// 	// Unsupported...
 	// 	unsupportedGame = true;
 	// }
+	// Have to find "Divinity" in the gameMainDir string as it's a big folder path due to being a SourceMod.
 	else if ((std::strstr(gameMainDir, "Divinity")))
 	{
 		this->m_iCurGameIndex = DIVINITY;
@@ -229,7 +231,8 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 	}
 	if (unsupportedGame && CommandLine()->FindParm("-forcep2mmload"))
 	{
-		MessageBox(this->m_hWnd, "P2:MM is being run with a unsupported Source Engine/Portal 2 branch game!\n\"-forcep2mmload\" has been specified to stop the plugin shutting down the game.\nProceed with caution as crashes and bugs could occur!", "Unsupported P2:MM Game", MB_OK | MB_ICONEXCLAMATION);
+		if (this->m_hWnd)
+			MessageBox(this->m_hWnd, "P2:MM is being run with a unsupported Source Engine/Portal 2 branch game!\n\"-forcep2mmload\" has been specified to stop the plugin shutting down the game.\nProceed with caution as crashes and bugs could occur!", "Unsupported P2:MM Game", MB_OK | MB_ICONEXCLAMATION);
 		Log(WARNING, false, R"(P2:MM is being run with a unsupported Source Engine/Portal 2 branch game! "-forcep2mmload" has been specified to stop the plugin shutting down the game. Proceed with caution as crashes and bugs could occur!)");
 	}
 
@@ -415,13 +418,14 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 		// NoSteamLogon disconnect hook patch.
 		Log(INFO, true, "Hooking CSteam3Server::OnGSClientDenyHelper...");
 		MH_CreateHook(
-			(LPVOID)Memory::Scanner::Scan<void*>(ENGINEDLL, "55 8B EC 83 EC 08 53 56 57 8B F1 E8 ?? ?? ?? ?? 8B"),
+			Memory::Scanner::Scan<void*>(ENGINEDLL, "55 8B EC 83 EC 08 53 56 57 8B F1 E8 ?? ?? ?? ?? 8B"),
 			&CSteam3Server__OnGSClientDenyHelper_hook, reinterpret_cast<void**>(&CSteam3Server__OnGSClientDenyHelper_orig)
 		);
 
-		// For p2mm_instantrespawn.
+		
 		if (!this->m_bP2SMPluginLoaded)
 		{
+			// For p2mm_instantrespawn.
 			Log(INFO, true, "Hooking CPortal_Player::PlayerDeathThink...");
 			MH_CreateHook(
 				Memory::Scanner::Scan(SERVERDLL, "53 8B DC 83 EC 08 83 E4 F0 83 C4 04 55 8B 6B ?? 89 6C 24 ?? 8B EC A1 ?? ?? ?? ?? F3 0F 10 40 ?? F3 0F 58 05 ?? ?? ?? ?? 83 EC 28 56 57 6A 00 51 8B F1 F3 0F 11 04 24 E8 ?? ?? ?? ?? 6A 03"),
@@ -474,10 +478,11 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 		
 		Log(INFO, true, "Enabling hooks...");
 		MH_EnableHook(MH_ALL_HOOKS);
-	} catch (const std::exception& ex)
+	}
+	catch (const std::exception& ex)
 	{
 		assert(0 && "Failed to implement patch or hook!");
-		Log(INFO, false, R"(Failed to load plugin! :( Exception: "%s")", ex.what());
+		Log(WARNING, false, R"(Failed to load plugin! :( Exception: "%s")", ex.what());
 		this->m_bNoUnload = true;
 		return false;
 	}
@@ -524,7 +529,7 @@ void CP2MMServerPlugin::Unload(void)
 		CommandLine()->RemoveParm("-allowspectators");
 	}
 
-	Log(INFO, true, "Unregistering ConVars...");
+	Log(INFO, true, "Unregistering ConVars/ConCommands...");
 	ConVar_Unregister();
 	
 	Log(INFO, true, "Disconnecting tier libraries...");
@@ -539,7 +544,7 @@ void CP2MMServerPlugin::Unload(void)
 		// Linked portal doors event crash patch
 		if (!this->m_bP2SMPluginLoaded)
 		{
-			Log(INFO, true, "Unfixing linked portal doors...");
+			Log(INFO, true, "Un-patching linked portal doors...");
 			Memory::ReplacePattern("server", "EB 14 87 04 05 00 00 8B 16", "0F B6 87 04 05 00 00 8B 16");
 		}
 
@@ -573,7 +578,7 @@ void CP2MMServerPlugin::Unload(void)
 	catch (const std::exception& ex)
 	{
 		assert(0 && "Failed to fully unload!");
-		Log(INFO, false, R"(Encountered error when unload plugin! :( Exception: "%s")", ex.what());
+		Log(WARNING, false, R"(Encountered error when unload plugin! :( Exception: "%s")", ex.what());
 		Log(ERRORR, false, "P2:MM failed to unload!\nGame has to be shutdown as possibly some other patches/hooks are still connected which can cause issues!");
 	}
 

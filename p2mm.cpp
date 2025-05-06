@@ -384,6 +384,25 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 		{
 			Log(INFO, true, "Fixing linked portal doors...");
 			Memory::ReplacePattern("server", "0F B6 87 04 05 00 00 8B 16", "EB 14 87 04 05 00 00 8B 16");
+
+			// Increase runtime max from 0.03 to 0.05.
+			// Helps add some more leeway to some things we do in VScript without the engine complaining and shutting down the rest of the script.
+			Log(INFO, true, "Patching max runtime for VScript...");
+			Memory::ReplacePattern("vscript", "00 00 00 E0 51 B8 9E 3F", "9a 99 99 99 99 99 a9 3f");
+
+			// Skip a line which adds a flag to the player that screws with client side prediction for multiplayer.
+			// TODO: Currently can not unpatch 
+			Log(INFO, true, "Fixing game_ui...");
+			switch (m_iCurGameIndex)
+			{
+			case (PORTAL_2):
+			case (DIVINITY):
+				Memory::ReplacePattern("server", "E8 ?? ?? ?? ?? A1 ?? ?? ?? ?? F3 0F 10 40 ?? 6A 00 51 8B CE F3 0F 11 04 24 E8 ?? ?? ?? ?? 8B 87", "E9 00 00 00 00");
+				break;
+			default:
+				Memory::ReplacePattern("server", "E8 ?? ?? ?? ?? 6A 00 51 8B 0D ?? ?? ?? ?? F3 0F 10 41 0C 8B CE F3 0F 11 04 24 E8 ?? ?? ?? ?? 8B 87 2C 0B 00 00", "E9 00 00 00 00");
+				break;
+			}
 		}
 
 		// Partner disconnects.
@@ -409,16 +428,6 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 		Log(INFO, true, "Fixing sv_password...");
 		Memory::ReplacePattern("engine", "0F 95 C1 51 8D 4D E8", "03 C9 90 51 8D 4D E8");
 
-		// Increase runtime max form 0.03 to 0.05.
-		// Helps add some more leeway to some things we do in VScript without the engine complaining and shutting down the rest of the script.
-		Log(INFO, true, "Patching max runtime for VScript...");
-		Memory::ReplacePattern("vscript", "00 00 00 E0 51 B8 9E 3F", "9a 99 99 99 99 99 a9 3f");
-
-		// Disabling adding a flag to the player that disables prediction when using entity game_ui.
-		// TODO: figure out how to unpatch this
-		Log(INFO, true, "Fixing game_ui...");
-		Memory::ReplacePattern("server", "E8 ?? ?? ?? ?? 6A 00 51 8B 0D ?? ?? ?? ?? F3 0F 10 41 0C 8B CE F3 0F 11 04 24 E8 ?? ?? ?? ?? 8B 87 2C 0B 00 00", "E9 00 00 00 00");
-
 		// MinHook initialization and hooking.
 		Log(INFO, true, "Initializing MinHook and hooking functions...");
 		MH_Initialize();
@@ -440,23 +449,20 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 				&CPortal_Player__PlayerDeathThink_hook, reinterpret_cast<void**>(&CPortal_Player__PlayerDeathThink_orig)
 			);
 		}
-
+		
+		// UTIL_GetLocalPlayer dedicated server hook crash fix.
+		Log(INFO, true, "Hooking UTIL_GetLocalPlayer...");
+		MH_CreateHook(
+			Memory::Scanner::Scan(SERVERDLL, "8B 15 ?? ?? ?? ?? 8B 4A ?? 33 C0"),
+			&UTIL_GetLocalPlayer, reinterpret_cast<void**>(&UTIL_GetLocalPlayer_orig)
+		);
+		
 		// "respawn" function hook for getting a VScript "game event" call out of it.
 		Log(INFO, true, "Hooking respawn function call...");
 		MH_CreateHook(
 			Memory::Scanner::Scan(SERVERDLL, "55 8B EC A1 ?? ?? ?? ?? 80 78 ?? ?? 75 ?? 80 78"),
 			&respawn_hook, reinterpret_cast<void**>(&respawn_orig)
 		);
-		
-		// UTIL_GetLocalPlayer dedicated server hook crash fix.
-		if (!this->m_bP2SMPluginLoaded)
-		{
-			Log(INFO, true, "Hooking UTIL_GetLocalPlayer...");
-			MH_CreateHook(
-				Memory::Scanner::Scan(SERVERDLL, "8B 15 ?? ?? ?? ?? 8B 4A ?? 33 C0"),
-				&UTIL_GetLocalPlayer, reinterpret_cast<void**>(&UTIL_GetLocalPlayer_orig)
-			);
-		}
 
 		// Game-specific hooks
 		switch (g_P2MMServerPlugin.m_iCurGameIndex)
@@ -557,6 +563,10 @@ void CP2MMServerPlugin::Unload(void)
 		{
 			Log(INFO, true, "Un-patching linked portal doors...");
 			Memory::ReplacePattern("server", "EB 14 87 04 05 00 00 8B 16", "0F B6 87 04 05 00 00 8B 16");
+
+			// runtime max 0.05 -> 0.03
+            Log(INFO, true, "Un-patching max runtime for VScript...");
+            Memory::ReplacePattern("vscript", "00 00 00 00 00 00 E0 3F", "00 00 00 E0 51 B8 9E 3F");
 		}
 
 		// Partner disconnects
@@ -577,10 +587,6 @@ void CP2MMServerPlugin::Unload(void)
 		// sv_password
 		Log(INFO, true, "Unfixing sv_password...");
 		Memory::ReplacePattern("engine", "03 C9 90 51 8D 4D E8", "0F 95 C1 51 8D 4D E8");
-
-		// runtime max 0.05 -> 0.03
-		Log(INFO, true, "Un-patching max runtime for VScript...");
-		Memory::ReplacePattern("vscript", "00 00 00 00 00 00 E0 3F", "00 00 00 E0 51 B8 9E 3F");
 
 		Log(INFO, true, "Disconnecting hooked functions and initializing MinHook...");
 		MH_DisableHook(MH_ALL_HOOKS);

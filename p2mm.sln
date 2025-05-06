@@ -8,6 +8,7 @@ EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Aperture Tag|Win32 = Aperture Tag|Win32
+		Portal 2 (DEBUG)|Win32 = Portal 2 (DEBUG)|Win32
 		Portal 2|Win32 = Portal 2|Win32
 		Portal Stories Mel|Win32 = Portal Stories Mel|Win32
 		Vanilla|Win32 = Vanilla|Win32
@@ -15,6 +16,8 @@ Global
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{531796FA-476D-47F1-84FA-CD3613D68536}.Aperture Tag|Win32.ActiveCfg = Aperture Tag|Win32
 		{531796FA-476D-47F1-84FA-CD3613D68536}.Aperture Tag|Win32.Build.0 = Aperture Tag|Win32
+		{531796FA-476D-47F1-84FA-CD3613D68536}.Portal 2 (DEBUG)|Win32.ActiveCfg = Portal 2 (DEBUG)|Win32
+		{531796FA-476D-47F1-84FA-CD3613D68536}.Portal 2 (DEBUG)|Win32.Build.0 = Portal 2 (DEBUG)|Win32
 		{531796FA-476D-47F1-84FA-CD3613D68536}.Portal 2|Win32.ActiveCfg = Portal 2|Win32
 		{531796FA-476D-47F1-84FA-CD3613D68536}.Portal 2|Win32.Build.0 = Portal 2|Win32
 		{531796FA-476D-47F1-84FA-CD3613D68536}.Portal Stories Mel|Win32.ActiveCfg = Portal Stories Mel|Win32

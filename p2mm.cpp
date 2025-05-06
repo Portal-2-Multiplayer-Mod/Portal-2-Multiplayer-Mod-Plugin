@@ -169,6 +169,8 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 	if (!this->m_hWnd)
 		Log(WARNING, false, "Failed to find game window!");
 
+// MARK: Determine Current Game
+#pragma region Determine Current Game
 	// Determine which Portal 2 branch game we are running and if its supported.
 	// TODO: Rework this to be a switch case then if and else if statements.
 	bool unsupportedGame = false;
@@ -235,11 +237,14 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 			MessageBox(this->m_hWnd, "P2:MM is being run with a unsupported Source Engine/Portal 2 branch game!\n\"-forcep2mmload\" has been specified to stop the plugin shutting down the game.\nProceed with caution as crashes and bugs could occur!", "Unsupported P2:MM Game", MB_OK | MB_ICONEXCLAMATION);
 		Log(WARNING, false, R"(P2:MM is being run with a unsupported Source Engine/Portal 2 branch game! "-forcep2mmload" has been specified to stop the plugin shutting down the game. Proceed with caution as crashes and bugs could occur!)");
 	}
+#pragma endregion
 
 	Log(INFO, true, "Connecting tier libraries...");
 	ConnectTier1Libraries(&interfaceFactory, 1);
 	ConnectTier2Libraries(&interfaceFactory, 1);
 
+// MARK: Engine Interfaces
+#pragma region Engine Interfaces
 	// Make sure that all the interfaces needed are loaded and usable.
 	Log(INFO, true, "Loading interfaces...");
 	Log(INFO, true, "Loading engineServer...");
@@ -321,6 +326,7 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 		this->m_bNoUnload = true;
 		return false;
 	}
+#pragma endregion
 	
 	MathLib_Init(2.2f, 2.2f, 0.0f, 2.0f);
 	ConVar_Register(0);
@@ -364,6 +370,8 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 		CommandLine()->AppendParm("-allowspectators", "");
 	}
 
+// MARK: Patches and Hooks
+#pragma region Patches and Hooks
 	// big ol' try catch because game has a TerminateProcess handler for exceptions...
 	// why this wasn't here is mystifying, - 10/2024 NULLderef
 	try
@@ -486,7 +494,8 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 		this->m_bNoUnload = true;
 		return false;
 	}
-
+#pragma endregion
+	
 	CDiscordIntegration::UpdateDiscordRPC();
 	
 	Log(INFO, false, "Loaded plugin! Yay! :D");
@@ -536,6 +545,8 @@ void CP2MMServerPlugin::Unload(void)
 	DisconnectTier2Libraries();
 	DisconnectTier1Libraries();
 
+// MARK: Patches and Hooks
+#pragma region Patches and Hooks
 	try
 	{
 		// Undo byte patches
@@ -581,6 +592,7 @@ void CP2MMServerPlugin::Unload(void)
 		Log(WARNING, false, R"(Encountered error when unload plugin! :( Exception: "%s")", ex.what());
 		Log(ERRORR, false, "P2:MM failed to unload!\nGame has to be shutdown as possibly some other patches/hooks are still connected which can cause issues!");
 	}
+#pragma endregion
 
 	if (p2mm_discord_rpc.GetBool() && CDiscordIntegration::DiscordRPCRunning())
 		CDiscordIntegration::ShutdownDiscordRPC();

@@ -155,6 +155,15 @@ int UTIL_GetCommandClientIndex()
 	return GetCommandClientIndex_();
 }
 
+//---------------------------------------------------------------------------------
+// Purpose: Get a trace between two points in space. Masks can be set to hit specific things
+//---------------------------------------------------------------------------------
+void UTIL_TraceLine(const Vector& vecAbsStart, const Vector& vecAbsEnd, const unsigned int mask, const IHandleEntity* ignore, const int collisionGroup, trace_t* ptr)
+{
+	static auto UTIL_TraceLine_ = reinterpret_cast<void (__cdecl*)(const Vector&, const Vector&, unsigned int, const IHandleEntity*, int, trace_t*)>(Memory::Scanner::Scan(SERVERDLL, "53 8B DC 83 EC 08 83 E4 F0 83 C4 04 55 8B 6B ?? 89 6C 24 ?? 8B EC 83 EC 6C 56 8B 43"));
+	UTIL_TraceLine_(vecAbsStart, vecAbsEnd, mask, ignore, collisionGroup, ptr);
+}
+
 ///			 CBaseEntity Class Functions				\\\
 
 //---------------------------------------------------------------------------------

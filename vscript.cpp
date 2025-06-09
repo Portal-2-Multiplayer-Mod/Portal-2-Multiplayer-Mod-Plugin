@@ -296,6 +296,26 @@ static void ShowScoreboard(const int playerIndex, const bool enable)
 	CBasePlayer__ShowViewPortPanel(playerIndex, "scores", enable);
 }
 
+/**
+ * @brief Improved version of TraceLine for VScript that allows for checking with bit masks and collision groups.
+ * @param vecAbsStart Location to start trace line.
+ * @param vecAbsEnd Location where the trace line should end.
+ * @param mask Bit mask used for determining what objects should be hit.
+ * @param ignore A entity for the trace line to ignore, typically this is for a trace line originating from a entity.
+ * @param collisionGroup Collision group that the trace line can hit.
+ * @return 
+ */
+static float Script_UTIL_TraceLine(const Vector& vecAbsStart, const Vector& vecAbsEnd, const int mask, const HSCRIPT ignore, const int collisionGroup)
+{
+	trace_t trace;
+	UTIL_TraceLine(vecAbsStart, vecAbsEnd, mask, static_cast<const IHandleEntity*>(HSCRIPTENT(ignore)), collisionGroup, &trace);
+	
+	if (trace.fractionleftsolid >= 1.0 && trace.startsolid)
+		return 1.0f - trace.fractionleftsolid;
+		
+	return trace.fraction;
+}
+
 {
 	CBasePlayer__ShowViewPortPanel(playerIndex, "scores", bEnable);
 }
@@ -343,9 +363,10 @@ void RegisterFuncsAndRun()
 													   "Supports printing localization strings but those that require formatting can't be formatted."
 													   "Vectors are used to consolidate some parameters so function isn't monstrously big."
 	);
-	ScriptRegisterFunction		(g_pScriptVM, GetMaxPlayers, "Self-explanatory.");
-	ScriptRegisterFunction		(g_pScriptVM, ShowScoreboard, "Enable or disable displaying the score board for players.");
-	ScriptRegisterFunction		(g_pScriptVM, RemovePlayerUI, "Display UI for either banning or kicking so host can ban or kick a player.");
+	ScriptRegisterFunction	   (g_pScriptVM, GetMaxPlayers, "Returns the current max players in the server.");
+	ScriptRegisterFunction	   (g_pScriptVM, ShowScoreboard, "Enable or disable displaying the score board for players.");
+	ScriptRegisterFunction	   (g_pScriptVM, RemovePlayerUI, "Display UI for either banning or kicking so host can ban or kick a player.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, Script_UTIL_TraceLine, "TraceLineEx", "Improved version of TraceLine that allows for checking with bit masks and collision groups.");
 
 	// Load up the main P2:MM VScript.
 	g_pScriptVM->Run("IncludeScript(\"multiplayermod/p2mm\");");

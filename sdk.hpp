@@ -60,6 +60,7 @@ void UTIL_ClientPrint(CBasePlayer* player, int msg_dest, const char* msg_name, c
 void UTIL_HudMessage(CBasePlayer* pPlayer, const HudMessageParams& textparms, const char* pMessage);
 CBasePlayer* UTIL_GetCommandClient();
 int UTIL_GetCommandClientIndex();
+void UTIL_TraceLine(const Vector& vecAbsStart, const Vector& vecAbsEnd, unsigned int mask, const IHandleEntity* ignore, int collisionGroup, trace_t* ptr);
 
 // CBaseEntity functions
 void CBaseEntity__RemoveEntity(CBaseEntity* pEntity);

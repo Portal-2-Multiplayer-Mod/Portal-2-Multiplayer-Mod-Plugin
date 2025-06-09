@@ -200,9 +200,7 @@ static void ClientPrint(const int playerIndex, const char* msg)
 			if (engineServer->GetPlayerInfo(i, &playerInfo))
 			{
 				if (CBasePlayer* pPlayer = UTIL_PlayerByIndex(i))
-				{
-					UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, msg);
-				}
+					UTIL_ClientPrint(pPlayer, HUD_PRINTCENTER, msg);
 			}
 		}
 		return;
@@ -215,42 +213,50 @@ static void ClientPrint(const int playerIndex, const char* msg)
 		return;
 	}
 
-	UTIL_ClientPrint(pPlayer, HUD_PRINTTALK, msg);
+	UTIL_ClientPrint(pPlayer, HUD_PRINTCENTER, msg);
 }
 
-//---------------------------------------------------------------------------------
-// Purpose: Print a message to the screen based on what the game_text entity does.
-//			See the Valve Developer Commentary page for the game_text entity to read
-//			what each field does. Specifying no playerIndex or 0 sends to all players.
-//			Supports printing localization strings but those that require formatting can't be formatted.
-//			Vectors are in place for sets of RGB values.
-//			Vector is used to consolidate x, y, and channel parameters together.
-//			Vector is used to consolidate fadeinTime, fadeoutTime, and holdTime.
-//---------------------------------------------------------------------------------
+/**
+ * @brief Print a message to the screen based on what the game_text entity does. See the Valve Developer Commentary page for the game_text entity to read
+ *		 what each field does and what values to input. Specifying no playerIndex or 0 sends to all players.
+ *		 Supports printing localization strings but those that require formatting can't be formatted.
+ *		 Vectors are used to consolidate some parameters so function isn't monstrously big.
+ * @param playerIndex Player index to display message to, or 0 to send to all players
+ * @param msg Message that should be displayed.
+ * @param posChannel Location on screen and channel to display message to.
+ * @param effect Effect text should use when displaying.
+ * @param fxTime How long the effect should last.
+ * @param RGB1 Color of text.
+ * @param alpha1 Alpha of text.
+ * @param RGB2 Transition color of text.
+ * @param alpha2 Transition color of text.
+ * @param showTimes Fade in, fade out, and hold time of text.
+ */
 static void HudPrint
 	(
-	const int playerIndex, const char* msg, 
-	Vector posChannel, const int effect, const float fxTime,
-	Vector RGB1, const int alpha1, Vector RGB2, const int alpha2,
-	Vector showTimes
+	const int playerIndex, const char* msg,
+	const Vector& posChannel, const int effect, const float fxTime,
+	const Vector& RGB1, const int alpha1, const Vector& RGB2, const int alpha2,
+	const Vector& showTimes
 	)
 {
-	if (!msg) return;
+	if (!msg)
+		return;
 
 	HudMessageParams hudTextParams;
 	hudTextParams.x = posChannel.x;
 	hudTextParams.y = posChannel.y;
-	hudTextParams.channel = posChannel.z;
+	hudTextParams.channel = static_cast<int>(posChannel.z);
 	hudTextParams.effect = effect;
 	hudTextParams.fxTime = fxTime;
-	hudTextParams.r1 = RGB1.x;
-	hudTextParams.g1 = RGB1.y;
-	hudTextParams.b1 = RGB1.z;
-	hudTextParams.a1 = alpha1;
-	hudTextParams.r2 = RGB2.x;
-	hudTextParams.g2 = RGB2.y;
-	hudTextParams.b2 = RGB2.z;
-	hudTextParams.a2 = alpha2;
+	hudTextParams.r1 = static_cast<byte>(RGB1.x);
+	hudTextParams.g1 = static_cast<byte>(RGB1.y);
+	hudTextParams.b1 = static_cast<byte>(RGB1.z);
+	hudTextParams.a1 = static_cast<byte>(alpha1);
+	hudTextParams.r2 = static_cast<byte>(RGB2.x);
+	hudTextParams.g2 = static_cast<byte>(RGB2.y);
+	hudTextParams.b2 = static_cast<byte>(RGB2.z);
+	hudTextParams.a2 = static_cast<byte>(alpha2);
 	hudTextParams.fadeinTime = showTimes.x;
 	hudTextParams.fadeoutTime = showTimes.y;
 	hudTextParams.holdTime = showTimes.z;
@@ -271,18 +277,25 @@ static void HudPrint
 	UTIL_HudMessage(pPlayer, hudTextParams, msg);
 }
 
-//---------------------------------------------------------------------------------
-// Purpose: Self-explanatory.
-//---------------------------------------------------------------------------------
+/**
+ * @brief Returns the current max players in the server.
+ * @return Max players in server.
+ */
 static int GetMaxPlayers()
 {
 	return MAX_PLAYERS;
 }
 
-//---------------------------------------------------------------------------------
-// Purpose: Enable or disable displaying the score board for a player.
-//---------------------------------------------------------------------------------
-static void ShowScoreboard(const int playerIndex, const bool bEnable)
+/**
+ * @brief Enable or disable displaying the score board for a player.
+ * @param playerIndex Index of player to enable/disable the scoreboard of.
+ * @param enable Whather the scoreboard should be enabled for this player.
+ */
+static void ShowScoreboard(const int playerIndex, const bool enable)
+{
+	CBasePlayer__ShowViewPortPanel(playerIndex, "scores", enable);
+}
+
 {
 	CBasePlayer__ShowViewPortPanel(playerIndex, "scores", bEnable);
 }
@@ -326,16 +339,14 @@ void RegisterFuncsAndRun()
 	);
 	ScriptRegisterFunction     (g_pScriptVM, HudPrint, "Print a message to the screen based on what the game_text entity does."
 													   "See the Valve Developer Commentary page for the game_text entity to read"
-													   "what each field does. Specifying no playerIndex or 0 sends to all players."
+													   "what each field does and what values to input. Specifying no playerIndex or 0 sends to all players."
 													   "Supports printing localization strings but those that require formatting can't be formatted."
-													   "Vectors are in place for sets of RGB values."
-													   "Vector is used to consolidate x, y, and channel parameters together."
-													   "Vector is used to consolidate fadeinTime, fadeoutTime, and holdTime."
+													   "Vectors are used to consolidate some parameters so function isn't monstrously big."
 	);
 	ScriptRegisterFunction		(g_pScriptVM, GetMaxPlayers, "Self-explanatory.");
 	ScriptRegisterFunction		(g_pScriptVM, ShowScoreboard, "Enable or disable displaying the score board for players.");
 	ScriptRegisterFunction		(g_pScriptVM, RemovePlayerUI, "Display UI for either banning or kicking so host can ban or kick a player.");
 
-	// Load up the main P2:MM VScript and set
+	// Load up the main P2:MM VScript.
 	g_pScriptVM->Run("IncludeScript(\"multiplayermod/p2mm\");");
 }

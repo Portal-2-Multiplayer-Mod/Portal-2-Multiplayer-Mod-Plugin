@@ -16,9 +16,6 @@
 
 #include <Windows.h>
 
-// memdbgon must be the last include file in a .cpp file!!!
-#include "tier0/memdbgon.h"
-
 extern ConVar p2mm_discord_rpc;
 extern ConVar p2mm_discord_webhooks;
 
@@ -438,7 +435,6 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 			Memory::Scanner::Scan<void*>(ENGINEDLL, "55 8B EC 83 EC 08 53 56 57 8B F1 E8 ?? ?? ?? ?? 8B"),
 			&CSteam3Server__OnGSClientDenyHelper_hook, reinterpret_cast<void**>(&CSteam3Server__OnGSClientDenyHelper_orig)
 		);
-
 		
 		if (!this->m_bP2SMPluginLoaded)
 		{

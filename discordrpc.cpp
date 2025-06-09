@@ -16,8 +16,7 @@
 #include <iostream>
 #include <thread>
 
-// memdbgon must be the last include file in a .cpp file!!!
-#include "tier0/memdbgon.h"
+
 
 /**
  * @brief  Log Discord GameSDK logs to the console.

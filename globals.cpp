@@ -9,8 +9,7 @@
 #include "sdk.hpp"
 #include "p2mm.hpp"
 
-// memdbgon must be the last include file in a .cpp file!!!
-#include "tier0/memdbgon.h"
+
 
 //---------------------------------------------------------------------------------
 // Purpose: Logging for the plugin by adding a prefix and line break.
@@ -516,7 +515,7 @@ const std::vector<MapParams> APERTURE_TAG_CAMPAIGN_MAPS =
 	{.mapFile= "gg_all_puzzle2",				.mapName= "Portals 2",						.chapter= 3, .chapterName= "No More Recycling Tests"},
 	{.mapFile= "gg_all2_puzzle1",			.mapName= "Future Starter",					.chapter= 3, .chapterName= "No More Recycling Tests"},
 	{.mapFile= "gg_all_puzzle1",				.mapName= "Final Qualification",			.chapter= 3, .chapterName= "No More Recycling Tests"},
-	{.mapFile= "gg_all2_escape1",			.mapName= "ALSSER/Escape",					.chapter= 3, .chapterName= "No More Recycling Tests"},
+	{.mapFile= "gg_all2_escape",				.mapName= "ALSSER/Escape",					.chapter= 3, .chapterName= "No More Recycling Tests"},
 	{.mapFile= "gg_stage_reveal",			.mapName= "Reveal",							.chapter= 4, .chapterName= "The Stage"},
 	{.mapFile= "gg_stage_bridgebounce_2",	.mapName= "Bridge Bounce",    				.chapter= 4, .chapterName= "The Stage"},
 	{.mapFile= "gg_stage_redfirst",			.mapName= "Red First",        				.chapter= 4, .chapterName= "The Stage"},

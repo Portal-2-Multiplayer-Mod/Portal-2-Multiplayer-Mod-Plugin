@@ -9,9 +9,6 @@
 #include "commands.hpp"
 #include "p2mm.hpp"
 
-// memdbgon must be the last include file in a .cpp file!!!
-#include "tier0/memdbgon.h"
-
 //---------------------------------------------------------------------------------
 // Purpose: Logging for the P2MM VScript. The log message must be passed as a string or it will error.
 //---------------------------------------------------------------------------------

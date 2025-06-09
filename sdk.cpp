@@ -32,6 +32,8 @@ const char* __cdecl GetBallBotModel_hook(const bool bLowRes)
 	{
 	case (PORTAL_STORIES_MEL):
 		return "models/portal_stories/player/mel.mdl";
+	default:
+		break;
 	}
 
 	return GetBallBotModel_orig(bLowRes);
@@ -44,6 +46,8 @@ const char* __cdecl GetEggBotModel_hook(const bool bLowRes)
 	{
 	case (PORTAL_STORIES_MEL):
 		return "models/player/chell/player.mdl";
+	default:
+		break;
 	}
 
 	return GetEggBotModel_orig(bLowRes);
@@ -57,8 +61,9 @@ const char* __fastcall CPortal_Player__GetPlayerModelName_hook(CPortal_Player* t
 	case (PORTAL_STORIES_MEL):
 		if (CBaseEntity__GetTeamNumber(reinterpret_cast<CBasePlayer*>(thisptr)) == TEAM_BLUE)
 			return "models/portal_stories/player/mel.mdl";
-		else
-			return "models/player/chell/player.mdl";
+		return "models/player/chell/player.mdl";
+	default:
+		break;
 	}
 	return CPortal_Player__GetPlayerModelName_orig(thisptr);
 }

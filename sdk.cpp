@@ -215,6 +215,22 @@ HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity)
 	return GetScriptInstance_(entity);
 }
 
+/**
+ * @brief Get angle of players eyes.
+ * @param playerIndex Player index to get angles from.
+ * @return QAngle of the entities angle.
+ */
+const QAngle& CBasePlayer__EyeAngles(const int playerIndex)
+{
+	CBasePlayer* pPlayer = UTIL_PlayerByIndex(playerIndex);
+	if (!pPlayer)
+	{
+		Log(WARNING, false, "Couldn't get player to get eye angles from! Returning (0,0,0)... playerIndex: %i", playerIndex);
+		return QAngle(0, 0, 0);
+	}
+	static auto EyeAngles_ = reinterpret_cast<QAngle& (__thiscall*)(CBasePlayer*)>(Memory::Scanner::Scan<void*>(SERVERDLL, "55 8B EC 8B 81 ?? ?? ?? ?? 83 EC 60"));
+	return EyeAngles_(pPlayer);
+}
 
 ///			 CBasePlayer Class Functions			\\\
 

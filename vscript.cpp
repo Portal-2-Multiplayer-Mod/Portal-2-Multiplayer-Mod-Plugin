@@ -316,8 +316,19 @@ static float Script_UTIL_TraceLine(const Vector& vecAbsStart, const Vector& vecA
 	return trace.fraction;
 }
 
+/**
+ * @brief Get the eye angles of a player.
+ * @param playerIndex Player index to get angles of.
+ * @return Vector of player eye angles.
+ */
+static const Vector& Script_EyeAngles(const int playerIndex)
 {
-	CBasePlayer__ShowViewPortPanel(playerIndex, "scores", bEnable);
+	Vector eyeVector;
+	const QAngle eyeAngles = CBasePlayer__EyeAngles(playerIndex);
+	eyeVector.x = eyeAngles.x;
+	eyeVector.y = eyeAngles.y;
+	eyeVector.z = eyeAngles.z;
+	return eyeVector;
 }
 
 void RegisterFuncsAndRun()
@@ -367,6 +378,7 @@ void RegisterFuncsAndRun()
 	ScriptRegisterFunction	   (g_pScriptVM, ShowScoreboard, "Enable or disable displaying the score board for players.");
 	ScriptRegisterFunction	   (g_pScriptVM, RemovePlayerUI, "Display UI for either banning or kicking so host can ban or kick a player.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, Script_UTIL_TraceLine, "TraceLineEx", "Improved version of TraceLine that allows for checking with bit masks and collision groups.");
+	ScriptRegisterFunctionNamed(g_pScriptVM, Script_EyeAngles, "EyeAngles", "Get the eye angles of a player.");
 
 	// Load up the main P2:MM VScript.
 	g_pScriptVM->Run("IncludeScript(\"multiplayermod/p2mm\");");

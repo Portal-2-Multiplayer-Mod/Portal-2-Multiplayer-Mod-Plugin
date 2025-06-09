@@ -67,6 +67,7 @@ void CBaseEntity__RemoveEntity(CBaseEntity* pEntity);
 int CBaseEntity__GetTeamNumber(CBasePlayer* pPlayer);
 HSCRIPT CBaseEntity__GetScriptScope(CBaseEntity* entity);
 HSCRIPT CBaseEntity__GetScriptInstance(CBaseEntity* entity);
+const QAngle& CBasePlayer__EyeAngles(int playerIndex);
 
 // CBasePlayer functions
 void CBasePlayer__ShowViewPortPanel(int playerIndex, const char* name, bool bShow = true, KeyValues* data = nullptr);

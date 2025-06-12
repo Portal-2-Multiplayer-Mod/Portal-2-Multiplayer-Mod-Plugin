@@ -298,7 +298,8 @@ void CPortal_Player__SetFlashlightState(const int playerIndex, const bool enable
 //---------------------------------------------------------------------------------
 IClient* CBaseServer__GetClient(const int playerIndex)
 {
-	if (!UTIL_PlayerByIndex(playerIndex)) return nullptr;
+	if (!UTIL_PlayerByIndex(playerIndex))
+		return nullptr;
 
 	static auto GetClient_ = reinterpret_cast<IClient * (__thiscall*)(CBaseServer*, int)>(Memory::Scanner::Scan(ENGINEDLL, "55 8B EC 8B 81 ?? ?? ?? ?? 8B 4D ?? 8B 04 88"));
 	return GetClient_(g_P2MMServerPlugin.sv, playerIndex);
@@ -311,7 +312,8 @@ IClient* CBaseServer__GetClient(const int playerIndex)
 //---------------------------------------------------------------------------------
 bool CGameClient__ExecuteStringCommand(IClient* client, const char* pCommandString)
 {
-	if (!client) return false;
+	if (!client)
+		return false;
 
 	static auto ExecuteStringCommand_ = reinterpret_cast<bool(__thiscall*)(IClient*, const char*)>(Memory::Scanner::Scan(ENGINEDLL, "55 8B EC 81 EC 08 05 00 00 56 8B 75"));
 	return ExecuteStringCommand_(client, pCommandString);

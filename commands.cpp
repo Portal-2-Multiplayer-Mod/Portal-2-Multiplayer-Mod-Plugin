@@ -554,12 +554,15 @@ void RemovePlayerUI(const int playerIndex, const bool bBanning)
 		return;
 	}
 
+	// TODO: Fix to show gameui or at some point replace with ImGUI.
 	engineClient->ExecuteClientCmd("gameui_activate"); // Doesn't work for some reason although it does for the first run prompt.
+	//! Below crasehs due to a issue with ExecuteStringCommand.
 	//CGameClient__ExecuteStringCommand(CBaseServer__GetClient(playerIndex), "gameui_activate");
 	std::vector<RemovePlayerInfo> userList;
 	FOR_ALL_PLAYERS(i)
 	{
-		if (i == 1) continue; // Don't add host to button options.
+		if (i == 1)
+			continue; // Don't add host to button options.
 		player_info_t playerInfo;
 		engineServer->GetPlayerInfo(i, &playerInfo);
 		RemovePlayerInfo curUserInfo;

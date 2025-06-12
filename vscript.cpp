@@ -303,7 +303,7 @@ static void ShowScoreboard(const int playerIndex, const bool enable)
  * @param mask Bit mask used for determining what objects should be hit.
  * @param ignore A entity for the trace line to ignore, typically this is for a trace line originating from a entity.
  * @param collisionGroup Collision group that the trace line can hit.
- * @return 
+ * @return Returns a fraction of line where a collision occured, or if in a solid, the amount spent outside the solid.
  */
 static float Script_UTIL_TraceLine(const Vector& vecAbsStart, const Vector& vecAbsEnd, const int mask, const HSCRIPT ignore, const int collisionGroup)
 {
@@ -323,12 +323,8 @@ static float Script_UTIL_TraceLine(const Vector& vecAbsStart, const Vector& vecA
  */
 static const Vector& Script_EyeAngles(const int playerIndex)
 {
-	Vector eyeVector;
 	const QAngle eyeAngles = CBasePlayer__EyeAngles(playerIndex);
-	eyeVector.x = eyeAngles.x;
-	eyeVector.y = eyeAngles.y;
-	eyeVector.z = eyeAngles.z;
-	return eyeVector;
+	return Vector(eyeAngles.x, eyeAngles.y, eyeAngles.z);
 }
 
 void RegisterFuncsAndRun()
@@ -374,7 +370,7 @@ void RegisterFuncsAndRun()
 													   "Supports printing localization strings but those that require formatting can't be formatted."
 													   "Vectors are used to consolidate some parameters so function isn't monstrously big."
 	);
-	ScriptRegisterFunction	   (g_pScriptVM, GetMaxPlayers, "Returns the current max players in the server.");
+	ScriptRegisterFunction	   (g_pScriptVM, GetMaxPlayers, "Return max amount of players that can be in the server.");
 	ScriptRegisterFunction	   (g_pScriptVM, ShowScoreboard, "Enable or disable displaying the score board for players.");
 	ScriptRegisterFunction	   (g_pScriptVM, RemovePlayerUI, "Display UI for either banning or kicking so host can ban or kick a player.");
 	ScriptRegisterFunctionNamed(g_pScriptVM, Script_UTIL_TraceLine, "TraceLineEx", "Improved version of TraceLine that allows for checking with bit masks and collision groups.");

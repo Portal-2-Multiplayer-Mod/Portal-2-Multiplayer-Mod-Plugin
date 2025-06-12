@@ -44,7 +44,7 @@ static std::vector<std::string> mapList; // List of maps for the p2mm_map comman
 static std::vector<std::string> workshopMapList; // List of all workshop map for the p2mm_map auto complete.
 
 // Update the map list available to p2mm_map by scanning for all map files in SearchPath.
-void UpdateMapsList()
+void UpdateMapList()
 {
 	mapList.clear();
 	CUtlVector<CUtlString> outList;
@@ -81,7 +81,7 @@ static int p2mm_map_CompletionFunc(const char* partial, char commands[COMMAND_CO
 {
 	// If the map list is empty, generate it.
 	if (mapList.empty())
-		UpdateMapsList();
+		UpdateMapList();
 
 	// Assemble together the current state of the inputted command.
 	const auto conCommand = "p2mm_map ";
@@ -106,13 +106,13 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 {
 	// If the map list is empty, generate it.
 	if (mapList.empty())
-		UpdateMapsList();
+		UpdateMapList();
 
 	// Make sure the CONCOMMAND was executed correctly.
 	if (args.ArgC() < 2 || FStrEq(args.Arg(1), ""))
 	{
 		Log(WARNING, false, "p2mm_map called incorrectly! Usage: \"p2mm_map (map to start)\"");
-		UpdateMapsList();
+		UpdateMapList();
 		return;
 	}
 
@@ -141,7 +141,7 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 			Log(WARNING, false, "p2mm_map was called with P2MM_LASTMAP, but p2mm_lastmap is empty or invalid!");
 			engineClient->ExecuteClientCmd("disconnect \"There is no last map recorded or the map doesn't exist! Please start a play session with the other options first.\"");
 			engineClient->ExecuteClientCmd(completePvCmd);
-			UpdateMapsList();
+			UpdateMapList();
 			return;
 		}
 		
@@ -162,7 +162,7 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 	if (!engineServer->IsMapValid(requestedMap))
 	{
 		Log(WARNING, false, "p2mm_map was given a non-valid map or one that doesn't exist! \"%s\"", requestedMap);
-		UpdateMapsList();
+		UpdateMapList();
 		return;
 	}
 
@@ -181,7 +181,7 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 
 CON_COMMAND_F(p2mm_updatemaplist, "Manually updates the list of available maps that can be loaded with p2mm_map.", FCVAR_HIDDEN)
 {
-	UpdateMapsList();
+	UpdateMapList();
 }
 
 CON_COMMAND_F(p2mm_maplist, "Lists available maps that can be loaded with p2mm_map.", FCVAR_HIDDEN)
@@ -254,8 +254,8 @@ CON_COMMAND_F(p2mm_helloworld, "Hello World!", FCVAR_HIDDEN)
 CON_COMMAND_F(p2mm_helloworld2, "Hello World 2: Electric Boogaloo!", FCVAR_HIDDEN)
 {
 	HudMessageParams helloWorldParams;
-	color32 RGB1 = { 0, 255, 100, 255 };
-	color32 RGB2 = { 0, 50, 255, 255 };
+	const color32 RGB1 = { 0, 255, 100, 255 };
+	const color32 RGB2 = { 0, 50, 255, 255 };
 	helloWorldParams.x = -1.f;
 	helloWorldParams.y = -1.f;
 	helloWorldParams.effect = 2;

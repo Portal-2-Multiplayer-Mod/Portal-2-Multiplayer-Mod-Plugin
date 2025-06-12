@@ -1130,7 +1130,7 @@ void CP2MMServerPlugin::GameFrame(const bool simulating)
 		g_pScriptVM->Call<bool>(gfFunc, nullptr, false, nullptr, simulating);
 }
 
-extern void UpdateMapsList();
+extern void UpdateMapList();
 //---------------------------------------------------------------------------------
 // Purpose: Called when the map is changing to another map, or the server is shutting down.
 //---------------------------------------------------------------------------------
@@ -1138,7 +1138,7 @@ void CP2MMServerPlugin::LevelShutdown(void)
 {
 	Log(INFO, true, "Level Shutdown! Map: %s", CUR_MAPFILE_NAME);
 	p2mm_loop.SetValue("0"); //! REMOVE THIS at some point...
-	UpdateMapsList(); // Update the maps list for p2mm_map.
+	UpdateMapList(); // Update the maps list for p2mm_map.
 	// Update Discord RPC to update the level information or to say the host is on the main menu.
 	CDiscordIntegration::UpdateDiscordRPC();
 }

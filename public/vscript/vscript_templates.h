@@ -320,7 +320,8 @@ inline FUNCPTR_TYPE ScriptConvertFuncPtrFromVoid( void *p )
 			} \
 			*pReturn = ((FUNC_TYPE)pFunction)( SCRIPT_BINDING_ARGS_##N ); \
 			if ( pReturn->m_type == FIELD_VECTOR ) \
-				pReturn->m_pVector = new Vector(*pReturn->m_pVector); \
+				/* new Vector uses the std allocator, this needs tier0 memalloc */ \
+				pReturn->m_pVector = Vector::Tier0CopyAlloc(*pReturn->m_pVector); \
  			return true; \
  		} \
 	}; \
@@ -360,7 +361,8 @@ inline FUNCPTR_TYPE ScriptConvertFuncPtrFromVoid( void *p )
 			} \
 			*pReturn = (((OBJECT_TYPE_PTR)(pContext))->*ScriptConvertFuncPtrFromVoid<FUNC_TYPE>(pFunction))( SCRIPT_BINDING_ARGS_##N ); \
 			if ( pReturn->m_type == FIELD_VECTOR ) \
-				pReturn->m_pVector = new Vector(*pReturn->m_pVector); \
+				/* new Vector uses the std allocator, this needs tier0 memalloc */ \
+				pReturn->m_pVector = Vector::Tier0CopyAlloc(*pReturn->m_pVector); \
  			return true; \
  		} \
 	}; \

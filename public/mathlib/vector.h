@@ -206,6 +206,14 @@ public:
 	operator VectorByValue &()				{ return *((VectorByValue *)(this)); }
 	operator const VectorByValue &() const	{ return *((const VectorByValue *)(this)); }
 
+	// allocate a vector using tier0's memalloc and copy to it from a source vector
+	static inline Vector* Tier0CopyAlloc(const Vector &vOther)
+	{
+		Vector* v = (Vector*)MemAlloc_Alloc(sizeof(Vector));
+		v->x = vOther.x; v->y = vOther.y; v->z = vOther.z;
+		return v;
+	}
+
 #ifndef VECTOR_NO_SLOW_OPERATIONS
 	// copy constructors
 //	Vector(const Vector &vOther);

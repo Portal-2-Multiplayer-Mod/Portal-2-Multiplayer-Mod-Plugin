@@ -321,7 +321,7 @@ static float Script_UTIL_TraceLine(const Vector& vecAbsStart, const Vector& vecA
  * @param playerIndex Player index to get angles of.
  * @return Vector of player eye angles.
  */
-static const Vector& Script_EyeAngles(const int playerIndex)
+static Vector Script_EyeAngles(const int playerIndex)
 {
 	const QAngle eyeAngles = CBasePlayer__EyeAngles(playerIndex);
 	return Vector(eyeAngles.x, eyeAngles.y, eyeAngles.z);

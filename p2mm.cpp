@@ -155,7 +155,6 @@ bool CP2MMServerPlugin::Load(CreateInterfaceFn interfaceFactory, const CreateInt
 	if (m_bPluginLoaded)
 	{
 		Log(WARNING, false, "Plugin already loaded!");
-		m_bNoUnload = true;
 		return false;
 	}
 
@@ -515,6 +514,15 @@ void CP2MMServerPlugin::Unload(void)
 	{
 		m_bNoUnload = false;
 		MessageBox(this->m_hWnd, "P2:MM ran into a error when starting!\nPlease check the console for more info!", "P2:MM Startup Error", MB_OK | MB_ICONERROR);
+		return;
+	}
+
+	if (IsGameActive())
+	{
+		m_bNoUnload = false;
+		Log(WARNING, false, "You unloaded the P2:MM plugin mid play session! This will cause issues and crashes!");
+		Log(WARNING, false, "You unloaded the P2:MM plugin mid play session! This will cause issues and crashes!");
+		Log(WARNING, false, "You unloaded the P2:MM plugin mid play session! This will cause issues and crashes!");
 		return;
 	}
 

@@ -42,7 +42,7 @@ IFileSystem* g_pFileSystem = nullptr; // Access interface for Valve's file syste
 //---------------------------------------------------------------------------------
 // The plugin is a static singleton that is exported as an interface
 //---------------------------------------------------------------------------------
-CP2MMServerPlugin g_P2MMServerPlugin;
+CP2MMServerPlugin* g_P2MMServerPlugin;
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CP2MMServerPlugin, IServerPluginCallbacks, INTERFACEVERSION_ISERVERPLUGINCALLBACKS, g_P2MMServerPlugin);
 
 // List of game events the plugin interfaces used to load each one.

@@ -1,27 +1,30 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="discordrpc.cpp" />
-    <ClCompile Include="globals.cpp" />
-    <ClCompile Include="p2mm.cpp" />
-    <ClCompile Include="scanner.cpp" />
-    <ClCompile Include="vscript.cpp" />
-    <ClCompile Include="sdk.cpp" />
-    <ClCompile Include="commands.cpp" />
+    <ClCompile Include="src\commands.cpp" />
+    <ClCompile Include="src\discordrpc.cpp" />
+    <ClCompile Include="src\globals.cpp" />
+    <ClCompile Include="src\p2mm.cpp" />
+    <ClCompile Include="src\sdk.cpp" />
+    <ClCompile Include="src\utils\memory.cpp" />
+    <ClCompile Include="src\utils\scanner.cpp" />
+    <ClCompile Include="src\vscript.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="discordrpc.hpp" />
-    <ClInclude Include="globals.hpp" />
-    <ClInclude Include="p2mm.hpp" />
-    <ClInclude Include="scanner.hpp" />
     <ClInclude Include="discord-rpc\include\discord_register.h">
       <Filter>Discord-RPC</Filter>
     </ClInclude>
     <ClInclude Include="discord-rpc\include\discord_rpc.h">
       <Filter>Discord-RPC</Filter>
     </ClInclude>
-    <ClInclude Include="sdk.hpp" />
-    <ClInclude Include="commands.hpp" />
+    <ClInclude Include="src\commands.hpp" />
+    <ClInclude Include="src\discordrpc.hpp" />
+    <ClInclude Include="src\globals.hpp" />
+    <ClInclude Include="src\p2mm.hpp" />
+    <ClInclude Include="src\sdk.hpp" />
+    <ClInclude Include="src\utils\hook.hpp" />
+    <ClInclude Include="src\utils\memory.hpp" />
+    <ClInclude Include="src\utils\scanner.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Discord-RPC">

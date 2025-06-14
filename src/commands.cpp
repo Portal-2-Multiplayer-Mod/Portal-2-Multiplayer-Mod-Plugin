@@ -4,6 +4,7 @@
 // Purpose: Where ConVars and ConCommands are defined and used throughout the plugin.
 // 
 //===========================================================================//
+
 #include "commands.hpp"
 
 #include "globals.hpp"
@@ -125,7 +126,7 @@ CON_COMMAND_F_COMPLETION(p2mm_map, "Starts up a P2:MM session with a requested m
 	{
 		if (!engineServer->IsMapValid(p2mm_lastmap.GetString()))
 		{
-			// Running disconnect to make the error screen appear causes the music to stop, don't let that to happen, so here it is started it again.
+			// Running disconnect to make the error screen appear causes the music to stop, here it is started it again.
 
 			// Get the current act so we can start the right main menu music.
 			int iAct = ConVarRef("ui_lastact_played").GetInt();

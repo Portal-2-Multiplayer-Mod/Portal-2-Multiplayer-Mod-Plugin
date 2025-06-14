@@ -18,7 +18,7 @@
 #include "tier2/fileutils.h"
 #include "irecipientfilter.h"
 
-#include "scanner.hpp"
+#include "utils/scanner.hpp"
 
 #include <comdef.h> 
 

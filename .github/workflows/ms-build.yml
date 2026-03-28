@@ -1,7 +1,8 @@
 name: MSBuild
 
 on:
-  push
+  push:
+  workflow_dispatch:
 
 permissions:
   contents: read
